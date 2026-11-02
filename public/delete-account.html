@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Suppression de Compte - NutriCoach</title>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Plus Jakarta Sans', sans-serif; background: #F8FAF8; color: #1E293B; margin: 0; padding: 2rem 1rem; }
+    .card { max-width: 600px; margin: 0 auto; background: white; border-radius: 24px; padding: 2.5rem; box-shadow: 0 4px 20px rgba(0,0,0,0.05); border: 1px solid #E2E8F0; }
+    h1 { color: #E11D48; margin-top: 0; font-size: 1.5rem; font-weight: 800; }
+    p { line-height: 1.6; font-size: 0.95rem; color: #475569; }
+    .warning { background: #FFF1F2; border: 1px solid #FECDD3; border-radius: 16px; padding: 1rem; color: #9F1239; font-size: 0.85rem; margin: 1.5rem 0; }
+    .btn-danger { background: #E11D48; color: white; border: none; padding: 0.75rem 1.5rem; border-radius: 12px; font-weight: 700; font-size: 0.9rem; cursor: pointer; }
+    .btn-secondary { background: #F1F5F9; color: #475569; border: none; padding: 0.75rem 1.5rem; border-radius: 12px; font-weight: 700; font-size: 0.9rem; text-decoration: none; display: inline-block; margin-left: 0.5rem; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>Supprimer mon compte NutriCoach</h1>
+    <p>Conformément au RGPD et à nos engagements de confidentialité, vous avez le droit de demander à tout moment la suppression définitive de vos données personnelles.</p>
+    
+    <div class="warning">
+      <strong>Attention :</strong> Cette action supprimera définitivement votre historique de pesée, vos journaux de repas enregistrés, vos favoris et vos échanges avec le Coach IA. Cette opération est irréversible.
+    </div>
+
+    <form onsubmit="event.preventDefault(); localStorage.clear(); alert('Vos données locales ont été purgées avec succès.'); window.location.href='/';">
+      <label style="display:block; font-size:0.85rem; font-weight:700; margin-bottom:0.5rem;">Confirmez votre adresse email :</label>
+      <input type="email" required placeholder="votre-email@exemple.com" style="width:100%; box-sizing:border-box; padding:0.75rem; border-radius:12px; border:1px solid #CBD5E1; margin-bottom:1.5rem; font-family:inherit;">
+      <button type="submit" class="btn-danger">Confirmer la suppression irréversible</button>
+      <a href="/" class="btn-secondary">Annuler</a>
+    </form>
+    <div style="margin-top: 2rem; padding-top: 1rem; border-top: 1px solid #E2E8F0; text-align: center; font-size: 0.8rem; color: #64748B;">
+      NutriCoach • Une création de <strong>L'ESCAPADE DE JOS</strong>
+    </div>
+  </div>
+</body>
+</html>

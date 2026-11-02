@@ -1,0 +1,6 @@
+{
+  "name": "NutriCoach",
+  "description": "Application mobile d'accompagnement minceur personnalisé : journal alimentaire, suivi du poids, calcul BMR/IMC, recettes, hydratation et coach IA.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
