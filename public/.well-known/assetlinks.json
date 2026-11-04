@@ -1,11 +1,16 @@
 [
   {
-    "relation": ["delegate_permission/common.handle_all_urls"],
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
+    ],
     "target": {
       "namespace": "android_app",
-      "package_name": "com.nutricoach.nutrition.app",
+      "package_name": "com.nutricoach.nutrition.coach",
       "sha256_cert_fingerprints": [
-        "14:6D:E9:7F:0F:7B:64:99:99:A5:10:98:C0:61:A0:5B:3F:8A:2E:7C:1F:B4:85:2B:6A:9A:8B:23:45:67:89:AB"
+        "22:47:7A:5A:F9:9F:0D:1C:57:65:38:58:FB:A3:93:22:B3:65:88:D4:4D:C8:69:BD:C6:AE:54:CA:4E:7D:77:DF",
+        "8C:BB:3F:A0:25:E2:13:FD:E2:73:BB:9D:9E:A6:EE:20:3A:35:CB:B9:EB:A6:0B:8D:5A:29:A6:68:92:92:0F:FD",
+        "69:CA:D0:20:4C:B2:64:D8:50:49:70:F6:32:0E:3B:D0:A0:7F:F2:01:3E:B0:64:EF:4E:A9:C4:44:5E:8F:7D:36"
       ]
     }
   }

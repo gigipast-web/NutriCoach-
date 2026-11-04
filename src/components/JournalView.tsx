@@ -83,11 +83,12 @@ export const JournalView: React.FC<JournalViewProps> = ({
   ];
 
   const quickMealExamples = [
+    '☕ Un café',
+    '☕ Café au lait & 1 biscotte',
     '🥚 Une omelette et mousse chocolat',
     '🍎 Omelette nature, salade & 1 pomme',
     '🍓 Yaourt grec & fruits rouges',
     '🥩 Steak haché, haricots & 1 poire',
-    '🐟 Pavé de saumon, riz & 1 kiwi',
   ];
 
   const handleOpenAddModal = (type: MealType) => {
@@ -111,7 +112,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
 
     setIsCalculating(true);
 
-    // 1. Instant local calculation (0ms latency fallback)
+    // 1. Instant local calculation (0ms latency fallback, accurate clinical values)
     const localEstimate = estimateMealFromText(textToCalculate);
     setCalories(String(localEstimate.totalCalories));
     setPortionGrams(String(localEstimate.totalPortionGrams));
@@ -130,15 +131,22 @@ export const JournalView: React.FC<JournalViewProps> = ({
 
       if (res.ok) {
         const data = await res.json();
-        if (data && typeof data.calories === 'number' && data.calories > 0) {
-          setCalories(String(data.calories));
+        if (data && typeof data.calories === 'number' && data.calories >= 0) {
+          // Guard: If local estimate identified a zero/low-calorie drink (<= 15 kcal like coffee/tea/water),
+          // prevent AI or fallback from returning a dish-level calorie count (> 25 kcal).
+          const resolvedCalories =
+            localEstimate.totalCalories <= 15 && data.calories > 25
+              ? localEstimate.totalCalories
+              : data.calories;
+
+          setCalories(String(resolvedCalories));
           setPortionGrams(String(data.portionGrams || localEstimate.totalPortionGrams));
           setProtein(String(data.protein ?? localEstimate.totalProtein));
           setCarbs(String(data.carbs ?? localEstimate.totalCarbs));
           setFat(String(data.fat ?? localEstimate.totalFat));
           setCalculationResult({
             foodName: data.foodName || localEstimate.foodName,
-            totalCalories: data.calories,
+            totalCalories: resolvedCalories,
             totalPortionGrams: data.portionGrams || localEstimate.totalPortionGrams,
             totalProtein: data.protein ?? localEstimate.totalProtein,
             totalCarbs: data.carbs ?? localEstimate.totalCarbs,
@@ -182,16 +190,32 @@ export const JournalView: React.FC<JournalViewProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (!foodName || !calories) return;
+    const cleanFoodName = foodName.trim();
+    if (!cleanFoodName) return;
+
+    let calVal = calories;
+    let protVal = protein;
+    let carbsVal = carbs;
+    let fatVal = fat;
+    let portionVal = portionGrams;
+
+    if (!calVal) {
+      const estimate = estimateMealFromText(cleanFoodName);
+      calVal = String(estimate.totalCalories);
+      protVal = String(estimate.totalProtein);
+      carbsVal = String(estimate.totalCarbs);
+      fatVal = String(estimate.totalFat);
+      portionVal = String(estimate.totalPortionGrams);
+    }
 
     onAddMeal({
       mealType: selectedMealType,
-      foodName,
-      calories: parseInt(calories, 10) || 0,
-      protein: parseFloat(protein) || 0,
-      carbs: parseFloat(carbs) || 0,
-      fat: parseFloat(fat) || 0,
-      portionGrams: parseInt(portionGrams, 10) || 100,
+      foodName: cleanFoodName,
+      calories: parseInt(calVal, 10) || 0,
+      protein: parseFloat(protVal) || 0,
+      carbs: parseFloat(carbsVal) || 0,
+      fat: parseFloat(fatVal) || 0,
+      portionGrams: parseInt(portionVal, 10) || 100,
       timestamp: new Date().toISOString(),
     });
 

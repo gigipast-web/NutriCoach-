@@ -1,4 +1,5 @@
 import { GoogleGenAI } from "@google/genai";
+import { estimateMealFromText } from "../src/utils/mealEstimator.ts";
 
 let genAIClient: GoogleGenAI | null = null;
 
@@ -193,15 +194,17 @@ export async function analyzeMealPhoto(params: {
   const lang = (language || "fr").toLowerCase();
   const ai = getGenAI();
 
+  const baselineEstimate = description ? estimateMealFromText(description) : null;
   const defaultAnalysis: MealAnalysisResult = {
     foodName: description || "Assiette équilibrée poulet & légumes",
-    calories: 380,
-    protein: 32,
-    carbs: 25,
-    fat: 12,
-    portionGrams: 300,
-    analysis: "Une excellente composition combinant protéines maigres, légumes riches en micronutriments et graisses saines.",
-    advice: "Idéal pour préserver la masse musculaire tout en stimulant le déficit calorique léger.",
+    calories: baselineEstimate ? baselineEstimate.totalCalories : 350,
+    protein: baselineEstimate ? baselineEstimate.totalProtein : 28,
+    carbs: baselineEstimate ? baselineEstimate.totalCarbs : 24,
+    fat: baselineEstimate ? baselineEstimate.totalFat : 11,
+    portionGrams: baselineEstimate ? baselineEstimate.totalPortionGrams : 280,
+    analysis:
+      "Une excellente composition favorisant la satiété avec un apport énergétique équilibré.",
+    advice: "Prenez le temps de bien mastiquer pour une digestion optimale.",
   };
 
   if (!ai) {
@@ -304,27 +307,39 @@ export async function calculateMealFromText(params: {
   language?: string;
 }) {
   const { mealText, language } = params;
-  const ai = getGenAI();
+  const localEstimate = estimateMealFromText(mealText);
 
   const defaultCalculation = {
-    foodName: mealText,
-    calories: 420,
-    portionGrams: 240,
-    protein: 18,
-    carbs: 25,
-    fat: 20,
-    items: [],
-    explanation: "Estimation nutritionnelle basée sur des portions standards.",
-    isAiRefined: true,
+    foodName: localEstimate.foodName || mealText,
+    calories: localEstimate.totalCalories,
+    portionGrams: localEstimate.totalPortionGrams,
+    protein: localEstimate.totalProtein,
+    carbs: localEstimate.totalCarbs,
+    fat: localEstimate.totalFat,
+    items: localEstimate.items,
+    explanation:
+      localEstimate.explanation || "Estimation nutritionnelle basée sur les tables de référence officielles.",
+    isAiRefined: false,
   };
 
+  const ai = getGenAI();
   if (!ai) {
     return defaultCalculation;
   }
 
-  const prompt = `Tu es un nutritionniste expert polyglotte. L'utilisateur a composé ou mangé le repas suivant : "${mealText}".
+  const prompt = `Tu es un nutritionniste et diététicien clinicien expert polyglotte.
+L'utilisateur a consommé ou composé le repas / aliment suivant : "${mealText}".
 Rédige les champs textuels ("foodName", "items.name", "explanation") dans la même langue que le texte de l'utilisateur (ou ${language || "fr"}).
-Décompose ce repas, estime les quantités réalistes en grammes pour chaque aliment ou ingrédient, les calories totales, et les macronutriments (protéines, glucides, lipides).
+
+RÈGLES NUTRITIONNELLES STRICTES (TABLES DE RÉFÉRENCE CIQUAL & USDA) :
+1. BOISSONS CHAUDES NATURE :
+   - Un café noir, expresso / espresso, café allongé, thé nature, tisane ou infusion sans sucre = 2 à 5 kcal (0g lipides, 0g protéines, 0g glucides). JAMAIS plus de 5 kcal pour un café noir !
+   - Un café avec 1 morceau de sucre = ~20 à 25 kcal (5g glucides).
+   - Un café au lait = ~40 à 60 kcal (3g protéines, 5g glucides, 2g lipides).
+   - Un cappuccino = ~60 à 80 kcal.
+   - Eau plate ou gazeuse = 0 kcal.
+2. NE JAMAIS assigner de calories de plat complet (ex: 300-400 kcal) à une simple boisson ou collation légère !
+3. Pour les plats composés, décompose chaque aliment avec sa portion réaliste.
 
 Exemple pour "une omelette et mousse chocolat" :
 - Omelette (environ 2 œufs) : ~140g, 185 kcal, 14g protéines, 1.5g glucides, 14g lipides
@@ -365,19 +380,28 @@ Réponds STRICTEMENT sous format JSON valide avec la structure suivante :
     );
 
     const parsed = JSON.parse(response.text || "{}");
+    const rawCalories = Math.round(Number(parsed.calories) || localEstimate.totalCalories);
+
+    // Sanity check: If local reference detected a zero/low-calorie drink (<= 15 kcal) like black coffee or tea,
+    // do not allow an AI hallucination of 100+ or 300+ kcal.
+    let finalCalories = rawCalories;
+    if (localEstimate.totalCalories <= 15 && rawCalories > 25) {
+      finalCalories = localEstimate.totalCalories;
+    }
+
     return {
-      foodName: parsed.foodName || mealText,
-      calories: Math.round(Number(parsed.calories) || 400),
-      portionGrams: Math.round(Number(parsed.portionGrams) || 250),
-      protein: Math.round((Number(parsed.protein) || 20) * 10) / 10,
-      carbs: Math.round((Number(parsed.carbs) || 30) * 10) / 10,
-      fat: Math.round((Number(parsed.fat) || 15) * 10) / 10,
-      items: Array.isArray(parsed.items) ? parsed.items : [],
-      explanation: parsed.explanation || "",
+      foodName: parsed.foodName || localEstimate.foodName || mealText,
+      calories: finalCalories,
+      portionGrams: Math.round(Number(parsed.portionGrams) || localEstimate.totalPortionGrams),
+      protein: Math.round((Number(parsed.protein) ?? localEstimate.totalProtein) * 10) / 10,
+      carbs: Math.round((Number(parsed.carbs) ?? localEstimate.totalCarbs) * 10) / 10,
+      fat: Math.round((Number(parsed.fat) ?? localEstimate.totalFat) * 10) / 10,
+      items: Array.isArray(parsed.items) && parsed.items.length > 0 ? parsed.items : localEstimate.items,
+      explanation: parsed.explanation || localEstimate.explanation || "",
       isAiRefined: true,
     };
   } catch (error) {
-    console.warn("Meal calculation error:", error);
+    console.warn("Meal calculation error (falling back to clinical dictionary):", error);
     return defaultCalculation;
   }
 }

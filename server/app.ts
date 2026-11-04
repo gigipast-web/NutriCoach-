@@ -28,8 +28,13 @@ export function createExpressApp() {
   });
 
   app.get("/manifest.json", (_req, res) => {
-    res.setHeader("Content-Type", "application/manifest+json");
+    res.setHeader("Content-Type", "application/manifest+json; charset=utf-8");
     res.sendFile(path.join(process.cwd(), "public", "manifest.json"));
+  });
+
+  app.get("/manifest.webmanifest", (_req, res) => {
+    res.setHeader("Content-Type", "application/manifest+json; charset=utf-8");
+    res.sendFile(path.join(process.cwd(), "public", "manifest.webmanifest"));
   });
 
   app.get("/offline.html", (_req, res) => {

@@ -505,6 +505,336 @@ const FOOD_KNOWLEDGE_BASE: Array<{
     carbsPer100g: 6,
     fatPer100g: 8,
   },
+
+  // Cafés, Thés & Boissons Chaudes
+  {
+    keywords: [
+      'cafe',
+      'cafes',
+      'cafe noir',
+      'cafes noirs',
+      'espresso',
+      'espressos',
+      'expresso',
+      'expressos',
+      'allonge',
+      'allongé',
+      'americano',
+      'deca',
+      'decaf',
+      'décaféiné',
+      'cafe sans sucre',
+      'un cafe',
+      'tasse de cafe',
+      'coffee',
+      'black coffee',
+    ],
+    canonicalName: 'Café noir (1 tasse / espresso)',
+    defaultPortionGrams: 60,
+    caloriesPer100g: 3,
+    proteinPer100g: 0.1,
+    carbsPer100g: 0.2,
+    fatPer100g: 0,
+  },
+  {
+    keywords: [
+      'cafe sucre',
+      'cafes sucres',
+      'cafe avec sucre',
+      'cafe 1 sucre',
+      'cafe un sucre',
+      'espresso sucre',
+      'expresso sucre',
+      'cafe 2 sucres',
+      'sweet coffee',
+    ],
+    canonicalName: 'Café avec sucre (1 tasse)',
+    defaultPortionGrams: 60,
+    caloriesPer100g: 35,
+    proteinPer100g: 0.1,
+    carbsPer100g: 8.5,
+    fatPer100g: 0,
+  },
+  {
+    keywords: [
+      'cafe au lait',
+      'cafes au lait',
+      'caffe latte',
+      'latte',
+      'cafe macchiato',
+      'macchiato',
+      'flat white',
+      'cafe noisette',
+      'noisette',
+      'cafe creme',
+      'café crème',
+    ],
+    canonicalName: 'Café au lait (1 tasse)',
+    defaultPortionGrams: 150,
+    caloriesPer100g: 35,
+    proteinPer100g: 2.2,
+    carbsPer100g: 3.5,
+    fatPer100g: 1.5,
+  },
+  {
+    keywords: ['cappuccino', 'cappuccinos', 'capuccino'],
+    canonicalName: 'Cappuccino (1 tasse)',
+    defaultPortionGrams: 150,
+    caloriesPer100g: 50,
+    proteinPer100g: 2.6,
+    carbsPer100g: 5.5,
+    fatPer100g: 2.2,
+  },
+  {
+    keywords: [
+      'the',
+      'thé',
+      'thes',
+      'thés',
+      'the vert',
+      'thé vert',
+      'the noir',
+      'thé noir',
+      'the blanc',
+      'the menthe',
+      'tisane',
+      'tisanes',
+      'infusion',
+      'infusions',
+      'verveine',
+      'camomille',
+      'rooibos',
+      'tea',
+      'green tea',
+    ],
+    canonicalName: 'Thé ou Infusion nature sans sucre',
+    defaultPortionGrams: 200,
+    caloriesPer100g: 1,
+    proteinPer100g: 0,
+    carbsPer100g: 0.2,
+    fatPer100g: 0,
+  },
+  {
+    keywords: [
+      'the sucre',
+      'thé sucré',
+      'the avec sucre',
+      'the au miel',
+      'thé au miel',
+      'the avec miel',
+      'tisane sucree',
+      'tisane au miel',
+    ],
+    canonicalName: 'Thé ou Infusion avec sucre ou miel',
+    defaultPortionGrams: 200,
+    caloriesPer100g: 18,
+    proteinPer100g: 0,
+    carbsPer100g: 4.5,
+    fatPer100g: 0,
+  },
+  {
+    keywords: [
+      'chocolat chaud',
+      'chocolats chauds',
+      'cacao au lait',
+      'cacao',
+      'nesquik',
+      'benco',
+      'hot chocolate',
+    ],
+    canonicalName: 'Chocolat chaud au lait (1 mug)',
+    defaultPortionGrams: 200,
+    caloriesPer100g: 78,
+    proteinPer100g: 3.5,
+    carbsPer100g: 10,
+    fatPer100g: 2.8,
+  },
+
+  // Boissons Fraîches & Eau
+  {
+    keywords: [
+      'eau',
+      'verre d eau',
+      'verres d eau',
+      'bouteille d eau',
+      'eau plate',
+      'eau gazeuse',
+      'eau minerale',
+      'eau de source',
+      'water',
+    ],
+    canonicalName: 'Eau (1 grand verre)',
+    defaultPortionGrams: 250,
+    caloriesPer100g: 0,
+    proteinPer100g: 0,
+    carbsPer100g: 0,
+    fatPer100g: 0,
+  },
+  {
+    keywords: [
+      'jus d orange',
+      'jus d oranges',
+      'jus orange',
+      'orange pressee',
+      'orange pressée',
+      'jus de fruits',
+      'jus de fruit',
+      'jus de pomme',
+      'jus de pamplemousse',
+      'jus d ananas',
+      'orange juice',
+    ],
+    canonicalName: 'Jus d’orange ou de fruits (1 verre)',
+    defaultPortionGrams: 200,
+    caloriesPer100g: 45,
+    proteinPer100g: 0.7,
+    carbsPer100g: 10.2,
+    fatPer100g: 0.2,
+  },
+  {
+    keywords: [
+      'lait',
+      'verre de lait',
+      'lait demi ecreme',
+      'lait demi écrémé',
+      'lait ecreme',
+      'lait entier',
+      'milk',
+    ],
+    canonicalName: 'Lait demi-écrémé (1 verre)',
+    defaultPortionGrams: 200,
+    caloriesPer100g: 46,
+    proteinPer100g: 3.3,
+    carbsPer100g: 4.8,
+    fatPer100g: 1.6,
+  },
+  {
+    keywords: ['coca', 'coca cola', 'soda', 'pepsi', 'fanta', 'sprite', 'ice tea'],
+    canonicalName: 'Soda sucré (1 canette / verre)',
+    defaultPortionGrams: 330,
+    caloriesPer100g: 42,
+    proteinPer100g: 0,
+    carbsPer100g: 10.6,
+    fatPer100g: 0,
+  },
+  {
+    keywords: [
+      'coca zero',
+      'cola zero',
+      'coca light',
+      'soda zero',
+      'zero sucre',
+      'pepsi max',
+      'coke zero',
+    ],
+    canonicalName: 'Soda sans sucre / Zéro (1 canette)',
+    defaultPortionGrams: 330,
+    caloriesPer100g: 0.5,
+    proteinPer100g: 0,
+    carbsPer100g: 0.1,
+    fatPer100g: 0,
+  },
+  {
+    keywords: ['biere', 'bière', 'bieres', 'bières', 'demi de biere', 'panache', 'beer'],
+    canonicalName: 'Bière (1 demi 25cl)',
+    defaultPortionGrams: 250,
+    caloriesPer100g: 43,
+    proteinPer100g: 0.5,
+    carbsPer100g: 3.6,
+    fatPer100g: 0,
+  },
+  {
+    keywords: [
+      'vin',
+      'vin rouge',
+      'vin blanc',
+      'vin rose',
+      'vin rosé',
+      'verre de vin',
+      'champagne',
+      'wine',
+    ],
+    canonicalName: 'Vin (1 verre 12cl)',
+    defaultPortionGrams: 120,
+    caloriesPer100g: 75,
+    proteinPer100g: 0.1,
+    carbsPer100g: 2.5,
+    fatPer100g: 0,
+  },
+
+  // Petit-déjeuner, Tartines & Snacks
+  {
+    keywords: [
+      'tartine beurree',
+      'tartine beurrée',
+      'tartine de beurre',
+      'pain beurre',
+      'pain beurré',
+      'tartine',
+    ],
+    canonicalName: 'Tartine de pain beurrée (1 tranche)',
+    defaultPortionGrams: 40,
+    caloriesPer100g: 350,
+    proteinPer100g: 6,
+    carbsPer100g: 38,
+    fatPer100g: 18,
+  },
+  {
+    keywords: ['tartine confiture', 'pain confiture', 'confiture', 'jam'],
+    canonicalName: 'Tartine avec confiture (1)',
+    defaultPortionGrams: 45,
+    caloriesPer100g: 280,
+    proteinPer100g: 4,
+    carbsPer100g: 55,
+    fatPer100g: 2,
+  },
+  {
+    keywords: ['biscotte', 'biscottes', 'craquotte', 'craquottes', 'pain grille', 'pain grillé'],
+    canonicalName: 'Biscotte (1)',
+    defaultPortionGrams: 15,
+    caloriesPer100g: 395,
+    proteinPer100g: 11,
+    carbsPer100g: 72,
+    fatPer100g: 6,
+  },
+  {
+    keywords: ['morceau de sucre', 'morceaux de sucre', 'cuillere de sucre', 'sucre', 'sugar'],
+    canonicalName: 'Sucre (1 morceau / cuillère)',
+    defaultPortionGrams: 5,
+    caloriesPer100g: 400,
+    proteinPer100g: 0,
+    carbsPer100g: 100,
+    fatPer100g: 0,
+  },
+  {
+    keywords: ['miel', 'cuillere de miel', 'honey'],
+    canonicalName: 'Miel (1 c.à.c)',
+    defaultPortionGrams: 10,
+    caloriesPer100g: 304,
+    proteinPer100g: 0.3,
+    carbsPer100g: 82,
+    fatPer100g: 0,
+  },
+  {
+    keywords: [
+      'amandes',
+      'amande',
+      'noix',
+      'noisettes',
+      'noisette',
+      'noix de cajou',
+      'pistaches',
+      'pistache',
+      'nuts',
+      'almonds',
+    ],
+    canonicalName: 'Poignée d’oléagineux (amandes/noix 30g)',
+    defaultPortionGrams: 30,
+    caloriesPer100g: 600,
+    proteinPer100g: 20,
+    carbsPer100g: 10,
+    fatPer100g: 52,
+  },
 ];
 
 /**
@@ -520,25 +850,86 @@ function normalize(str: string): string {
 }
 
 /**
- * Extracts a numeric portion if the user wrote e.g. "200g", "2 oeufs", "3 tranches"
+ * Robust word-boundary check to prevent substring collisions (e.g. "eau" matching "morceau", "the" matching "menthe")
+ */
+function matchesKeyword(normClause: string, normKw: string): boolean {
+  if (normClause === normKw) return true;
+  const escaped = normKw.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const reg = new RegExp(`(^|\\s)${escaped}(\\s|$)`);
+  return reg.test(normClause);
+}
+
+/**
+ * Extracts a numeric portion or multiplier if user wrote e.g. "200g", "25cl", "2 cafés", "un café"
  */
 function extractQuantityModifier(text: string): { grams?: number; multiplier?: number } {
   const norm = normalize(text);
 
-  // Matches "200g", "200 g", "250gr"
-  const gramsMatch = norm.match(/(\d+)\s*(g|gr|grammes|grams)/);
+  // Matches grams: "200g", "200 g", "250gr"
+  const gramsMatch = norm.match(/(\d+(?:[.,]\d+)?)\s*(g|gr|grammes|grams)\b/);
   if (gramsMatch) {
-    const val = parseInt(gramsMatch[1], 10);
-    if (val >= 10 && val <= 1500) {
+    const val = Math.round(parseFloat(gramsMatch[1].replace(',', '.')));
+    if (val >= 5 && val <= 2500) {
       return { grams: val };
     }
   }
 
-  // Matches count: "2 oeufs", "3 tranches", "1 part"
-  const countMatch = norm.match(/^(\d+)\s+(tranches?|parts?|verres?|bols?|oeufs?|pommes?|pots?)/);
-  if (countMatch) {
-    const count = parseInt(countMatch[1], 10);
-    if (count > 0 && count <= 10) {
+  // Matches milliliters: "100ml", "250 ml"
+  const mlMatch = norm.match(/(\d+)\s*(ml|millilitres)\b/);
+  if (mlMatch) {
+    const val = parseInt(mlMatch[1], 10);
+    if (val >= 10 && val <= 3000) {
+      return { grams: val };
+    }
+  }
+
+  // Matches centiliters: "25cl", "33 cl" -> convert to grams
+  const clMatch = norm.match(/(\d+)\s*(cl|centilitres)\b/);
+  if (clMatch) {
+    const val = parseInt(clMatch[1], 10) * 10;
+    if (val >= 10 && val <= 3000) {
+      return { grams: val };
+    }
+  }
+
+  // Matches liters: "1l", "1.5 l"
+  const lMatch = norm.match(/(\d+(?:[.,]\d+)?)\s*(l|litre|litres)\b/);
+  if (lMatch) {
+    const val = Math.round(parseFloat(lMatch[1].replace(',', '.')) * 1000);
+    if (val >= 100 && val <= 5000) {
+      return { grams: val };
+    }
+  }
+
+  // Matches word numbers: "un", "une", "deux", "trois"
+  const numberWords: Record<string, number> = {
+    un: 1,
+    une: 1,
+    deux: 2,
+    trois: 3,
+    quatre: 4,
+    cinq: 5,
+    six: 6,
+    demi: 0.5,
+    demie: 0.5,
+  };
+
+  const countWordMatch = norm.match(
+    /\b(un|une|deux|trois|quatre|cinq|six|demi|demie|\d+)\s*(cafes?|tasses?|mugs?|verres?|bols?|tranches?|parts?|morceaux?|cuilleres?|pots?|pommes?|oeufs?|biscottes?|croissants?)\b/
+  );
+  if (countWordMatch) {
+    const rawNum = countWordMatch[1];
+    const count = numberWords[rawNum] ?? parseInt(rawNum, 10);
+    if (!isNaN(count) && count > 0 && count <= 15) {
+      return { multiplier: count };
+    }
+  }
+
+  // Standalone leading digit: "2 cafes", "3 pommes", "1 cafe"
+  const simpleCountMatch = norm.match(/^(\d+)\s+/);
+  if (simpleCountMatch) {
+    const count = parseInt(simpleCountMatch[1], 10);
+    if (count > 0 && count <= 15) {
       return { multiplier: count };
     }
   }
@@ -547,7 +938,59 @@ function extractQuantityModifier(text: string): { grams?: number; multiplier?: n
 }
 
 /**
- * Calculates calories and quantity immediately from a meal text (e.g. "une omelette et mousse chocolat")
+ * Intelligent categorization for unknown clauses (prevents giving 380 kcal to drinks or small snacks)
+ */
+function detectCategory(clauseText: string): {
+  defaultGrams: number;
+  defaultCal: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+} {
+  const norm = normalize(clauseText);
+
+  // 1. Black coffee, tea, infusions, water (0-5 kcal)
+  if (
+    /\b(cafe|cafes|coffee|espresso|espressos|expresso|expressos|the|thes|thé|tea|tisane|tisanes|infusion|infusions|eau|water)\b/.test(
+      norm
+    )
+  ) {
+    return { defaultGrams: 60, defaultCal: 2, protein: 0.1, carbs: 0.2, fat: 0 };
+  }
+
+  // 2. Other drinks (latte, juice, milk, smoothie, soda)
+  if (
+    /\b(boisson|boissons|drink|jus|lait|milk|latte|smoothie|soda|cola|sirop|tasse|mug|verre)\b/.test(
+      norm
+    )
+  ) {
+    return { defaultGrams: 180, defaultCal: 50, protein: 2, carbs: 8, fat: 1 };
+  }
+
+  // 3. Fruits & Vegetables
+  if (
+    /\b(fruit|fruits|legume|legumes|pomme|poire|orange|banane|fraise|kiwi|salade|tomate|courgette|carotte|haricot)\b/.test(
+      norm
+    )
+  ) {
+    return { defaultGrams: 120, defaultCal: 55, protein: 1, carbs: 12, fat: 0.2 };
+  }
+
+  // 4. Sweets, desserts, sugars & snacks
+  if (
+    /\b(biscuit|gateau|gâteau|chocolat|bonbon|sucre|miel|mousse|crepe|crêpe|glace|dessert|snack)\b/.test(
+      norm
+    )
+  ) {
+    return { defaultGrams: 80, defaultCal: 160, protein: 3, carbs: 24, fat: 6 };
+  }
+
+  // 5. General balanced dish (realistic default meal: ~250 kcal, NOT 380)
+  return { defaultGrams: 200, defaultCal: 250, protein: 16, carbs: 24, fat: 9 };
+}
+
+/**
+ * Calculates calories and quantity immediately from a meal text (e.g. "un café", "une omelette et mousse chocolat")
  */
 export function estimateMealFromText(input: string): MealCalculationResult {
   const cleaned = input.trim();
@@ -569,7 +1012,7 @@ export function estimateMealFromText(input: string): MealCalculationResult {
   const clauses = cleaned
     .split(/\s+(?:et|\+|&|avec|puis|suivi\s+de|accompagne\s+de|accompagné\s+de|,)\s+|\s*,\s*|\s*\+\s*/i)
     .map((c) => c.trim())
-    .filter((c) => c.length > 1);
+    .filter((c) => c.length > 0);
 
   const matchedItems: MealItemEstimate[] = [];
   const unmatchedClauses: string[] = [];
@@ -584,7 +1027,7 @@ export function estimateMealFromText(input: string): MealCalculationResult {
     for (const food of FOOD_KNOWLEDGE_BASE) {
       for (const kw of food.keywords) {
         const normKw = normalize(kw);
-        if (normClause.includes(normKw)) {
+        if (matchesKeyword(normClause, normKw)) {
           const score = normKw.length;
           if (score > bestScore) {
             bestScore = score;
@@ -621,27 +1064,26 @@ export function estimateMealFromText(input: string): MealCalculationResult {
 
   // If some or all clauses were not recognized by dictionary, provide intelligent generic estimates
   if (matchedItems.length === 0) {
-    // Generic balanced meal approximation (e.g. unknown dish)
-    const defaultGrams = 250;
-    const defaultCal = 380;
+    const cat = detectCategory(cleaned);
     matchedItems.push({
       name: cleaned.charAt(0).toUpperCase() + cleaned.slice(1),
-      portionGrams: defaultGrams,
-      calories: defaultCal,
-      protein: 24,
-      carbs: 35,
-      fat: 14,
+      portionGrams: cat.defaultGrams,
+      calories: cat.defaultCal,
+      protein: cat.protein,
+      carbs: cat.carbs,
+      fat: cat.fat,
     });
   } else if (unmatchedClauses.length > 0) {
-    // Add an estimate for the remaining item
+    // Add estimates for any remaining unrecognized components
     for (const unk of unmatchedClauses) {
+      const cat = detectCategory(unk);
       matchedItems.push({
         name: unk.charAt(0).toUpperCase() + unk.slice(1),
-        portionGrams: 100,
-        calories: 130,
-        protein: 5,
-        carbs: 15,
-        fat: 5,
+        portionGrams: cat.defaultGrams,
+        calories: cat.defaultCal,
+        protein: cat.protein,
+        carbs: cat.carbs,
+        fat: cat.fat,
       });
     }
   }

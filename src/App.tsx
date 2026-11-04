@@ -212,6 +212,101 @@ export default function App() {
     }
   }, [isDarkMode]);
 
+  // Handle Deep Links, Web Links, and Custom Protocol Schemes (web+nutricoach)
+  const handleDeepLink = (locationUrl: { search: string; hash?: string }) => {
+    try {
+      const searchParams = new URLSearchParams(locationUrl.search);
+      const tab = searchParams.get('tab');
+      const action = searchParams.get('action');
+      const protocolAction = searchParams.get('protocol_action');
+
+      // 1. Direct tab routing (e.g. ?tab=journal or ?tab=aicoach)
+      if (tab) {
+        const validTabs: TabType[] = [
+          'dashboard',
+          'journal',
+          'aicoach',
+          'progress',
+          'hydration',
+          'recipes',
+          'badges',
+          'profile',
+        ];
+        if (validTabs.includes(tab as TabType)) {
+          setActiveTab(tab as TabType);
+        }
+      }
+
+      // 2. Custom protocol scheme handling (web+nutricoach://...)
+      if (protocolAction) {
+        const decoded = decodeURIComponent(protocolAction).toLowerCase();
+        if (decoded.includes('journal') || decoded.includes('repas') || decoded.includes('meal')) {
+          setActiveTab('journal');
+        } else if (decoded.includes('coach') || decoded.includes('ai') || decoded.includes('chat')) {
+          setActiveTab('aicoach');
+        } else if (decoded.includes('hydration') || decoded.includes('eau') || decoded.includes('water')) {
+          setActiveTab('hydration');
+        } else if (decoded.includes('recipe') || decoded.includes('recette')) {
+          setActiveTab('recipes');
+        } else if (decoded.includes('progress') || decoded.includes('poids') || decoded.includes('weight')) {
+          setActiveTab('progress');
+        } else if (decoded.includes('scan') || decoded.includes('scanner') || decoded.includes('photo')) {
+          setActiveTab('aicoach');
+        } else if (decoded.includes('barcode') || decoded.includes('codebarre')) {
+          setIsBarcodeModalOpen(true);
+        }
+      }
+
+      // 3. Quick action parameters (?action=scan, ?action=barcode, ?action=water, etc.)
+      if (action === 'scan' || action === 'camera') {
+        setActiveTab('aicoach');
+      } else if (action === 'barcode') {
+        setIsBarcodeModalOpen(true);
+      } else if (action === 'water') {
+        setActiveTab('hydration');
+      } else if (action === 'meal') {
+        setActiveTab('journal');
+      }
+    } catch (e) {
+      console.warn('Error processing deep link:', e);
+    }
+  };
+
+  useEffect(() => {
+    // 1. Check current URL for deep links & custom protocol actions
+    handleDeepLink(window.location);
+
+    // 2. Support W3C / Chromium Launch Queue API for installed PWAs
+    if (
+      typeof window !== 'undefined' &&
+      'launchQueue' in window &&
+      typeof (window as any).launchQueue?.setConsumer === 'function'
+    ) {
+      (window as any).launchQueue.setConsumer((launchParams: any) => {
+        if (launchParams?.targetURL) {
+          try {
+            const launchedUrl = new URL(launchParams.targetURL);
+            handleDeepLink(launchedUrl);
+          } catch (err) {
+            console.warn('launchQueue error:', err);
+          }
+        }
+      });
+    }
+
+    // 3. Register custom scheme web+nutricoach in browser if supported
+    if (typeof navigator !== 'undefined' && 'registerProtocolHandler' in navigator) {
+      try {
+        navigator.registerProtocolHandler(
+          'web+nutricoach',
+          `${window.location.origin}/?protocol_action=%s`
+        );
+      } catch (err) {
+        // Ignored if already registered or in restricted iframe
+      }
+    }
+  }, []);
+
   // Handle Stripe return redirect (?session_id=...&payment_status=success)
   useEffect(() => {
     try {

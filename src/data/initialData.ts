@@ -590,4 +590,8 @@ export const foodDatabase: FoodItem[] = [
   { id: 'f10', name: 'Omelette 2 œufs bio', calories: 150, protein: 13, carbs: 1, fat: 11, servingSize: '120g', category: 'Œufs' },
   { id: 'f11', name: 'Pain de mie complet (2 tranches)', calories: 140, protein: 5, carbs: 24, fat: 2, servingSize: '60g', category: 'Féculents' },
   { id: 'f12', name: 'Yaourt grec nature 2%', calories: 120, protein: 10, carbs: 6, fat: 5, servingSize: '150g', category: 'Produits Laitiers' },
+  { id: 'f13', name: 'Café noir / Espresso (1 tasse)', calories: 2, protein: 0.1, carbs: 0.2, fat: 0, servingSize: '60ml', category: 'Boissons' },
+  { id: 'f14', name: 'Café au lait (1 tasse)', calories: 53, protein: 3.3, carbs: 5.3, fat: 2.3, servingSize: '150ml', category: 'Boissons' },
+  { id: 'f15', name: 'Thé ou Infusion nature sans sucre', calories: 2, protein: 0, carbs: 0.2, fat: 0, servingSize: '200ml', category: 'Boissons' },
+  { id: 'f16', name: 'Eau minérale ou de source (1 verre)', calories: 0, protein: 0, carbs: 0, fat: 0, servingSize: '250ml', category: 'Boissons' },
 ];
