@@ -10,6 +10,19 @@
   node_bundler = "esbuild"
   included_files = ["public/**"]
 
+# Digital Asset Links for Google Play Store (TWA) verification
+[[redirects]]
+  from = "/.well-known/assetlinks.json"
+  to = "/.netlify/functions/assetlinks"
+  status = 200
+  force = true
+
+[[redirects]]
+  from = "/well-known/assetlinks.json"
+  to = "/.netlify/functions/assetlinks"
+  status = 200
+  force = true
+
 # API Serverless Functions Routing
 [[redirects]]
   from = "/api/health"
@@ -70,6 +83,12 @@
 
 [[headers]]
   for = "/.well-known/assetlinks.json"
+  [headers.values]
+    Content-Type = "application/json"
+    Cache-Control = "public, max-age=86400"
+
+[[headers]]
+  for = "/well-known/assetlinks.json"
   [headers.values]
     Content-Type = "application/json"
     Cache-Control = "public, max-age=86400"

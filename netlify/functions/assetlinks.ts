@@ -1,0 +1,28 @@
+import type { Handler } from "@netlify/functions";
+
+const assetlinks = [
+  {
+    relation: ["delegate_permission/common.handle_all_urls"],
+    target: {
+      namespace: "android_app",
+      package_name: "com.nutricoach.nutrition.coach",
+      sha256_cert_fingerprints: [
+        "22:47:7A:5A:F9:9F:0D:1C:57:65:38:58:FB:A3:93:22:B3:65:88:D4:4D:C8:69:BD:C6:AE:54:CA:4E:7D:77:DF",
+        "8C:BB:3F:A0:25:E2:13:FD:E2:73:BB:9D:9E:A6:EE:20:3A:35:CB:B9:EB:A6:0B:8D:5A:29:A6:68:92:92:0F:FD",
+        "69:CA:D0:20:4C:B2:64:D8:50:49:70:F6:32:0E:3B:D0:A0:7F:F2:01:3E:B0:64:EF:4E:A9:C4:44:5E:8F:7D:36",
+      ],
+    },
+  },
+];
+
+export const handler: Handler = async () => {
+  return {
+    statusCode: 200,
+    headers: {
+      "Content-Type": "application/json; charset=utf-8",
+      "Access-Control-Allow-Origin": "*",
+      "Cache-Control": "public, max-age=0, must-revalidate",
+    },
+    body: JSON.stringify(assetlinks, null, 2),
+  };
+};

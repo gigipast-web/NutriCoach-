@@ -43,10 +43,13 @@ export function createExpressApp() {
   });
 
   // Digital Asset Links for Google Play Store (TWA) verification
-  app.get("/.well-known/assetlinks.json", (_req, res) => {
-    res.setHeader("Content-Type", "application/json");
+  const serveAssetLinks = (_req: express.Request, res: express.Response) => {
+    res.setHeader("Content-Type", "application/json; charset=utf-8");
     res.sendFile(path.join(process.cwd(), "public", ".well-known", "assetlinks.json"));
-  });
+  };
+  app.get("/.well-known/assetlinks.json", serveAssetLinks);
+  app.get("/well-known/assetlinks.json", serveAssetLinks);
+  app.get("/.well-known/assetlinks", serveAssetLinks);
 
   // Explicit Privacy Policy routes (Google Play Console requirement)
   const servePrivacyPolicy = (_req: express.Request, res: express.Response) => {

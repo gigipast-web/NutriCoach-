@@ -20,12 +20,12 @@
   "capture_links": "existing-client-navigate",
   "scope_extensions": [
     {
-      "origin": "https://nutricoach.netlify.app"
+      "origin": "https://nutricoach-minceur.netlify.app"
     }
   ],
   "url_handlers": [
     {
-      "origin": "https://nutricoach.netlify.app"
+      "origin": "https://nutricoach-minceur.netlify.app"
     }
   ],
   "protocol_handlers": [

@@ -1,0 +1,23 @@
+# Digital Asset Links for Google Play Store (TWA) - Force serve via Netlify Function & physical JSON fallback
+/.well-known/assetlinks.json   /.netlify/functions/assetlinks   200!
+/well-known/assetlinks.json    /.netlify/functions/assetlinks   200!
+/.well-known/assetlinks        /.netlify/functions/assetlinks   200!
+
+# Web Manifests
+/manifest.json                 /manifest.json                200
+/manifest.webmanifest          /manifest.webmanifest         200
+
+# Explicit Legal Pages
+/privacy                       /privacy.html                 200
+/delete-account                /delete-account.html          200
+/tester                        /tester.html                  200
+
+# API serverless redirects
+/api/health                    /.netlify/functions/health    200!
+/api/ai/chat                   /.netlify/functions/chat      200!
+/api/ai/analyze-meal           /.netlify/functions/analyze-meal 200!
+/api/ai/calculate-meal         /.netlify/functions/calculate-meal 200!
+/api/*                         /.netlify/functions/api/:splat 200!
+
+# SPA React client-side routing fallback
+/*                             /index.html                   200
