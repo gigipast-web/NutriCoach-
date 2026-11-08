@@ -11,15 +11,15 @@ import {
 } from '../types.ts';
 
 export const demoUser: UserProfile = {
-  name: 'Ghislaine',
-  email: 'ghislaine@exemple.com',
+  name: 'Clara',
+  email: 'clara.martin@exemple.com',
   isLoggedIn: true,
-  age: 38,
+  age: 32,
   sex: 'femme',
   heightCm: 168,
-  currentWeightKg: 72.3,
-  targetWeightKg: 65,
-  startWeightKg: 78,
+  currentWeightKg: 67.5,
+  targetWeightKg: 60.0,
+  startWeightKg: 70.0,
   activityLevel: 'moderement_actif',
   goal: 'perdre',
   weeklyGoalKg: 0.5,
@@ -32,15 +32,15 @@ export const demoUser: UserProfile = {
 };
 
 export const initialUser: UserProfile = {
-  name: '',
-  email: '',
-  isLoggedIn: false,
-  age: 0,
+  name: 'Clara',
+  email: 'clara.martin@exemple.com',
+  isLoggedIn: true,
+  age: 32,
   sex: 'femme',
-  heightCm: 0,
-  currentWeightKg: 0,
-  targetWeightKg: 0,
-  startWeightKg: 0,
+  heightCm: 168,
+  currentWeightKg: 67.5,
+  targetWeightKg: 60.0,
+  startWeightKg: 70.0,
   activityLevel: 'moderement_actif',
   goal: 'perdre',
   weeklyGoalKg: 0.5,
@@ -67,6 +67,51 @@ const day5Str = getOffsetDateStr(5);
 const day6Str = getOffsetDateStr(6);
 
 export const initialMeals: MealEntry[] = [
+  // Aujourd'hui (Aujourd'hui Clara - 1 320 kcal consommées)
+  {
+    id: 'today_m1',
+    mealType: 'petit_dejeuner',
+    foodName: "Flocons d'avoine, fruits rouges, yaourt nature",
+    calories: 350,
+    protein: 16,
+    carbs: 48,
+    fat: 6,
+    portionGrams: 240,
+    timestamp: `${todayStr}T08:15:00`,
+  },
+  {
+    id: 'today_m2',
+    mealType: 'dejeuner',
+    foodName: 'Salade quinoa, avocat, saumon',
+    calories: 520,
+    protein: 34,
+    carbs: 42,
+    fat: 18,
+    portionGrams: 340,
+    timestamp: `${todayStr}T12:45:00`,
+  },
+  {
+    id: 'today_m3',
+    mealType: 'diner',
+    foodName: 'Filet de poulet, légumes vapeur',
+    calories: 450,
+    protein: 40,
+    carbs: 22,
+    fat: 8,
+    portionGrams: 320,
+    timestamp: `${todayStr}T19:30:00`,
+  },
+  {
+    id: 'today_m4',
+    mealType: 'collation',
+    foodName: 'Pomme fraîche croquante',
+    calories: 120,
+    protein: 1,
+    carbs: 28,
+    fat: 0,
+    portionGrams: 160,
+    timestamp: `${todayStr}T16:00:00`,
+  },
   // Hier (J-1)
   {
     id: 'm6',
@@ -346,18 +391,27 @@ export const initialMeals: MealEntry[] = [
 
 export const initialWater: WaterData = {
   date: todayStr,
-  glassesCount: 5,
-  amountMl: 1250,
+  glassesCount: 6,
+  amountMl: 1500,
 };
 
-export const initialActivities: ActivityEntry[] = [];
+export const initialActivities: ActivityEntry[] = [
+  {
+    id: 'act_today_1',
+    title: 'Marche active',
+    type: 'walk',
+    durationMinutes: 45,
+    caloriesBurned: 180,
+    stepsCount: 6200,
+    timestamp: `${todayStr}T11:00:00`,
+  },
+];
 
 export const initialWeightHistory: WeightEntry[] = [
-  { id: 'w1', date: '2026-05-15', weightKg: 78.0, waistCm: 88, note: 'Début du programme' },
-  { id: 'w2', date: '2026-06-01', weightKg: 76.5, waistCm: 86, note: 'Bonne motivation' },
-  { id: 'w3', date: '2026-06-20', weightKg: 75.0, waistCm: 84, note: 'Moins de fringales' },
-  { id: 'w4', date: '2026-07-15', weightKg: 73.8, waistCm: 82, note: 'Énergie retrouvée' },
-  { id: 'w5', date: '2026-08-10', weightKg: 72.3, waistCm: 80, note: 'Dernière pesée' },
+  { id: 'w1', date: getOffsetDateStr(21), weightKg: 71.5, waistCm: 82, note: 'Semaine 1 (S1)' },
+  { id: 'w2', date: getOffsetDateStr(14), weightKg: 70.0, waistCm: 81, note: 'Semaine 2 (S2)' },
+  { id: 'w3', date: getOffsetDateStr(7), weightKg: 68.0, waistCm: 79, note: 'Semaine 3 (S3)' },
+  { id: 'w4', date: todayStr, weightKg: 67.5, waistCm: 78, note: 'Aujourd’hui (S4)' },
 ];
 
 export const initialBadges: Badge[] = [

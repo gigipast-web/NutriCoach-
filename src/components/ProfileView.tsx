@@ -22,11 +22,20 @@ import {
   Mic,
   Sparkles,
   ArrowRight,
+  Settings,
+  HelpCircle,
+  BarChart2,
+  ChevronRight,
 } from 'lucide-react';
 import { UserProfile, UserMetrics, ActivityEntry } from '../types.ts';
 import { useLanguage } from '../i18n/LanguageContext.tsx';
 import { LanguageSelector } from './LanguageSelector.tsx';
 import { SmartwatchSyncModal } from './SmartwatchSyncModal.tsx';
+import {
+  BlossomFlower,
+  CornerFloralFlourish,
+  FlowerGardenCluster,
+} from './FloralDecorations.tsx';
 
 interface ProfileViewProps {
   user: UserProfile;
@@ -140,56 +149,179 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         </div>
       )}
 
-      {/* Header bar */}
-      <div
-        className={`p-6 rounded-3xl border ${
-          isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-        } shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4`}
-      >
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 px-3 py-1 rounded-full text-xs font-bold">
-              Profil & Paramètres
-            </span>
-            <span className="text-xs text-slate-400">Métabolisme BMR / TDEE</span>
+      {/* 1. Profile Header (Screen 6: Clara Martin) with Blossom */}
+      <div className="flex items-center justify-between gap-4 pt-1">
+        <div className="flex items-center gap-3.5">
+          <div className="w-14 h-14 rounded-full overflow-hidden border-2 border-white dark:border-slate-700 shadow-md bg-gradient-to-tr from-emerald-500 via-teal-400 to-amber-300 flex items-center justify-center text-white text-xl font-black relative">
+            <span>{user.name ? user.name.charAt(0) : 'C'}</span>
           </div>
-          <h1 className="text-2xl font-black text-slate-800 dark:text-white">{t('profileTitle')}</h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            {t('profileSubtitle')}
-          </p>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl sm:text-2xl font-black text-[#163321] dark:text-white tracking-tight">
+                {user.name ? (user.name.toLowerCase().includes('clara') ? 'Clara Martin' : user.name) : 'Clara Martin'}
+              </h1>
+              <BlossomFlower size={20} palette="pink" />
+            </div>
+            <span className="text-xs font-bold text-[#5A7363] dark:text-slate-400 block mt-0.5">
+              Membre depuis 12 semaines 🌸
+            </span>
+          </div>
         </div>
 
-        <div className="flex items-center gap-2 flex-wrap">
-          {user.isPremium ? (
-            <>
-              <button
-                id="btn-profile-premium-cta"
-                onClick={onOpenPremium}
-                className="font-bold px-4 py-2.5 rounded-2xl text-xs sm:text-sm flex items-center gap-2 bg-emerald-500/15 border border-emerald-500/30 text-emerald-700 dark:text-emerald-300 cursor-pointer hover:bg-emerald-500/20 transition-all"
-                title="Gérer l'abonnement"
-              >
-                <Crown className="w-4 h-4 text-amber-500 fill-amber-500" />
-                Abonnement Premium Actif
-              </button>
-              <button
-                id="btn-header-unsubscribe"
-                onClick={() => setShowCancelModal(true)}
-                className="font-extrabold px-3.5 py-2.5 rounded-2xl text-xs flex items-center gap-1.5 bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-950/70 text-rose-700 dark:text-rose-300 border border-rose-300 dark:border-rose-800 cursor-pointer transition-all shadow-xs"
-              >
-                <XCircle className="w-3.5 h-3.5 text-rose-500" />
-                Se désabonner
-              </button>
-            </>
-          ) : (
-            <button
-              id="btn-profile-premium-cta"
-              onClick={onOpenPremium}
-              className="font-bold px-4 py-2.5 rounded-2xl text-xs sm:text-sm flex items-center gap-2 shadow-md transition-all cursor-pointer bg-gradient-to-r from-emerald-600 via-teal-600 to-amber-500 text-white hover:opacity-95"
-            >
-              <Crown className="text-amber-300 fill-amber-300 w-4 h-4" />
-              Abonnement Premium (4,99 €/mois)
-            </button>
-          )}
+        <button
+          type="button"
+          onClick={() => {
+            const el = document.getElementById('account-edit-form');
+            el?.scrollIntoView({ behavior: 'smooth' });
+          }}
+          className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 border border-[#DCE8DC] dark:border-slate-700 flex items-center justify-center text-[#5A7363] hover:text-[#163321] transition-all cursor-pointer shadow-xs"
+          title="Paramètres du profil"
+        >
+          <Settings className="w-5 h-5" />
+        </button>
+      </div>
+
+      {/* 2. Target Card: Archery Bullseye (Screen 6) with Coral Sunset Gradient & Flowers */}
+      <div
+        id="target-goal-progress-card"
+        className={`p-6 rounded-[28px] border relative overflow-hidden ${
+          isDarkMode
+            ? 'bg-gradient-to-br from-slate-900 via-slate-900 to-rose-950/30 border-rose-900/40'
+            : 'bg-gradient-to-br from-white via-[#FFF8F8] to-[#FFF0F4] border-rose-200/80'
+        } shadow-[0_4px_24px_rgba(244,63,94,0.06)] space-y-4`}
+      >
+        <CornerFloralFlourish className="opacity-70 dark:opacity-30" flip={true} />
+
+        <div className="flex items-start justify-between relative z-10">
+          <div className="flex items-center gap-3.5">
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-rose-500 to-orange-400 text-white flex items-center justify-center text-2xl shrink-0 shadow-sm">
+              🎯
+            </div>
+            <div>
+              <span className="text-xs font-bold text-[#5A7363] dark:text-slate-400 block">
+                Mon objectif
+              </span>
+              <h2 className="text-lg font-black text-[#163321] dark:text-white leading-tight flex items-center gap-1.5">
+                <span>Perdre 5 kg</span>
+                <BlossomFlower size={16} palette="orchid" />
+              </h2>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              const el = document.getElementById('account-edit-form');
+              el?.scrollIntoView({ behavior: 'smooth' });
+            }}
+            className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer"
+            title="Modifier l'objectif"
+          >
+            ✏️
+          </button>
+        </div>
+
+        {/* Multi-color Vibrant Progress Bar */}
+        <div className="w-full h-3 bg-rose-100/70 dark:bg-slate-800 rounded-full overflow-hidden">
+          <div
+            className="h-full bg-gradient-to-r from-rose-500 via-amber-400 to-emerald-500 rounded-full transition-all duration-700 shadow-2xs"
+            style={{ width: '60%' }}
+          />
+        </div>
+
+        <div className="text-right">
+          <span className="text-xs font-extrabold text-[#78350F] dark:text-slate-300">
+            Il vous reste <strong className="text-rose-600 dark:text-rose-400 font-black">2,5 kg</strong> ! 🌸🎉
+          </span>
+        </div>
+      </div>
+
+      {/* 3. Mes conseils du jour (Screen 6) */}
+      <div className="space-y-2">
+        <div className="flex items-center gap-1.5">
+          <span className="text-amber-500 text-sm">💡</span>
+          <h3 className="text-sm font-black text-[#163321] dark:text-white">
+            Mes conseils du jour
+          </h3>
+        </div>
+
+        <div
+          onClick={onOpenPremium}
+          className={`p-4 rounded-[26px] border ${
+            isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#E2ECE2]'
+          } shadow-xs flex items-center justify-between gap-4 cursor-pointer hover:border-emerald-300 transition-all group`}
+        >
+          <div className="flex items-center gap-3.5 min-w-0">
+            <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 shadow-xs border border-[#E5EFE5]">
+              <img
+                src="https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=260&q=80"
+                alt="Légumes frais"
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                loading="lazy"
+              />
+            </div>
+            <p className="text-xs font-bold text-[#163321] dark:text-slate-200 leading-snug">
+              Privilégiez les légumes à chaque repas : ils sont riches en nutriments et peu caloriques !
+            </p>
+          </div>
+          <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-[#1F6F43] transition-colors shrink-0" />
+        </div>
+      </div>
+
+      {/* 4. Menu Options List (Screen 6) */}
+      <div
+        className={`divide-y divide-[#EDF3ED] dark:divide-slate-800 rounded-[26px] border ${
+          isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#E2ECE2]'
+        } shadow-xs overflow-hidden`}
+      >
+        {/* Mes statistiques */}
+        <div
+          onClick={() => {
+            const el = document.getElementById('metabolism-calculation-card');
+            el?.scrollIntoView({ behavior: 'smooth' });
+          }}
+          className="p-4 flex items-center justify-between hover:bg-[#F9FCF9] dark:hover:bg-slate-800 transition-colors cursor-pointer group"
+        >
+          <div className="flex items-center gap-3">
+            <BarChart2 className="w-5 h-5 text-[#1F6F43] dark:text-emerald-400" />
+            <span className="text-sm font-bold text-[#163321] dark:text-white">
+              Mes statistiques
+            </span>
+          </div>
+          <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#1F6F43] transition-colors" />
+        </div>
+
+        {/* Mes paramètres */}
+        <div
+          onClick={() => {
+            const el = document.getElementById('account-edit-form');
+            el?.scrollIntoView({ behavior: 'smooth' });
+          }}
+          className="p-4 flex items-center justify-between hover:bg-[#F9FCF9] dark:hover:bg-slate-800 transition-colors cursor-pointer group"
+        >
+          <div className="flex items-center gap-3">
+            <Settings className="w-5 h-5 text-[#1F6F43] dark:text-emerald-400" />
+            <span className="text-sm font-bold text-[#163321] dark:text-white">
+              Mes paramètres
+            </span>
+          </div>
+          <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#1F6F43] transition-colors" />
+        </div>
+
+        {/* FAQ & Aide */}
+        <div
+          onClick={() => {
+            alert('NutriCoach Minceur : application de suivi calorique, pesée et rééquilibrage alimentaire assisté par IA.');
+          }}
+          className="p-4 flex items-center justify-between hover:bg-[#F9FCF9] dark:hover:bg-slate-800 transition-colors cursor-pointer group"
+        >
+          <div className="flex items-center gap-3">
+            <HelpCircle className="w-5 h-5 text-[#1F6F43] dark:text-emerald-400" />
+            <span className="text-sm font-bold text-[#163321] dark:text-white">
+              FAQ & Aide
+            </span>
+          </div>
+          <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#1F6F43] transition-colors" />
         </div>
       </div>
 

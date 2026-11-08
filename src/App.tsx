@@ -180,14 +180,28 @@ export default function App() {
         // fallback
       }
     }
+    const now = new Date();
+    const time1 = new Date(now.getTime() - 15 * 60000).toISOString();
+    const time2 = new Date(now.getTime() - 12 * 60000).toISOString();
+    const time3 = new Date(now.getTime() - 10 * 60000).toISOString();
     return [
       {
-        id: 'msg_welcome',
+        id: 'msg_1',
         sender: 'assistant',
-        text: `Bonjour **${user.name}** ! 👋 Je suis votre **Coach Nutritionnel personnel NutriCoach**.\n\nJe suis à vos côtés pour vous accompagner vers votre objectif de **${
-          user.goal === 'perdre' ? 'perte de poids progressive et durable' : 'maintien et équilibre'
-        }**.\n\n### Que puis-je faire pour vous aujourd'hui ?\n- Vous suggérer un **menu équilibré** selon vos besoins caloriques\n- Vous donner un **conseil nutritionnel personnalisé**\n- **Analyser votre repas** à partir d'une photo d'assiette 📸\n\nN'hésitez pas à me poser une question dans **n'importe quelle langue** !`,
-        timestamp: new Date().toISOString(),
+        text: `Bonjour ${user.name || 'Clara'} !\nComment vous sentez-vous aujourd'hui ?`,
+        timestamp: time1,
+      },
+      {
+        id: 'msg_2',
+        sender: 'user',
+        text: "Plutôt bien, mais j'ai une petite fringale ce matin...",
+        timestamp: time2,
+      },
+      {
+        id: 'msg_3',
+        sender: 'assistant',
+        text: "Pas de souci ! 😊\nVoici une idée saine et gourmande :\n\nUn yaourt nature avec des fruits et quelques amandes.\n\nCela vous apportera de l'énergie sans excès de calories.",
+        timestamp: time3,
       },
     ];
   });
@@ -806,8 +820,8 @@ export default function App() {
   return (
     <div
       id="nutricoach-app-root"
-      className={`min-h-screen transition-colors duration-200 ${
-        isDarkMode ? 'bg-slate-950 text-slate-100' : 'bg-[#F8FAF8] text-slate-800'
+      className={`min-h-screen transition-colors duration-200 font-semibold ${
+        isDarkMode ? 'bg-[#0A160F] text-slate-100' : 'bg-[#EDF3ED] text-[#163321]'
       }`}
     >
       {/* Top Navigation */}
@@ -897,7 +911,7 @@ export default function App() {
       )}
 
       {/* Main Content Area */}
-      <main id="main-content" className="max-w-7xl mx-auto px-4 sm:px-6 pt-6">
+      <main id="main-content" className="max-w-7xl mx-auto px-4 sm:px-6 pt-5 pb-24 lg:pb-12">
         {activeTab === 'dashboard' && (
           !user.isLoggedIn ? (
             <RegistrationView

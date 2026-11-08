@@ -19,11 +19,18 @@ import {
   Volume2,
   VolumeX,
   Mic,
+  MoreHorizontal,
 } from 'lucide-react';
 import { UserProfile, UserMetrics, ChatMessage, MealEntry } from '../types.ts';
 import { useLanguage } from '../i18n/LanguageContext.tsx';
 import { LANGUAGES, POPULAR_LANGUAGE_CODES, Language } from '../i18n/translations.ts';
 import { playMealVoiceReminder, speakText, stopSpeaking } from '../utils/voiceCoach.ts';
+import { RobotCoachMascot } from './RobotCoachMascot.tsx';
+import {
+  BlossomFlower,
+  CornerFloralFlourish,
+  FlowerGardenCluster,
+} from './FloralDecorations.tsx';
 
 interface AiCoachViewProps {
   user: UserProfile;
@@ -710,65 +717,77 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
         </div>
       </div>
 
-      {/* View Header */}
+      {/* View Header (Screen 4: Mon coach IA) */}
       <div
-        className={`p-6 rounded-3xl border ${
-          isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-        } shadow-sm flex flex-col md:flex-row md:items-center justify-between gap-4`}
+        className={`p-4 sm:p-5 rounded-[28px] border ${
+          isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#E2ECE2]'
+        } shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3`}
       >
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-teal-500 to-emerald-400 text-white flex items-center justify-center shadow-md shadow-emerald-500/20">
-            <Sparkles className="w-6 h-6 text-amber-300" />
-          </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-[10px] px-2 py-0.5 rounded-full font-black uppercase">
-                IA Nutritionnelle Gemini
-              </span>
-              <span className="text-xs text-slate-400">Coach Personnel</span>
+        <div className="flex items-center justify-between w-full md:w-auto gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-full bg-white dark:bg-slate-800 border border-[#DCE8DC] dark:border-slate-700 flex items-center justify-center text-[#163321] dark:text-emerald-300 font-bold shadow-xs">
+              ‹
             </div>
-            <h1 className="text-2xl font-black text-slate-800 dark:text-white">Assistant NutriCoach IA</h1>
+            <div className="flex items-center gap-2">
+              <div>
+                <h1 className="text-xl sm:text-2xl font-black text-[#163321] dark:text-white tracking-tight flex items-center gap-2">
+                  <span>Mon coach IA</span>
+                  <BlossomFlower size={20} palette="pink" />
+                </h1>
+                <span className="text-[11px] text-[#5A7363] dark:text-emerald-400 font-bold block">
+                  En ligne • Conseils personnalisés
+                </span>
+              </div>
+            </div>
           </div>
+
+          <button
+            type="button"
+            className="w-9 h-9 rounded-full bg-[#F4F7F4] dark:bg-slate-800 flex items-center justify-center text-[#5A7363] hover:text-[#163321] cursor-pointer"
+            title="Options supplémentaires"
+          >
+            <MoreHorizontal className="w-5 h-5" />
+          </button>
         </div>
 
         {/* Sub Navigation Modes */}
         <div
-          className={`p-1 rounded-2xl border flex items-center gap-1 ${
+          className={`p-1 rounded-2xl border w-full sm:w-auto grid grid-cols-3 sm:inline-flex items-center gap-1 ${
             isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'
           }`}
         >
           <button
             id="subtab-chat"
             onClick={() => setSubTab('chat')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`px-1.5 sm:px-3.5 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer text-center truncate ${
               subTab === 'chat'
                 ? 'bg-emerald-600 text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
             }`}
           >
-            💬 Chat Coach
+            💬 Chat
           </button>
           <button
             id="subtab-photo"
             onClick={() => setSubTab('photo')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`px-1.5 sm:px-3.5 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer text-center truncate ${
               subTab === 'photo'
                 ? 'bg-emerald-600 text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
             }`}
           >
-            📸 Scan Photo
+            📸 Scan
           </button>
           <button
             id="subtab-generator"
             onClick={() => setSubTab('generator')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+            className={`px-1.5 sm:px-3.5 py-1.5 rounded-xl text-[11px] sm:text-xs font-bold transition-all cursor-pointer text-center truncate ${
               subTab === 'generator'
                 ? 'bg-emerald-600 text-white shadow-xs'
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
             }`}
           >
-            🥗 Menu Sur-Mesure
+            🥗 Menu
           </button>
         </div>
       </div>
@@ -858,25 +877,58 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                   key={msg.id}
                   className={`flex items-start gap-3 ${isUser ? 'flex-row-reverse' : 'flex-row'}`}
                 >
-                  <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-                      isUser
-                        ? 'bg-emerald-600 text-white'
-                        : 'bg-gradient-to-tr from-teal-500 to-emerald-400 text-white shadow-xs'
-                    }`}
-                  >
-                    {isUser ? <UserIcon className="w-4 h-4" /> : <Bot className="w-4 h-4" />}
+                  <div className="shrink-0">
+                    {isUser ? (
+                      <div className="w-8 h-8 rounded-full bg-[#1F6F43] text-white flex items-center justify-center text-xs font-bold shadow-xs">
+                        {user.name ? user.name.charAt(0) : <UserIcon className="w-4 h-4" />}
+                      </div>
+                    ) : (
+                      <div className="w-9 h-9 rounded-full bg-[#E5EFE5] dark:bg-slate-800 flex items-center justify-center p-0.5 shadow-xs">
+                        <RobotCoachMascot size={32} waving={false} mood="happy" />
+                      </div>
+                    )}
                   </div>
                   <div
-                    className={`max-w-[80%] rounded-2xl p-4 text-xs sm:text-sm leading-relaxed ${
+                    className={`max-w-[85%] rounded-[22px] p-4 text-xs sm:text-sm leading-relaxed shadow-xs ${
                       isUser
-                        ? 'bg-emerald-600 text-white rounded-tr-xs'
+                        ? 'bg-[#DDECDD] dark:bg-emerald-950 text-[#163321] dark:text-emerald-100 rounded-tr-xs font-bold border border-[#CDE1CD] dark:border-emerald-800'
                         : isDarkMode
                         ? 'bg-slate-800 border border-slate-700 text-slate-100 rounded-tl-xs'
-                        : 'bg-slate-100 text-slate-800 rounded-tl-xs'
+                        : 'bg-white border border-[#E2ECE2] text-[#163321] rounded-tl-xs'
                     }`}
                   >
                     {renderFormattedMessageText(msg.text, isUser, isBoldMode)}
+
+                    {/* Smart Food Suggestion Card if bot advises a snack/yogurt */}
+                    {!isUser && (msg.text.toLowerCase().includes('yaourt') || msg.text.toLowerCase().includes('fringale') || msg.text.toLowerCase().includes('gourmande')) && (
+                      <div className="mt-3 rounded-2xl overflow-hidden border border-[#E2ECE2] dark:border-slate-700 bg-[#F9FAF9] dark:bg-slate-800 shadow-2xs">
+                        <img
+                          src="https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=400&q=80"
+                          alt="Yaourt aux fruits et amandes"
+                          className="w-full h-32 object-cover"
+                          loading="lazy"
+                        />
+                        <div className="p-2.5 flex items-center justify-between">
+                          <span className="text-[11px] font-black text-[#163321] dark:text-white">
+                            Yaourt nature, fruits & amandes (~160 kcal)
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => onAddMealFromAi({
+                              foodName: 'Yaourt nature, fruits frais & amandes',
+                              calories: 160,
+                              protein: 10,
+                              carbs: 18,
+                              fat: 5,
+                            })}
+                            className="text-[10px] font-black text-white bg-[#1F6F43] hover:bg-[#175834] px-2.5 py-1 rounded-full cursor-pointer"
+                          >
+                            + Noter
+                          </button>
+                        </div>
+                      </div>
+                    )}
+
                     <div className="flex items-center justify-between gap-2 mt-2 pt-1 border-t border-slate-200/40 dark:border-slate-700/40">
                       {!isUser && (
                         <button
@@ -904,7 +956,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                       )}
                       <span
                         className={`text-[10px] ${
-                          isUser ? 'text-emerald-200 text-right w-full' : 'text-slate-400'
+                          isUser ? 'text-[#1F6F43] dark:text-emerald-300 text-right w-full font-bold' : 'text-slate-400'
                         }`}
                       >
                         {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -934,48 +986,53 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input footer */}
+          {/* Input footer pill matching Screen 4 */}
           <div
-            className={`p-3 border-t ${
-              isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+            className={`p-3.5 border-t ${
+              isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#E2ECE2]'
             } flex items-center gap-2`}
           >
             <button
               id="btn-footer-toggle-bold"
               type="button"
               onClick={toggleBoldMode}
-              className={`p-3 rounded-2xl border transition-all cursor-pointer shrink-0 ${
+              className={`p-2.5 rounded-full border transition-all cursor-pointer shrink-0 ${
                 isBoldMode
-                  ? 'bg-emerald-600 text-white border-emerald-600 shadow-xs ring-2 ring-emerald-400/40'
-                  : 'bg-white dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 hover:text-emerald-600 hover:border-emerald-400'
+                  ? 'bg-[#1F6F43] text-white border-[#1F6F43] shadow-xs'
+                  : 'bg-[#F4F7F4] dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-[#DCE8DC] dark:border-slate-700 hover:text-[#1F6F43]'
               }`}
-              title={isBoldMode ? 'Texte en gras activé (cliquez pour désactiver)' : 'Activer le mode texte en gras'}
+              title={isBoldMode ? 'Texte en gras activé' : 'Activer le texte en gras'}
             >
-              <Bold className="w-4 h-4" />
+              <Bold className="w-3.5 h-3.5" />
             </button>
-            <input
-              id="input-coach-chat-message"
-              type="text"
-              placeholder={currentPlaceholder}
-              value={inputText}
-              onChange={(e) => setInputText(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') handleSend();
-              }}
-              className={`flex-1 p-3 rounded-2xl border text-xs sm:text-sm ${
-                isBoldMode ? 'font-bold' : 'font-medium'
-              } outline-none focus:ring-2 focus:ring-emerald-500 ${
-                isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200 text-slate-900'
-              }`}
-            />
-            <button
-              id="btn-send-coach-chat"
-              onClick={handleSend}
-              disabled={!inputText.trim() || isSending}
-              className="bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 text-white p-3 rounded-2xl transition-colors cursor-pointer shadow-xs"
-            >
-              <Send className="w-4 h-4" />
-            </button>
+            <div className="flex-1 relative flex items-center">
+              <input
+                id="input-coach-chat-message"
+                type="text"
+                placeholder="Posez-moi une question..."
+                value={inputText}
+                onChange={(e) => setInputText(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleSend();
+                }}
+                className={`w-full py-3 pl-4 pr-12 rounded-full border text-xs sm:text-sm ${
+                  isBoldMode ? 'font-bold' : 'font-medium'
+                } outline-none focus:ring-2 focus:ring-[#1F6F43] transition-all shadow-xs ${
+                  isDarkMode
+                    ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400'
+                    : 'bg-[#F9FAF9] border-[#E2ECE2] text-[#163321] placeholder:text-[#5A7363]'
+                }`}
+              />
+              <button
+                id="btn-send-coach-chat"
+                onClick={handleSend}
+                disabled={!inputText.trim() || isSending}
+                className="absolute right-1.5 w-9 h-9 rounded-full bg-[#1F6F43] hover:bg-[#175834] disabled:opacity-40 text-white flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95"
+                title="Envoyer la question"
+              >
+                <Send className="w-4 h-4 ml-0.5" />
+              </button>
+            </div>
           </div>
         </div>
       )}

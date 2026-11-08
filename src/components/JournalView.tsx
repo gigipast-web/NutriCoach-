@@ -15,6 +15,7 @@ import {
   Scale,
   Flame,
   RotateCcw,
+  Calendar,
 } from 'lucide-react';
 import { MealEntry, MealType, UserProfile } from '../types.ts';
 import { initialUser } from '../data/initialData.ts';
@@ -22,6 +23,11 @@ import { getMealTypeLabel } from '../utils/metrics.ts';
 import { estimateMealFromText, MealCalculationResult } from '../utils/mealEstimator.ts';
 import { useLanguage } from '../i18n/LanguageContext.tsx';
 import { WeeklyMealRecap } from './WeeklyMealRecap.tsx';
+import {
+  BlossomFlower,
+  CornerFloralFlourish,
+  FlowerGardenCluster,
+} from './FloralDecorations.tsx';
 
 interface JournalViewProps {
   user?: UserProfile;
@@ -48,6 +54,13 @@ export const JournalView: React.FC<JournalViewProps> = ({
 }) => {
   const { t } = useLanguage();
   const [activeSubTab, setActiveSubTab] = useState<'today' | 'weekly'>(initialSubTab || 'today');
+  const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'tomorrow' | 'week'>('today');
+  const [completedMeals, setCompletedMeals] = useState<Record<string, boolean>>({
+    petit_dejeuner: true,
+    dejeuner: true,
+    diner: false,
+    collation: true,
+  });
   const [selectedMealType, setSelectedMealType] = useState<MealType>('petit_dejeuner');
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
   const [foodName, setFoodName] = useState('');
@@ -273,208 +286,413 @@ export const JournalView: React.FC<JournalViewProps> = ({
   }
 
   return (
-    <div id="journal-view" className="space-y-6 pb-12">
-      {/* Subtab Switcher & Header bar */}
-      <div className="flex items-center justify-between">
-        <div className="inline-flex p-1 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-2xs">
-          <button
-            type="button"
-            className="px-4 py-2 rounded-xl text-xs font-black bg-emerald-600 text-white shadow-xs transition-all cursor-pointer"
-          >
-            📅 Aujourd'hui
-          </button>
-          <button
-            type="button"
-            id="btn-switch-to-weekly-recap"
-            onClick={() => setActiveSubTab('weekly')}
-            className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all cursor-pointer flex items-center gap-1.5"
-          >
-            <span>📊 Récapitulatif Semaine</span>
-            <span className="text-[10px] bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 px-1.5 py-0.2 rounded-full font-black">
-              7j
-            </span>
-          </button>
-        </div>
-      </div>
-
-      {/* Header bar */}
-      <div
-        className={`p-6 rounded-3xl border ${
-          isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-        } shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4`}
-      >
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 px-3 py-1 rounded-full text-xs font-bold">
-              Journal Nutritionnel
-            </span>
-            <span className="text-xs text-slate-400">Aujourd'hui</span>
-          </div>
-          <h1 className="text-2xl font-black text-slate-800 dark:text-white">Suivi des Repas</h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Total consommé aujourd'hui :{' '}
-            <strong className="text-emerald-600 font-bold">{totalCaloriesConsumedToday} kcal</strong>
-            {todayMeals.length === 0 ? (
-              <span className="ml-2 text-slate-400 font-medium italic">• Champs vides au réveil (prêts pour vos repas)</span>
-            ) : (
-              <span className="ml-2 text-emerald-600 dark:text-emerald-400 text-[11px] font-semibold">
-                • {todayMeals.length} aliment{todayMeals.length > 1 ? 's' : ''} noté{todayMeals.length > 1 ? 's' : ''}
-              </span>
-            )}
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2 flex-wrap">
-          {todayMeals.length > 0 && onResetTodayMeals && (
-            <button
-              type="button"
-              id="btn-journal-reset-today"
-              onClick={onResetTodayMeals}
-              className={`flex items-center gap-1.5 border px-3 py-2 rounded-xl text-xs font-semibold transition-all cursor-pointer text-slate-400 hover:text-rose-500 hover:border-rose-300 dark:hover:border-rose-800 ${
-                isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-200 bg-white'
-              }`}
-              title="Vider les repas du jour pour repartir à zéro (conserve l'historique de la semaine)"
-            >
-              <RotateCcw className="w-3.5 h-3.5" />
-              <span>Vider aujourd'hui</span>
-            </button>
-          )}
-
-          <button
-            id="btn-journal-barcode-scanner"
-            onClick={onOpenBarcodeScanner}
-            className={`flex items-center gap-2 border px-3.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
-              isDarkMode
-                ? 'border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-200'
-                : 'border-slate-200 bg-slate-50 hover:bg-slate-100 text-slate-700'
-            }`}
-          >
-            <Barcode className="w-4 h-4 text-emerald-600" />
-            Code-barres
-          </button>
-          <button
-            id="btn-journal-ai-scanner"
-            onClick={onOpenAiScan}
-            className="flex items-center gap-2 bg-gradient-to-r from-teal-600 to-emerald-600 text-white font-bold px-4 py-2 rounded-xl text-xs shadow-md transition-all cursor-pointer hover:opacity-90"
-          >
-            <Camera className="w-4 h-4 text-amber-300" />
-            Scanner Repas IA
-          </button>
-        </div>
-      </div>
-
-      {/* Weekly Recap CTA Banner */}
-      <div
-        id="banner-weekly-recap-cta"
-        onClick={() => setActiveSubTab('weekly')}
-        className={`p-4 rounded-2xl border transition-all cursor-pointer flex items-center justify-between gap-3 ${
-          isDarkMode
-            ? 'bg-slate-900 hover:bg-slate-850 border-slate-800'
-            : 'bg-emerald-50/70 hover:bg-emerald-100/70 border-emerald-200/80'
-        }`}
-      >
+    <div id="journal-view" className="space-y-5 pb-20 max-w-4xl mx-auto">
+      {/* 1. Header bar with "Mon alimentation", Calendar icon & Blossom (Screen 3) */}
+      <div className="flex items-center justify-between gap-3 pt-1">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center text-lg shadow-xs shrink-0">
-            📊
+          <div className="w-9 h-9 rounded-full bg-white dark:bg-slate-800 border border-[#DCE8DC] dark:border-slate-700 flex items-center justify-center text-[#163321] dark:text-emerald-300 font-bold shadow-xs">
+            ‹
           </div>
-          <div>
-            <h4 className="font-extrabold text-xs sm:text-sm text-slate-800 dark:text-white">
-              Bilan & Récapitulatif de la Semaine disponible
-            </h4>
-            <p className="text-[11px] text-slate-500 dark:text-slate-400">
-              Vos repas des jours précédents sont soigneusement conservés. Moyennes, calories et macronutriments sur 7 jours.
-            </p>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-black text-[#163321] dark:text-white tracking-tight">
+              Mon alimentation
+            </h1>
+            <BlossomFlower size={22} palette="pink" />
           </div>
         </div>
-        <span className="text-xs font-black text-emerald-700 dark:text-emerald-300 bg-white dark:bg-slate-800 px-3 py-1.5 rounded-xl border border-emerald-200 dark:border-emerald-800 shrink-0 shadow-2xs">
-          Ouvrir le bilan →
-        </span>
+
+        <button
+          type="button"
+          onClick={() => setSelectedPeriod('week')}
+          className="w-9 h-9 rounded-full bg-white dark:bg-slate-800 border border-[#DCE8DC] dark:border-slate-700 flex items-center justify-center text-[#1F6F43] dark:text-emerald-400 hover:bg-[#EAF3EA] transition-all cursor-pointer shadow-xs"
+          title="Historique & Bilan semaine"
+        >
+          <Calendar className="w-4 h-4" />
+        </button>
       </div>
 
-      {/* Grid of Meal Categories */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {mealTypesConfig.map((item) => {
-          const mealsForType = todayMeals.filter((m) => m.mealType === item.type);
-          const typeCalories = mealsForType.reduce((acc, m) => acc + m.calories, 0);
-          const Icon = item.icon;
+      {/* 2. Period selector tabs: [Aujourd'hui] [Demain] [Semaine] with Radiant Gradients */}
+      <div className="flex items-center gap-2 max-w-md">
+        <button
+          type="button"
+          onClick={() => setSelectedPeriod('today')}
+          className={`flex-1 py-2 px-3 rounded-full text-xs font-black transition-all cursor-pointer text-center ${
+            selectedPeriod === 'today'
+              ? 'bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white shadow-md'
+              : 'bg-[#E3ECE2] text-[#5A7363] hover:bg-[#D5E4D5]'
+          }`}
+        >
+          Aujourd'hui
+        </button>
+        <button
+          type="button"
+          onClick={() => setSelectedPeriod('tomorrow')}
+          className={`flex-1 py-2 px-3 rounded-full text-xs font-black transition-all cursor-pointer text-center ${
+            selectedPeriod === 'tomorrow'
+              ? 'bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white shadow-md'
+              : 'bg-[#E3ECE2] text-[#5A7363] hover:bg-[#D5E4D5]'
+          }`}
+        >
+          Demain
+        </button>
+        <button
+          type="button"
+          onClick={() => setSelectedPeriod('week')}
+          className={`flex-1 py-2 px-3 rounded-full text-xs font-black transition-all cursor-pointer text-center ${
+            selectedPeriod === 'week'
+              ? 'bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white shadow-md'
+              : 'bg-[#E3ECE2] text-[#5A7363] hover:bg-[#D5E4D5]'
+          }`}
+        >
+          Semaine
+        </button>
+      </div>
 
-          return (
+      {selectedPeriod === 'week' ? (
+        <WeeklyMealRecap
+          meals={meals}
+          user={user || initialUser}
+          isDarkMode={isDarkMode}
+          onBackToToday={() => setSelectedPeriod('today')}
+        />
+      ) : (
+        <>
+          {/* 3. Nutrition Goal Overview Banner (Screen 3) with Corner Floral Flourish & Botanical Gradient */}
+          <div
+            id="nutrition-goal-banner-card"
+            className={`p-5 rounded-[26px] border relative overflow-hidden ${
+              isDarkMode
+                ? 'bg-gradient-to-br from-slate-900 via-slate-900 to-[#122218] border-slate-800'
+                : 'bg-gradient-to-br from-white via-[#FCFDFB] to-[#F2F8F4] border-[#E2ECE2]'
+            } shadow-[0_4px_24px_rgba(31,111,67,0.05)] flex items-center gap-5`}
+          >
+            <CornerFloralFlourish className="opacity-70 dark:opacity-40" />
+
+            {/* Salad bowl image thumbnail with colorful border */}
+            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden shrink-0 shadow-xs border-2 border-emerald-200 dark:border-slate-700 p-0.5 bg-gradient-to-tr from-emerald-400 via-teal-300 to-amber-300">
+              <img
+                src="https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=300&q=80"
+                alt="Salade équilibrée"
+                className="w-full h-full object-cover rounded-full"
+                loading="lazy"
+              />
+            </div>
+
+            {/* Nutrition checklist */}
+            <div className="space-y-1.5 flex-1 relative z-10">
+              <div className="flex items-center gap-2">
+                <h3 className="text-xs sm:text-sm font-extrabold text-[#5A7363] dark:text-slate-300">
+                  Votre objectif nutritionnel
+                </h3>
+                <BlossomFlower size={15} palette="emerald" />
+              </div>
+              <div className="space-y-1 text-xs font-black text-[#163321] dark:text-white">
+                <div className="flex items-center gap-2">
+                  <span className="text-[#10B981] dark:text-emerald-400 font-bold">✔</span>
+                  <span>1 800 kcal</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[#10B981] dark:text-emerald-400 font-bold">✔</span>
+                  <span>Protéines : 90 g</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="text-[#10B981] dark:text-emerald-400 font-bold">✔</span>
+                  <span>Fibres : 25 g</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 4. Meal Checklist Cards (Screen 3) */}
+          <div className="space-y-3">
+            {/* Meal 1: Petit-déjeuner */}
             <div
-              key={item.type}
-              id={`meal-category-card-${item.type}`}
-              className={`p-5 rounded-2xl border transition-all ${
-                isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-              } shadow-xs space-y-4`}
+              id="meal-card-petit-dejeuner"
+              onClick={() => handleOpenAddModal('petit_dejeuner')}
+              className={`p-4 rounded-[24px] border ${
+                isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#E2ECE2]'
+              } shadow-xs flex items-center justify-between gap-3 hover:border-emerald-300 transition-all cursor-pointer group`}
             >
-              <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
-                <div className="flex items-center gap-3">
-                  <div
-                    className={`w-10 h-10 rounded-xl bg-gradient-to-tr ${item.color} text-white flex items-center justify-center shadow-xs`}
-                  >
-                    <Icon className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <h3 className="font-extrabold text-base text-slate-800 dark:text-white">{item.label}</h3>
-                    <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
-                      {typeCalories} kcal
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="w-14 h-14 rounded-full overflow-hidden shrink-0 shadow-xs border border-[#E5EFE5]">
+                  <img
+                    src="https://images.unsplash.com/photo-1517673132405-a56a62b18caf?auto=format&fit=crop&w=260&q=80"
+                    alt="Petit-déjeuner"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-amber-500 text-xs">☀️</span>
+                    <span className="font-black text-sm text-[#163321] dark:text-white">
+                      Petit-déjeuner
+                    </span>
+                    <span className="text-xs font-bold text-[#5A7363] dark:text-slate-400">
+                      350 / 400 kcal
                     </span>
                   </div>
-                </div>
-                <button
-                  id={`btn-add-meal-to-${item.type}`}
-                  onClick={() => handleOpenAddModal(item.type)}
-                  className="bg-emerald-50 hover:bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-300 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer"
-                >
-                  <Plus className="w-3.5 h-3.5" /> Ajouter
-                </button>
-              </div>
-
-              {mealsForType.length === 0 ? (
-                <div className="py-6 text-center text-slate-400 text-xs italic space-y-1">
-                  <p>Aucun aliment enregistré aujourd'hui pour le {item.label.toLowerCase()}.</p>
-                  <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold not-italic">
-                    Cliquez sur « + Ajouter » ou scannez votre repas
+                  <p className="text-xs text-[#5A7363] dark:text-slate-400 font-semibold truncate mt-0.5">
+                    Flocons d'avoine, fruits rouges, yaourt nature
                   </p>
                 </div>
-              ) : (
-                <div className="space-y-2">
-                  {mealsForType.map((meal) => (
-                    <div
-                      key={meal.id}
-                      className={`p-3 rounded-xl border flex items-center justify-between transition-colors ${
-                        isDarkMode ? 'bg-slate-800/50 border-slate-700/50' : 'bg-slate-50 border-slate-100'
-                      }`}
-                    >
-                      <div>
-                        <span className="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-100 block">
-                          {meal.foodName}
-                        </span>
-                        <span className="text-[11px] text-slate-400">
-                          {meal.portionGrams}g • P: {meal.protein}g • G: {meal.carbs}g • L: {meal.fat}g
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <span className="font-black text-xs sm:text-sm text-slate-900 dark:text-white">
-                          {meal.calories} kcal
-                        </span>
-                        <button
-                          id={`btn-delete-meal-${meal.id}`}
-                          onClick={() => onDeleteMeal(meal.id)}
-                          className="text-slate-400 hover:text-rose-500 p-1 rounded-md transition-colors cursor-pointer"
-                          title="Supprimer"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          );
-        })}
-      </div>
+              </div>
 
+              {/* Status Circle */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCompletedMeals((prev) => ({ ...prev, petit_dejeuner: !prev.petit_dejeuner }));
+                }}
+                className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 cursor-pointer transition-all"
+              >
+                {completedMeals.petit_dejeuner ? (
+                  <div className="w-6 h-6 rounded-full bg-[#1F6F43] text-white flex items-center justify-center text-xs font-black shadow-xs">
+                    ✓
+                  </div>
+                ) : (
+                  <div className="w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-600" />
+                )}
+              </button>
+            </div>
+
+            {/* Meal 2: Déjeuner */}
+            <div
+              id="meal-card-dejeuner"
+              onClick={() => handleOpenAddModal('dejeuner')}
+              className={`p-4 rounded-[24px] border ${
+                isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#E2ECE2]'
+              } shadow-xs flex items-center justify-between gap-3 hover:border-emerald-300 transition-all cursor-pointer group`}
+            >
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="w-14 h-14 rounded-full overflow-hidden shrink-0 shadow-xs border border-[#E5EFE5]">
+                  <img
+                    src="https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=260&q=80"
+                    alt="Déjeuner"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-amber-500 text-xs">☀️</span>
+                    <span className="font-black text-sm text-[#163321] dark:text-white">
+                      Déjeuner
+                    </span>
+                    <span className="text-xs font-bold text-[#5A7363] dark:text-slate-400">
+                      520 / 600 kcal
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#5A7363] dark:text-slate-400 font-semibold truncate mt-0.5">
+                    Salade quinoa, avocat, saumon
+                  </p>
+                </div>
+              </div>
+
+              {/* Status Circle */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCompletedMeals((prev) => ({ ...prev, dejeuner: !prev.dejeuner }));
+                }}
+                className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 cursor-pointer transition-all"
+              >
+                {completedMeals.dejeuner ? (
+                  <div className="w-6 h-6 rounded-full bg-[#1F6F43] text-white flex items-center justify-center text-xs font-black shadow-xs">
+                    ✓
+                  </div>
+                ) : (
+                  <div className="w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-600" />
+                )}
+              </button>
+            </div>
+
+            {/* Meal 3: Dîner */}
+            <div
+              id="meal-card-diner"
+              onClick={() => handleOpenAddModal('diner')}
+              className={`p-4 rounded-[24px] border ${
+                isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#E2ECE2]'
+              } shadow-xs flex items-center justify-between gap-3 hover:border-emerald-300 transition-all cursor-pointer group`}
+            >
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="w-14 h-14 rounded-full overflow-hidden shrink-0 shadow-xs border border-[#E5EFE5]">
+                  <img
+                    src="https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=260&q=80"
+                    alt="Dîner"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-indigo-400 text-xs">🌙</span>
+                    <span className="font-black text-sm text-[#163321] dark:text-white">
+                      Dîner
+                    </span>
+                    <span className="text-xs font-bold text-[#5A7363] dark:text-slate-400">
+                      450 / 500 kcal
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#5A7363] dark:text-slate-400 font-semibold truncate mt-0.5">
+                    Filet de poulet, légumes vapeur
+                  </p>
+                </div>
+              </div>
+
+              {/* Status Circle */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCompletedMeals((prev) => ({ ...prev, diner: !prev.diner }));
+                }}
+                className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 cursor-pointer transition-all"
+              >
+                {completedMeals.diner ? (
+                  <div className="w-6 h-6 rounded-full bg-[#1F6F43] text-white flex items-center justify-center text-xs font-black shadow-xs">
+                    ✓
+                  </div>
+                ) : (
+                  <div className="w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-600" />
+                )}
+              </button>
+            </div>
+
+            {/* Meal 4: Collation */}
+            <div
+              id="meal-card-collation"
+              onClick={() => handleOpenAddModal('collation')}
+              className={`p-4 rounded-[24px] border ${
+                isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#E2ECE2]'
+              } shadow-xs flex items-center justify-between gap-3 hover:border-emerald-300 transition-all cursor-pointer group`}
+            >
+              <div className="flex items-center gap-3.5 min-w-0">
+                <div className="w-14 h-14 rounded-full overflow-hidden shrink-0 shadow-xs border border-[#E5EFE5]">
+                  <img
+                    src="https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?auto=format&fit=crop&w=260&q=80"
+                    alt="Collation"
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                    loading="lazy"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-rose-500 text-xs">🍎</span>
+                    <span className="font-black text-sm text-[#163321] dark:text-white">
+                      Collation
+                    </span>
+                    <span className="text-xs font-bold text-[#5A7363] dark:text-slate-400">
+                      120 / 200 kcal
+                    </span>
+                  </div>
+                  <p className="text-xs text-[#5A7363] dark:text-slate-400 font-semibold truncate mt-0.5">
+                    Pomme
+                  </p>
+                </div>
+              </div>
+
+              {/* Status Circle */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCompletedMeals((prev) => ({ ...prev, collation: !prev.collation }));
+                }}
+                className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 cursor-pointer transition-all"
+              >
+                {completedMeals.collation ? (
+                  <div className="w-6 h-6 rounded-full bg-[#1F6F43] text-white flex items-center justify-center text-xs font-black shadow-xs">
+                    ✓
+                  </div>
+                ) : (
+                  <div className="w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-600" />
+                )}
+              </button>
+            </div>
+          </div>
+
+          {/* 5. Primary Full-width CTA: Ajouter un aliment + with Vibrant Gradient */}
+          <button
+            type="button"
+            id="btn-journal-add-food-full"
+            onClick={() => handleOpenAddModal('dejeuner')}
+            className="w-full h-14 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white rounded-full font-black text-base flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/20 active:scale-[0.99] transition-all cursor-pointer"
+          >
+            <span>Ajouter un aliment</span>
+            <span className="text-lg font-bold">+</span>
+            <span className="text-sm">🌸</span>
+          </button>
+
+          {/* Supporting tools bar: Code-barres, Scanner IA, Vider */}
+          <div className="flex items-center justify-center gap-3 pt-2">
+            <button
+              type="button"
+              id="btn-journal-barcode-scanner"
+              onClick={onOpenBarcodeScanner}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold bg-white dark:bg-slate-800 border border-[#DCE8DC] dark:border-slate-700 text-[#163321] dark:text-slate-200 hover:bg-[#EAF3EA] transition-all cursor-pointer shadow-xs"
+            >
+              <Barcode className="w-3.5 h-3.5 text-[#1F6F43]" />
+              <span>Code-barres</span>
+            </button>
+            <button
+              type="button"
+              id="btn-journal-ai-scanner"
+              onClick={onOpenAiScan}
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold bg-[#EAF3EA] dark:bg-emerald-950/60 border border-[#D5E4D5] dark:border-emerald-800 text-[#1F6F43] dark:text-emerald-300 hover:bg-[#D5EBD5] transition-all cursor-pointer shadow-xs"
+            >
+              <Camera className="w-3.5 h-3.5 text-[#1F6F43]" />
+              <span>Scanner Photo IA</span>
+            </button>
+            {todayMeals.length > 0 && onResetTodayMeals && (
+              <button
+                type="button"
+                onClick={onResetTodayMeals}
+                className="flex items-center gap-1 px-3 py-2 rounded-full text-xs font-semibold text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
+                title="Vider aujourd'hui"
+              >
+                <RotateCcw className="w-3.5 h-3.5" />
+                <span>Vider</span>
+              </button>
+            )}
+          </div>
+        </>
+      )}
+
+      {/* Custom Logged Items Detailed Breakdown (Collapsible) */}
+      {todayMeals.length > 0 && (
+        <details className="group bg-white dark:bg-slate-900 border border-[#E2ECE2] dark:border-slate-800 rounded-[24px] p-4 text-xs">
+          <summary className="font-extrabold text-[#5A7363] dark:text-slate-300 cursor-pointer select-none flex items-center justify-between">
+            <span>Détail des {todayMeals.length} aliments enregistrés ({totalCaloriesConsumedToday} kcal)</span>
+            <span className="text-[#1F6F43] group-open:rotate-180 transition-transform">▼</span>
+          </summary>
+          <div className="mt-3 divide-y divide-[#EDF3ED] dark:divide-slate-800">
+            {todayMeals.map((m) => (
+              <div key={m.id} className="py-2.5 flex items-center justify-between gap-3">
+                <div className="min-w-0">
+                  <span className="font-bold text-[#163321] dark:text-white block truncate">{m.foodName}</span>
+                  <span className="text-[10px] text-slate-400 font-semibold">
+                    {getMealTypeLabel(m.mealType)} • {m.portionGrams}g • P:{m.protein}g G:{m.carbs}g L:{m.fat}g
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 shrink-0">
+                  <span className="font-black text-[#1F6F43] dark:text-emerald-400">{m.calories} kcal</span>
+                  <button
+                    type="button"
+                    onClick={() => onDeleteMeal(m.id)}
+                    className="p-1 text-slate-400 hover:text-rose-500 cursor-pointer"
+                    title="Supprimer cet aliment"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </details>
+      )}
       {/* Add Meal Modal with Instant Calorie & Quantity Calculator */}
       {isAddModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto">

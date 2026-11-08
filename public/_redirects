@@ -1,7 +1,7 @@
-# Digital Asset Links for Google Play Store (TWA) - Force serve via Netlify Function & physical JSON fallback
-/.well-known/assetlinks.json   /.netlify/functions/assetlinks   200!
-/well-known/assetlinks.json    /.netlify/functions/assetlinks   200!
-/.well-known/assetlinks        /.netlify/functions/assetlinks   200!
+# Digital Asset Links for Google Play Store (TWA)
+/.well-known/assetlinks.json   /.well-known/assetlinks.json   200
+/well-known/assetlinks.json    /well-known/assetlinks.json    200
+/.well-known/assetlinks        /.well-known/assetlinks.json   200
 
 # Web Manifests
 /manifest.json                 /manifest.json                200
