@@ -209,11 +209,11 @@ export const RegistrationView: React.FC<RegistrationViewProps> = ({
       </div>
 
       {/* Choice of Onboarding Mode */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mb-6 max-w-full">
         <button
           type="button"
           onClick={() => setOnboardingMode('instant_discovery')}
-          className={`p-4 rounded-2xl border text-left flex items-start gap-3 transition-all cursor-pointer ${
+          className={`p-3.5 sm:p-4 rounded-2xl border text-left flex items-start gap-3 transition-all cursor-pointer min-w-0 max-w-full box-border overflow-hidden ${
             onboardingMode === 'instant_discovery'
               ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg shadow-emerald-600/25 ring-2 ring-emerald-500/50'
               : isDarkMode
@@ -230,11 +230,11 @@ export const RegistrationView: React.FC<RegistrationViewProps> = ({
           >
             <Rocket className="w-5 h-5" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-extrabold text-sm sm:text-base">Mode Découverte 1-Clic</span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="font-extrabold text-sm sm:text-base leading-tight">Mode Découverte 1-Clic</span>
               <span
-                className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase shrink-0 ${
                   onboardingMode === 'instant_discovery'
                     ? 'bg-white/25 text-white'
                     : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
@@ -256,7 +256,7 @@ export const RegistrationView: React.FC<RegistrationViewProps> = ({
         <button
           type="button"
           onClick={() => setOnboardingMode('custom_profile')}
-          className={`p-4 rounded-2xl border text-left flex items-start gap-3 transition-all cursor-pointer ${
+          className={`p-3.5 sm:p-4 rounded-2xl border text-left flex items-start gap-3 transition-all cursor-pointer min-w-0 max-w-full box-border overflow-hidden ${
             onboardingMode === 'custom_profile'
               ? 'bg-emerald-600 text-white border-emerald-600 shadow-lg shadow-emerald-600/25 ring-2 ring-emerald-500/50'
               : isDarkMode
@@ -273,11 +273,11 @@ export const RegistrationView: React.FC<RegistrationViewProps> = ({
           >
             <User className="w-5 h-5" />
           </div>
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="font-extrabold text-sm sm:text-base">Profil Sur-Mesure</span>
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <span className="font-extrabold text-sm sm:text-base leading-tight">Profil Sur-Mesure</span>
               <span
-                className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase ${
+                className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase shrink-0 ${
                   onboardingMode === 'custom_profile'
                     ? 'bg-white/25 text-white'
                     : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'

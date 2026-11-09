@@ -432,7 +432,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
           className={`flex-1 py-2 px-3 rounded-full text-xs font-black transition-all cursor-pointer text-center ${
             evolutionTab === 'poids'
               ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md'
-              : 'bg-[#E3ECE2] text-[#5A7363] hover:bg-[#D5E4D5]'
+              : 'bg-[#E3ECE2] text-black hover:bg-[#D5E4D5]'
           }`}
         >
           Poids
@@ -443,7 +443,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
           className={`flex-1 py-2 px-3 rounded-full text-xs font-black transition-all cursor-pointer text-center ${
             evolutionTab === 'calories'
               ? 'bg-gradient-to-r from-amber-500 to-rose-500 text-white shadow-md'
-              : 'bg-[#E3ECE2] text-[#5A7363] hover:bg-[#D5E4D5]'
+              : 'bg-[#E3ECE2] text-black hover:bg-[#D5E4D5]'
           }`}
         >
           Calories
@@ -454,7 +454,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
           className={`flex-1 py-2 px-3 rounded-full text-xs font-black transition-all cursor-pointer text-center ${
             evolutionTab === 'hydratation'
               ? 'bg-gradient-to-r from-cyan-600 to-blue-600 text-white shadow-md'
-              : 'bg-[#E3ECE2] text-[#5A7363] hover:bg-[#D5E4D5]'
+              : 'bg-[#E3ECE2] text-black hover:bg-[#D5E4D5]'
           }`}
         >
           Hydratation
@@ -600,7 +600,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
           <button
             type="button"
             onClick={() => setIsModalOpen(true)}
-            className="text-xs font-bold text-[#5A7363] dark:text-slate-400 hover:text-[#1F6F43] flex items-center gap-0.5 cursor-pointer"
+            className="text-xs font-black text-black dark:text-slate-300 hover:text-[#1F6F43] flex items-center gap-0.5 cursor-pointer"
           >
             Voir tout ›
           </button>
@@ -627,12 +627,12 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <Flag className="w-3.5 h-3.5 text-[#10B981] mb-0.5" />
-                <span className="text-[11px] font-black text-[#163321] dark:text-white leading-none">
+                <span className="text-[11px] font-black text-black dark:text-white leading-none">
                   - 5 kg
                 </span>
               </div>
             </div>
-            <span className="text-[10px] font-bold text-[#5A7363] dark:text-slate-400 mt-2 block">
+            <span className="text-[10px] font-black text-black dark:text-slate-300 mt-2 block">
               sur 8 semaines
             </span>
           </div>
@@ -656,12 +656,12 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-amber-500 text-xs mb-0.5">★</span>
-                <span className="text-[11px] font-black text-[#163321] dark:text-white leading-none">
+                <span className="text-[11px] font-black text-black dark:text-white leading-none">
                   5 jours
                 </span>
               </div>
             </div>
-            <span className="text-[10px] font-bold text-[#5A7363] dark:text-slate-400 mt-2 block">
+            <span className="text-[10px] font-black text-black dark:text-slate-300 mt-2 block">
               série active
             </span>
           </div>
@@ -685,12 +685,12 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
               </svg>
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <Droplets className="w-3.5 h-3.5 text-cyan-600 mb-0.5" />
-                <span className="text-[11px] font-black text-[#163321] dark:text-white leading-none">
+                <span className="text-[11px] font-black text-black dark:text-white leading-none">
                   2 L
                 </span>
               </div>
             </div>
-            <span className="text-[10px] font-bold text-[#5A7363] dark:text-slate-400 mt-2 block">
+            <span className="text-[10px] font-black text-black dark:text-slate-300 mt-2 block">
               d'eau / jour
             </span>
           </div>

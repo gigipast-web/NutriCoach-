@@ -316,11 +316,11 @@ export const JournalView: React.FC<JournalViewProps> = ({
       {/* 1. Header bar with "Mon alimentation", Calendar icon & Blossom (Screen 3) */}
       <div className="flex items-center justify-between gap-3 pt-1">
         <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-full bg-white dark:bg-slate-800 border border-[#DCE8DC] dark:border-slate-700 flex items-center justify-center text-[#163321] dark:text-emerald-300 font-bold shadow-xs">
+          <div className="w-9 h-9 rounded-full bg-white dark:bg-slate-800 border border-[#DCE8DC] dark:border-slate-700 flex items-center justify-center text-black dark:text-emerald-300 font-bold shadow-xs">
             ‹
           </div>
           <div className="flex items-center gap-2">
-            <h1 className="text-xl sm:text-2xl font-black text-[#163321] dark:text-white tracking-tight">
+            <h1 className="text-xl sm:text-2xl font-black text-black dark:text-white tracking-tight">
               Mon alimentation
             </h1>
             <BlossomFlower size={22} palette="pink" />
@@ -330,7 +330,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
         <button
           type="button"
           onClick={() => setSelectedPeriod('week')}
-          className="w-9 h-9 rounded-full bg-white dark:bg-slate-800 border border-[#DCE8DC] dark:border-slate-700 flex items-center justify-center text-[#1F6F43] dark:text-emerald-400 hover:bg-[#EAF3EA] transition-all cursor-pointer shadow-xs"
+          className="w-9 h-9 rounded-full bg-white dark:bg-slate-800 border border-[#DCE8DC] dark:border-slate-700 flex items-center justify-center text-black dark:text-emerald-400 hover:bg-[#EAF3EA] transition-all cursor-pointer shadow-xs"
           title="Historique & Bilan semaine"
         >
           <Calendar className="w-4 h-4" />
@@ -345,7 +345,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
           className={`flex-1 py-2 px-3 rounded-full text-xs font-black transition-all cursor-pointer text-center ${
             selectedPeriod === 'today'
               ? 'bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white shadow-md'
-              : 'bg-[#E3ECE2] text-[#5A7363] hover:bg-[#D5E4D5]'
+              : 'bg-[#E3ECE2] text-black hover:bg-[#D5E4D5]'
           }`}
         >
           Aujourd'hui
@@ -356,7 +356,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
           className={`flex-1 py-2 px-3 rounded-full text-xs font-black transition-all cursor-pointer text-center ${
             selectedPeriod === 'tomorrow'
               ? 'bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white shadow-md'
-              : 'bg-[#E3ECE2] text-[#5A7363] hover:bg-[#D5E4D5]'
+              : 'bg-[#E3ECE2] text-black hover:bg-[#D5E4D5]'
           }`}
         >
           Demain
@@ -367,7 +367,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
           className={`flex-1 py-2 px-3 rounded-full text-xs font-black transition-all cursor-pointer text-center ${
             selectedPeriod === 'week'
               ? 'bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white shadow-md'
-              : 'bg-[#E3ECE2] text-[#5A7363] hover:bg-[#D5E4D5]'
+              : 'bg-[#E3ECE2] text-black hover:bg-[#D5E4D5]'
           }`}
         >
           Semaine
@@ -407,12 +407,12 @@ export const JournalView: React.FC<JournalViewProps> = ({
             {/* Nutrition checklist */}
             <div className="space-y-1.5 flex-1 relative z-10">
               <div className="flex items-center gap-2">
-                <h3 className="text-xs sm:text-sm font-extrabold text-[#5A7363] dark:text-slate-300">
+                <h3 className="text-xs sm:text-sm font-black text-black dark:text-slate-200">
                   Votre objectif nutritionnel
                 </h3>
                 <BlossomFlower size={15} palette="emerald" />
               </div>
-              <div className="space-y-1 text-xs font-black text-[#163321] dark:text-white">
+              <div className="space-y-1 text-xs font-black text-black dark:text-white">
                 <div className="flex items-center gap-2">
                   <span className="text-[#10B981] dark:text-emerald-400 font-bold">✔</span>
                   <span>1 800 kcal</span>
@@ -493,10 +493,10 @@ export const JournalView: React.FC<JournalViewProps> = ({
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-1.5 flex-wrap">
                           <span className="text-xs">{cat.icon}</span>
-                          <span className="font-black text-sm text-[#163321] dark:text-white">
+                          <span className="font-black text-sm text-black dark:text-white">
                             {cat.label}
                           </span>
-                          <span className="text-xs font-bold text-[#5A7363] dark:text-slate-400">
+                          <span className="text-xs font-black text-black dark:text-slate-300">
                             <strong className={`font-black ${categoryCalories > 0 ? 'text-[#1F6F43] dark:text-emerald-400 font-extrabold' : ''}`}>
                               {categoryCalories}
                             </strong>{' '}
@@ -505,7 +505,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
                         </div>
 
                         {/* Food summary description */}
-                        <p className="text-xs text-[#5A7363] dark:text-slate-400 font-semibold truncate mt-0.5">
+                        <p className="text-xs text-black dark:text-slate-300 font-semibold truncate mt-0.5">
                           {categoryMeals.length > 0
                             ? categoryMeals.map((m) => m.foodName).join(', ')
                             : cat.placeholderText}
@@ -595,7 +595,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
               type="button"
               id="btn-journal-barcode-scanner"
               onClick={onOpenBarcodeScanner}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold bg-white dark:bg-slate-800 border border-[#DCE8DC] dark:border-slate-700 text-[#163321] dark:text-slate-200 hover:bg-[#EAF3EA] transition-all cursor-pointer shadow-xs"
+              className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold bg-white dark:bg-slate-800 border border-[#DCE8DC] dark:border-slate-700 text-black dark:text-slate-200 hover:bg-[#EAF3EA] transition-all cursor-pointer shadow-xs"
             >
               <Barcode className="w-3.5 h-3.5 text-[#1F6F43]" />
               <span>Code-barres</span>
@@ -627,7 +627,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
       {/* Custom Logged Items Detailed Breakdown (Collapsible) */}
       {todayMeals.length > 0 && (
         <details className="group bg-white dark:bg-slate-900 border border-[#E2ECE2] dark:border-slate-800 rounded-[24px] p-4 text-xs">
-          <summary className="font-extrabold text-[#5A7363] dark:text-slate-300 cursor-pointer select-none flex items-center justify-between">
+          <summary className="font-black text-black dark:text-slate-200 cursor-pointer select-none flex items-center justify-between">
             <span>Détail des {todayMeals.length} aliments enregistrés ({totalCaloriesConsumedToday} kcal)</span>
             <span className="text-[#1F6F43] group-open:rotate-180 transition-transform">▼</span>
           </summary>
@@ -635,7 +635,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
             {todayMeals.map((m) => (
               <div key={m.id} className="py-2.5 flex items-center justify-between gap-3">
                 <div className="min-w-0">
-                  <span className="font-bold text-[#163321] dark:text-white block truncate">{m.foodName}</span>
+                  <span className="font-black text-black dark:text-white block truncate">{m.foodName}</span>
                   <span className="text-[10px] text-slate-400 font-semibold">
                     {getMealTypeLabel(m.mealType)} • {m.portionGrams}g • P:{m.protein}g G:{m.carbs}g L:{m.fat}g
                   </span>

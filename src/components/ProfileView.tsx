@@ -157,12 +157,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <h1 className="text-xl sm:text-2xl font-black text-[#163321] dark:text-white tracking-tight">
+              <h1 className="text-xl sm:text-2xl font-black text-black dark:text-white tracking-tight">
                 {user.name ? (user.name.toLowerCase().includes('clara') ? 'Clara Martin' : user.name) : 'Clara Martin'}
               </h1>
               <BlossomFlower size={20} palette="pink" />
             </div>
-            <span className="text-xs font-bold text-[#5A7363] dark:text-slate-400 block mt-0.5">
+            <span className="text-xs font-bold text-black dark:text-slate-300 block mt-0.5">
               Membre depuis 12 semaines 🌸
             </span>
           </div>
@@ -174,7 +174,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             const el = document.getElementById('account-edit-form');
             el?.scrollIntoView({ behavior: 'smooth' });
           }}
-          className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 border border-[#DCE8DC] dark:border-slate-700 flex items-center justify-center text-[#5A7363] hover:text-[#163321] transition-all cursor-pointer shadow-xs"
+          className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 border border-[#DCE8DC] dark:border-slate-700 flex items-center justify-center text-black hover:text-[#1F6F43] transition-all cursor-pointer shadow-xs"
           title="Paramètres du profil"
         >
           <Settings className="w-5 h-5" />
@@ -198,10 +198,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               🎯
             </div>
             <div>
-              <span className="text-xs font-bold text-[#5A7363] dark:text-slate-400 block">
+              <span className="text-xs font-black text-black dark:text-slate-300 block">
                 Mon objectif
               </span>
-              <h2 className="text-lg font-black text-[#163321] dark:text-white leading-tight flex items-center gap-1.5">
+              <h2 className="text-lg font-black text-black dark:text-white leading-tight flex items-center gap-1.5">
                 <span>Perdre 5 kg</span>
                 <BlossomFlower size={16} palette="orchid" />
               </h2>
@@ -260,7 +260,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 loading="lazy"
               />
             </div>
-            <p className="text-xs font-bold text-[#163321] dark:text-slate-200 leading-snug">
+            <p className="text-xs font-bold text-black dark:text-slate-200 leading-snug">
               Privilégiez les légumes à chaque repas : ils sont riches en nutriments et peu caloriques !
             </p>
           </div>
@@ -284,7 +284,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         >
           <div className="flex items-center gap-3">
             <BarChart2 className="w-5 h-5 text-[#1F6F43] dark:text-emerald-400" />
-            <span className="text-sm font-bold text-[#163321] dark:text-white">
+            <span className="text-sm font-black text-black dark:text-white">
               Mes statistiques
             </span>
           </div>
@@ -301,7 +301,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         >
           <div className="flex items-center gap-3">
             <Settings className="w-5 h-5 text-[#1F6F43] dark:text-emerald-400" />
-            <span className="text-sm font-bold text-[#163321] dark:text-white">
+            <span className="text-sm font-black text-black dark:text-white">
               Mes paramètres
             </span>
           </div>
@@ -317,7 +317,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         >
           <div className="flex items-center gap-3">
             <HelpCircle className="w-5 h-5 text-[#1F6F43] dark:text-emerald-400" />
-            <span className="text-sm font-bold text-[#163321] dark:text-white">
+            <span className="text-sm font-black text-black dark:text-white">
               FAQ & Aide
             </span>
           </div>

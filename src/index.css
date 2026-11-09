@@ -18,7 +18,21 @@ html, body {
   background-size: 380px auto;
   background-attachment: fixed;
   background-position: center top;
-  color: #163321;
+  color: #000000;
+}
+
+/* Écritures en noir profond par défaut pour tous les textes en mode clair */
+body:not(.dark) {
+  color: #000000;
+}
+
+body:not(.dark) h1,
+body:not(.dark) h2,
+body:not(.dark) h3,
+body:not(.dark) h4,
+body:not(.dark) h5,
+body:not(.dark) h6 {
+  color: #000000;
 }
 
 .dark body {
@@ -37,9 +51,17 @@ html, body {
 }
 
 /* Sécurité anti-débordement pour les smartphones en mode portrait (9:16) */
-button {
+button, input, select, textarea {
   max-width: 100%;
   box-sizing: border-box;
+}
+
+@media (max-width: 640px) {
+  /* Assure que toutes les boîtes modales et formulaires restent strictement dans le cadre de l'écran */
+  .fixed.inset-0 > div {
+    max-height: 92dvh !important;
+    max-width: calc(100vw - 1rem) !important;
+  }
 }
 
 /* Écritures en gras par défaut pour tous les textes, boutons, inputs et paragraphes */

@@ -140,12 +140,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       <div className="flex items-center justify-between gap-4 pt-1">
         <div className="space-y-1">
           <div className="flex items-center gap-2">
-            <h1 className="text-2xl sm:text-3xl font-black text-[#163321] dark:text-emerald-300 tracking-tight flex items-center gap-2">
+            <h1 className="text-2xl sm:text-3xl font-black text-black dark:text-emerald-300 tracking-tight flex items-center gap-2">
               <span>Bonjour {user.name || 'Clara'} ! 👋</span>
             </h1>
             <BlossomFlower size={24} palette="pink" />
           </div>
-          <p className="text-xs sm:text-sm text-[#5A7363] dark:text-slate-300 font-semibold leading-relaxed max-w-md">
+          <p className="text-xs sm:text-sm text-black dark:text-slate-300 font-bold leading-relaxed max-w-md">
             Chaque petit effort vous rapproche de votre objectif.
           </p>
 
@@ -250,7 +250,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             <span className="text-3xl font-black bg-gradient-to-r from-emerald-600 via-teal-600 to-amber-600 dark:from-emerald-300 dark:via-teal-300 dark:to-amber-300 bg-clip-text text-transparent tracking-tight leading-none">
               {progressPercent}%
             </span>
-            <span className="text-[11px] font-extrabold text-[#5A7363] dark:text-slate-400 mt-1 leading-tight flex items-center gap-1 justify-center">
+            <span className="text-3xl font-black bg-gradient-to-r from-emerald-600 via-teal-600 to-amber-600 dark:from-emerald-300 dark:via-teal-300 dark:to-amber-300 bg-clip-text text-transparent tracking-tight leading-none">
+              {progressPercent}%
+            </span>
+            <span className="text-[11px] font-black text-black dark:text-slate-300 mt-1 leading-tight flex items-center gap-1 justify-center">
               <span>vers votre objectif</span>
             </span>
           </div>
@@ -267,12 +270,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <Scale className="w-5 h-5" />
             </div>
             <div>
-              <span className="block text-[11px] font-extrabold text-[#5A7363] dark:text-slate-400 uppercase tracking-wider">
+              <span className="block text-[11px] font-black text-black dark:text-slate-300 uppercase tracking-wider">
                 Poids actuel
               </span>
-              <span className="text-2xl font-black text-[#163321] dark:text-white">
+              <span className="text-2xl font-black text-black dark:text-white">
                 {currentWeight.toFixed(1).replace('.', ',')}{' '}
-                <small className="text-xs font-bold text-slate-400">kg</small>
+                <small className="text-xs font-bold text-black dark:text-slate-400">kg</small>
               </span>
             </div>
           </div>
@@ -286,12 +289,12 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <Flag className="w-5 h-5" />
             </div>
             <div>
-              <span className="block text-[11px] font-extrabold text-[#5A7363] dark:text-slate-400 uppercase tracking-wider">
+              <span className="block text-[11px] font-black text-black dark:text-slate-300 uppercase tracking-wider">
                 Objectif
               </span>
-              <span className="text-2xl font-black text-[#163321] dark:text-white">
+              <span className="text-2xl font-black text-black dark:text-white">
                 {targetWeight.toFixed(1).replace('.', ',')}{' '}
-                <small className="text-xs font-bold text-slate-400">kg</small>
+                <small className="text-xs font-bold text-black dark:text-slate-400">kg</small>
               </span>
             </div>
           </div>
@@ -312,16 +315,16 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <span className="text-amber-500 text-lg">🔥</span>
-              <span className="text-xs font-extrabold text-[#78350F] dark:text-amber-300">
+              <span className="text-xs font-black text-black dark:text-amber-300">
                 Calories du jour
               </span>
             </div>
             <BlossomFlower size={16} palette="golden" />
           </div>
 
-          <div className="text-2xl font-black text-[#163321] dark:text-white">
+          <div className="text-2xl font-black text-black dark:text-white">
             {caloriesDisplay.toLocaleString()}{' '}
-            <span className="text-sm font-bold text-[#5A7363] dark:text-slate-400">
+            <span className="text-sm font-black text-black dark:text-slate-300">
               / {targetCalories.toLocaleString()}
             </span>
           </div>
@@ -347,7 +350,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           <div className="flex items-center justify-between mb-2">
             <div className="flex items-center gap-2">
               <span className="text-sky-500 text-lg">💧</span>
-              <span className="text-xs font-extrabold text-[#0C4A6E] dark:text-cyan-300">
+              <span className="text-xs font-black text-black dark:text-cyan-300">
                 Hydratation
               </span>
             </div>
@@ -366,9 +369,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
           </div>
 
-          <div className="text-2xl font-black text-[#163321] dark:text-white">
+          <div className="text-2xl font-black text-black dark:text-white">
             {currentLiters.toFixed(1).replace('.', ',')}{' '}
-            <span className="text-sm font-bold text-[#5A7363] dark:text-slate-400">
+            <span className="text-sm font-black text-black dark:text-slate-300">
               / {targetLiters.toFixed(0)} L
             </span>
           </div>
@@ -394,7 +397,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
       >
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <h2 className="text-lg font-black text-[#163321] dark:text-white tracking-tight">
+            <h2 className="text-lg font-black text-black dark:text-white tracking-tight">
               Vos repas d'aujourd'hui
             </h2>
             <FlowerGardenCluster />
@@ -430,10 +433,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 />
               </div>
 
-              <span className="font-black text-xs text-[#163321] dark:text-white block truncate max-w-full">
+              <span className="font-black text-xs text-black dark:text-white block truncate max-w-full">
                 {meal.title}
               </span>
-              <span className="text-[11px] font-bold text-[#5A7363] dark:text-slate-400 block mt-0.5">
+              <span className="text-[11px] font-black text-black dark:text-slate-300 block mt-0.5">
                 <strong className={meal.hasLogged ? 'text-[#1F6F43] dark:text-emerald-400 font-black' : 'font-semibold'}>
                   {meal.kcal}
                 </strong>{' '}
@@ -472,10 +475,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <Footprints className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-[11px] font-extrabold text-[#5A7363] dark:text-slate-400 uppercase">
+              <span className="text-[11px] font-black text-black dark:text-slate-300 uppercase">
                 Activité physique
               </span>
-              <span className="block text-base font-black text-[#163321] dark:text-white">
+              <span className="block text-base font-black text-black dark:text-white">
                 {totalSteps.toLocaleString()} / {(user.stepTarget || 10000).toLocaleString()} pas
               </span>
             </div>
@@ -515,10 +518,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
               <Sparkles className="w-5 h-5" />
             </div>
             <div>
-              <span className="text-[11px] font-extrabold text-[#5A7363] dark:text-slate-400 uppercase">
+              <span className="text-[11px] font-black text-black dark:text-slate-300 uppercase">
                 Coach Nutri-IA
               </span>
-              <span className="block text-sm font-black text-[#163321] dark:text-white">
+              <span className="block text-sm font-black text-black dark:text-white">
                 Poser une question nutritionnelle...
               </span>
             </div>

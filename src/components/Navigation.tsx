@@ -155,7 +155,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                         ? 'bg-[#1F6F43] text-white shadow-xs'
                         : isDarkMode
                         ? 'text-slate-300 hover:bg-slate-800'
-                        : 'text-[#5A7363] hover:bg-[#EDF3ED]'
+                        : 'text-black hover:bg-[#EDF3ED]'
                     }`}
                   >
                     {tab.isRobot ? (
@@ -182,7 +182,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                         ? 'bg-[#1F6F43] text-white shadow-xs'
                         : isDarkMode
                         ? 'text-slate-400 hover:text-white'
-                        : 'text-[#5A7363] hover:text-[#163321]'
+                        : 'text-black hover:text-[#1F6F43]'
                     }`}
                   >
                     {tab.label}
@@ -282,7 +282,7 @@ export const Navigation: React.FC<NavigationProps> = ({
         className={`lg:hidden fixed bottom-0 left-0 right-0 z-40 ${
           isDarkMode
             ? 'bg-slate-900/95 border-slate-800 text-white'
-            : 'bg-white/95 border-[#E2ECE2] text-[#163321]'
+            : 'bg-white/95 border-[#E2ECE2] text-black'
         } backdrop-blur-md border-t px-2 py-2 flex items-center justify-around shadow-[0_-4px_16px_rgba(31,111,67,0.06)]`}
       >
         {mainTabs.map((tab) => {
@@ -296,7 +296,7 @@ export const Navigation: React.FC<NavigationProps> = ({
               className={`flex flex-col items-center justify-center py-1 px-2 rounded-2xl text-[10px] font-black transition-all cursor-pointer ${
                 isActive
                   ? 'text-[#1F6F43] dark:text-emerald-400 font-black scale-105'
-                  : 'text-[#5A7363] dark:text-slate-400 hover:text-[#163321]'
+                  : 'text-black dark:text-slate-300 hover:text-black font-extrabold'
               }`}
             >
               <div

@@ -96,22 +96,23 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4">
+    <div className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-2.5 sm:p-4 overflow-y-auto">
       <div
-        className={`w-full max-w-md p-6 sm:p-8 rounded-3xl border shadow-2xl relative ${
+        className={`w-full max-w-md max-h-[92dvh] overflow-y-auto p-4 sm:p-6 rounded-3xl border shadow-2xl relative my-auto box-border ${
           isDarkMode ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'
         }`}
       >
         <button
           id="btn-close-auth-modal"
           onClick={onClose}
-          className="absolute top-4 right-4 p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-600 cursor-pointer"
+          className="absolute top-3.5 right-3.5 p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-400 hover:text-slate-600 cursor-pointer z-10"
+          aria-label="Fermer"
         >
-          <X className="w-5 h-5" />
+          <X className="w-4 h-4 sm:w-5 sm:h-5" />
         </button>
 
-        {/* Tab switcher: Inscription vs Connexion */}
-        <div className="flex border-b border-slate-100 dark:border-slate-800 mb-6">
+        {/* Tab switcher: Inscription vs Connexion (Segmented & Anti-overflow) */}
+        <div className="grid grid-cols-2 gap-1.5 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700 mb-5 pr-8 sm:pr-0">
           <button
             id="tab-auth-signup"
             type="button"
@@ -119,10 +120,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               setMode('signup');
               setStep(1);
             }}
-            className={`flex-1 pb-3 text-sm font-extrabold transition-colors cursor-pointer border-b-2 ${
+            className={`py-2 px-2 text-xs sm:text-sm font-black rounded-xl transition-all cursor-pointer text-center truncate ${
               mode === 'signup'
-                ? 'border-emerald-600 text-emerald-600'
-                : 'border-transparent text-slate-400 hover:text-slate-600'
+                ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-xs border border-emerald-300 dark:border-emerald-600'
+                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
             }`}
           >
             Créer un compte
@@ -134,10 +135,10 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               setMode('login');
               setStep(1);
             }}
-            className={`flex-1 pb-3 text-sm font-extrabold transition-colors cursor-pointer border-b-2 ${
+            className={`py-2 px-2 text-xs sm:text-sm font-black rounded-xl transition-all cursor-pointer text-center truncate ${
               mode === 'login'
-                ? 'border-emerald-600 text-emerald-600'
-                : 'border-transparent text-slate-400 hover:text-slate-600'
+                ? 'bg-white dark:bg-slate-900 text-emerald-600 dark:text-emerald-400 shadow-xs border border-emerald-300 dark:border-emerald-600'
+                : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
             }`}
           >
             Se connecter
@@ -343,7 +344,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <div>
                 <label className="block text-[11px] font-bold text-slate-600 dark:text-slate-400 mb-1">
                   Taille (cm)
@@ -423,21 +424,21 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </select>
             </div>
 
-            <div className="flex items-center gap-2 pt-2">
+            <div className="flex flex-col-reverse sm:flex-row items-stretch sm:items-center gap-2 pt-2">
               <button
                 type="button"
                 onClick={() => setStep(1)}
-                className="px-4 py-3 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer"
+                className="w-full sm:w-auto px-4 py-2.5 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs font-bold text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 cursor-pointer text-center"
               >
                 Retour
               </button>
               <button
                 id="btn-auth-complete-signup"
                 type="submit"
-                className="flex-1 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold py-3 rounded-2xl text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full flex-1 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-700 text-white font-black py-3 px-3 rounded-2xl text-xs sm:text-sm shadow-md transition-all flex items-center justify-center gap-2 cursor-pointer text-center"
               >
-                <Sparkles className="w-4 h-4 text-amber-300" />
-                <span>Démarrer mes 30 jours d'essai gratuit</span>
+                <Sparkles className="w-4 h-4 text-amber-300 shrink-0" />
+                <span className="truncate">Démarrer mes 30 jours gratuits</span>
               </button>
             </div>
           </form>
