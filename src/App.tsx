@@ -820,9 +820,18 @@ export default function App() {
   return (
     <div
       id="nutricoach-app-root"
-      className={`min-h-screen transition-colors duration-200 font-semibold ${
-        isDarkMode ? 'bg-[#0A160F] text-slate-100' : 'bg-[#EDF3ED] text-[#163321]'
+      className={`min-h-screen transition-colors duration-200 font-semibold relative ${
+        isDarkMode ? 'text-slate-100' : 'text-[#163321]'
       }`}
+      style={{
+        backgroundImage: isDarkMode
+          ? 'linear-gradient(rgba(10, 22, 15, 0.90), rgba(10, 22, 15, 0.93)), url("/assets/floral_light_wallpaper.jpg")'
+          : 'linear-gradient(rgba(253, 252, 250, 0.50), rgba(253, 252, 250, 0.60)), url("/assets/floral_light_wallpaper.jpg")',
+        backgroundRepeat: 'repeat',
+        backgroundSize: '380px auto',
+        backgroundAttachment: 'fixed',
+        backgroundPosition: 'center top',
+      }}
     >
       {/* Top Navigation */}
       <Navigation

@@ -12,12 +12,21 @@ html, body {
   -moz-osx-font-smoothing: grayscale;
   overflow-x: hidden;
   max-width: 100vw;
-  background-color: #EDF3ED;
+  background-color: #FAF8F5;
+  background-image: linear-gradient(rgba(253, 252, 250, 0.45), rgba(253, 252, 250, 0.55)), url('/assets/floral_light_wallpaper.jpg');
+  background-repeat: repeat;
+  background-size: 380px auto;
+  background-attachment: fixed;
+  background-position: center top;
   color: #163321;
 }
 
 .dark body {
   background-color: #0A160F;
+  background-image: linear-gradient(rgba(10, 22, 15, 0.92), rgba(10, 22, 15, 0.94)), url('/assets/floral_light_wallpaper.jpg');
+  background-repeat: repeat;
+  background-size: 380px auto;
+  background-attachment: fixed;
   color: #E2ECE2;
 }
 
