@@ -248,6 +248,32 @@ export const JournalView: React.FC<JournalViewProps> = ({
 
   const totalCaloriesConsumedToday = todayMeals.reduce((acc, m) => acc + m.calories, 0);
 
+  const mealsByType = useMemo(() => {
+    return {
+      petit_dejeuner: todayMeals.filter((m) => m.mealType === 'petit_dejeuner'),
+      dejeuner: todayMeals.filter((m) => m.mealType === 'dejeuner'),
+      diner: todayMeals.filter((m) => m.mealType === 'diner'),
+      collation: todayMeals.filter((m) => m.mealType === 'collation'),
+    };
+  }, [todayMeals]);
+
+  const caloriesByType = useMemo(() => {
+    return {
+      petit_dejeuner: mealsByType.petit_dejeuner.reduce((s, m) => s + m.calories, 0),
+      dejeuner: mealsByType.dejeuner.reduce((s, m) => s + m.calories, 0),
+      diner: mealsByType.diner.reduce((s, m) => s + m.calories, 0),
+      collation: mealsByType.collation.reduce((s, m) => s + m.calories, 0),
+    };
+  }, [mealsByType]);
+
+  const getSuggestedMealTypeNow = (): MealType => {
+    const hour = new Date().getHours();
+    if (hour < 11) return 'petit_dejeuner';
+    if (hour < 15) return 'dejeuner';
+    if (hour < 18) return 'collation';
+    return 'diner';
+  };
+
   // If user selected Weekly Recap mode, render full weekly breakdown component
   if (activeSubTab === 'weekly') {
     return (
@@ -403,222 +429,159 @@ export const JournalView: React.FC<JournalViewProps> = ({
             </div>
           </div>
 
-          {/* 4. Meal Checklist Cards (Screen 3) */}
+          {/* 4. Meal Checklist Cards (Screen 3) - Dynamically displaying real added foods & calories */}
           <div className="space-y-3">
-            {/* Meal 1: Petit-déjeuner */}
-            <div
-              id="meal-card-petit-dejeuner"
-              onClick={() => handleOpenAddModal('petit_dejeuner')}
-              className={`p-4 rounded-[24px] border ${
-                isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#E2ECE2]'
-              } shadow-xs flex items-center justify-between gap-3 hover:border-emerald-300 transition-all cursor-pointer group`}
-            >
-              <div className="flex items-center gap-3.5 min-w-0">
-                <div className="w-14 h-14 rounded-full overflow-hidden shrink-0 shadow-xs border border-[#E5EFE5]">
-                  <img
-                    src="https://images.unsplash.com/photo-1517673132405-a56a62b18caf?auto=format&fit=crop&w=260&q=80"
-                    alt="Petit-déjeuner"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                    loading="lazy"
-                  />
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-amber-500 text-xs">☀️</span>
-                    <span className="font-black text-sm text-[#163321] dark:text-white">
-                      Petit-déjeuner
-                    </span>
-                    <span className="text-xs font-bold text-[#5A7363] dark:text-slate-400">
-                      350 / 400 kcal
-                    </span>
-                  </div>
-                  <p className="text-xs text-[#5A7363] dark:text-slate-400 font-semibold truncate mt-0.5">
-                    Flocons d'avoine, fruits rouges, yaourt nature
-                  </p>
-                </div>
-              </div>
+            {[
+              {
+                type: 'petit_dejeuner' as MealType,
+                label: 'Petit-déjeuner',
+                icon: '☀️',
+                targetKcal: 400,
+                defaultImage: 'https://images.unsplash.com/photo-1517673132405-a56a62b18caf?auto=format&fit=crop&w=260&q=80',
+                placeholderText: "Flocons d'avoine, fruits rouges, yaourt nature...",
+              },
+              {
+                type: 'dejeuner' as MealType,
+                label: 'Déjeuner',
+                icon: '🥗',
+                targetKcal: 600,
+                defaultImage: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=260&q=80',
+                placeholderText: 'Salade composée, féculents, légumes, poisson ou viande...',
+              },
+              {
+                type: 'collation' as MealType,
+                label: 'Collation',
+                icon: '🍎',
+                targetKcal: 200,
+                defaultImage: 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?auto=format&fit=crop&w=260&q=80',
+                placeholderText: 'Fruit frais, amandes, fromage blanc ou compote...',
+              },
+              {
+                type: 'diner' as MealType,
+                label: 'Dîner',
+                icon: '🌙',
+                targetKcal: 500,
+                defaultImage: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=260&q=80',
+                placeholderText: 'Filet de poulet, légumes vapeur, soupe légère...',
+              },
+            ].map((cat) => {
+              const categoryMeals = mealsByType[cat.type] || [];
+              const categoryCalories = caloriesByType[cat.type] || 0;
+              const isChecked = categoryMeals.length > 0 || !!completedMeals[cat.type];
 
-              {/* Status Circle */}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setCompletedMeals((prev) => ({ ...prev, petit_dejeuner: !prev.petit_dejeuner }));
-                }}
-                className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 cursor-pointer transition-all"
-              >
-                {completedMeals.petit_dejeuner ? (
-                  <div className="w-6 h-6 rounded-full bg-[#1F6F43] text-white flex items-center justify-center text-xs font-black shadow-xs">
-                    ✓
-                  </div>
-                ) : (
-                  <div className="w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-600" />
-                )}
-              </button>
-            </div>
+              return (
+                <div
+                  key={cat.type}
+                  id={`meal-card-${cat.type.replace('_', '-')}`}
+                  onClick={() => handleOpenAddModal(cat.type)}
+                  className={`p-4 rounded-[24px] border ${
+                    isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#E2ECE2]'
+                  } shadow-xs hover:border-emerald-300 transition-all cursor-pointer group`}
+                >
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="flex items-center gap-3.5 min-w-0 flex-1">
+                      {/* Thumbnail Image */}
+                      <div className="w-14 h-14 rounded-full overflow-hidden shrink-0 shadow-xs border border-[#E5EFE5] p-0.5 bg-gradient-to-tr from-emerald-200 to-amber-200">
+                        <img
+                          src={cat.defaultImage}
+                          alt={cat.label}
+                          className="w-full h-full object-cover rounded-full group-hover:scale-105 transition-transform"
+                          loading="lazy"
+                        />
+                      </div>
 
-            {/* Meal 2: Déjeuner */}
-            <div
-              id="meal-card-dejeuner"
-              onClick={() => handleOpenAddModal('dejeuner')}
-              className={`p-4 rounded-[24px] border ${
-                isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#E2ECE2]'
-              } shadow-xs flex items-center justify-between gap-3 hover:border-emerald-300 transition-all cursor-pointer group`}
-            >
-              <div className="flex items-center gap-3.5 min-w-0">
-                <div className="w-14 h-14 rounded-full overflow-hidden shrink-0 shadow-xs border border-[#E5EFE5]">
-                  <img
-                    src="https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=260&q=80"
-                    alt="Déjeuner"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                    loading="lazy"
-                  />
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-amber-500 text-xs">☀️</span>
-                    <span className="font-black text-sm text-[#163321] dark:text-white">
-                      Déjeuner
-                    </span>
-                    <span className="text-xs font-bold text-[#5A7363] dark:text-slate-400">
-                      520 / 600 kcal
-                    </span>
-                  </div>
-                  <p className="text-xs text-[#5A7363] dark:text-slate-400 font-semibold truncate mt-0.5">
-                    Salade quinoa, avocat, saumon
-                  </p>
-                </div>
-              </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          <span className="text-xs">{cat.icon}</span>
+                          <span className="font-black text-sm text-[#163321] dark:text-white">
+                            {cat.label}
+                          </span>
+                          <span className="text-xs font-bold text-[#5A7363] dark:text-slate-400">
+                            <strong className={`font-black ${categoryCalories > 0 ? 'text-[#1F6F43] dark:text-emerald-400 font-extrabold' : ''}`}>
+                              {categoryCalories}
+                            </strong>{' '}
+                            / {cat.targetKcal} kcal
+                          </span>
+                        </div>
 
-              {/* Status Circle */}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setCompletedMeals((prev) => ({ ...prev, dejeuner: !prev.dejeuner }));
-                }}
-                className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 cursor-pointer transition-all"
-              >
-                {completedMeals.dejeuner ? (
-                  <div className="w-6 h-6 rounded-full bg-[#1F6F43] text-white flex items-center justify-center text-xs font-black shadow-xs">
-                    ✓
-                  </div>
-                ) : (
-                  <div className="w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-600" />
-                )}
-              </button>
-            </div>
+                        {/* Food summary description */}
+                        <p className="text-xs text-[#5A7363] dark:text-slate-400 font-semibold truncate mt-0.5">
+                          {categoryMeals.length > 0
+                            ? categoryMeals.map((m) => m.foodName).join(', ')
+                            : cat.placeholderText}
+                        </p>
+                      </div>
+                    </div>
 
-            {/* Meal 3: Dîner */}
-            <div
-              id="meal-card-diner"
-              onClick={() => handleOpenAddModal('diner')}
-              className={`p-4 rounded-[24px] border ${
-                isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#E2ECE2]'
-              } shadow-xs flex items-center justify-between gap-3 hover:border-emerald-300 transition-all cursor-pointer group`}
-            >
-              <div className="flex items-center gap-3.5 min-w-0">
-                <div className="w-14 h-14 rounded-full overflow-hidden shrink-0 shadow-xs border border-[#E5EFE5]">
-                  <img
-                    src="https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=260&q=80"
-                    alt="Dîner"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                    loading="lazy"
-                  />
-                </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-indigo-400 text-xs">🌙</span>
-                    <span className="font-black text-sm text-[#163321] dark:text-white">
-                      Dîner
-                    </span>
-                    <span className="text-xs font-bold text-[#5A7363] dark:text-slate-400">
-                      450 / 500 kcal
-                    </span>
+                    {/* Status Circle Checkmark */}
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setCompletedMeals((prev) => ({
+                          ...prev,
+                          [cat.type]: !isChecked,
+                        }));
+                      }}
+                      className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 cursor-pointer transition-all"
+                      title={isChecked ? 'Marqué comme complété' : 'Cocher ce repas'}
+                    >
+                      {isChecked ? (
+                        <div className="w-6 h-6 rounded-full bg-[#1F6F43] text-white flex items-center justify-center text-xs font-black shadow-xs">
+                          ✓
+                        </div>
+                      ) : (
+                        <div className="w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-600 hover:border-emerald-400" />
+                      )}
+                    </button>
                   </div>
-                  <p className="text-xs text-[#5A7363] dark:text-slate-400 font-semibold truncate mt-0.5">
-                    Filet de poulet, légumes vapeur
-                  </p>
-                </div>
-              </div>
 
-              {/* Status Circle */}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setCompletedMeals((prev) => ({ ...prev, diner: !prev.diner }));
-                }}
-                className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 cursor-pointer transition-all"
-              >
-                {completedMeals.diner ? (
-                  <div className="w-6 h-6 rounded-full bg-[#1F6F43] text-white flex items-center justify-center text-xs font-black shadow-xs">
-                    ✓
-                  </div>
-                ) : (
-                  <div className="w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-600" />
-                )}
-              </button>
-            </div>
+                  {/* Registered foods badge chips list with direct deletion */}
+                  {categoryMeals.length > 0 && (
+                    <div
+                      className="mt-3 pt-2.5 border-t border-[#EDF3ED] dark:border-slate-800/80 flex flex-wrap items-center gap-1.5"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {categoryMeals.map((item) => (
+                        <span
+                          key={item.id}
+                          className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-semibold bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200/90 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 shadow-2xs"
+                        >
+                          <span className="truncate max-w-[130px] sm:max-w-[200px]">{item.foodName}</span>
+                          <span className="font-extrabold text-emerald-700 dark:text-emerald-400 shrink-0">
+                            {item.calories} kcal
+                          </span>
+                          <button
+                            type="button"
+                            onClick={() => onDeleteMeal(item.id)}
+                            className="text-slate-400 hover:text-rose-500 transition-colors cursor-pointer p-0.5 ml-0.5"
+                            title="Supprimer cet aliment"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
 
-            {/* Meal 4: Collation */}
-            <div
-              id="meal-card-collation"
-              onClick={() => handleOpenAddModal('collation')}
-              className={`p-4 rounded-[24px] border ${
-                isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#E2ECE2]'
-              } shadow-xs flex items-center justify-between gap-3 hover:border-emerald-300 transition-all cursor-pointer group`}
-            >
-              <div className="flex items-center gap-3.5 min-w-0">
-                <div className="w-14 h-14 rounded-full overflow-hidden shrink-0 shadow-xs border border-[#E5EFE5]">
-                  <img
-                    src="https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?auto=format&fit=crop&w=260&q=80"
-                    alt="Collation"
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform"
-                    loading="lazy"
-                  />
+                      <button
+                        type="button"
+                        onClick={() => handleOpenAddModal(cat.type)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100/60 transition-colors cursor-pointer"
+                      >
+                        <Plus className="w-3 h-3" />
+                        <span>Ajouter</span>
+                      </button>
+                    </div>
+                  )}
                 </div>
-                <div className="min-w-0">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-rose-500 text-xs">🍎</span>
-                    <span className="font-black text-sm text-[#163321] dark:text-white">
-                      Collation
-                    </span>
-                    <span className="text-xs font-bold text-[#5A7363] dark:text-slate-400">
-                      120 / 200 kcal
-                    </span>
-                  </div>
-                  <p className="text-xs text-[#5A7363] dark:text-slate-400 font-semibold truncate mt-0.5">
-                    Pomme
-                  </p>
-                </div>
-              </div>
-
-              {/* Status Circle */}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setCompletedMeals((prev) => ({ ...prev, collation: !prev.collation }));
-                }}
-                className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 cursor-pointer transition-all"
-              >
-                {completedMeals.collation ? (
-                  <div className="w-6 h-6 rounded-full bg-[#1F6F43] text-white flex items-center justify-center text-xs font-black shadow-xs">
-                    ✓
-                  </div>
-                ) : (
-                  <div className="w-6 h-6 rounded-full border-2 border-slate-300 dark:border-slate-600" />
-                )}
-              </button>
-            </div>
+              );
+            })}
           </div>
 
           {/* 5. Primary Full-width CTA: Ajouter un aliment + with Vibrant Gradient */}
           <button
             type="button"
             id="btn-journal-add-food-full"
-            onClick={() => handleOpenAddModal('dejeuner')}
+            onClick={() => handleOpenAddModal(getSuggestedMealTypeNow())}
             className="w-full h-14 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white rounded-full font-black text-base flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/20 active:scale-[0.99] transition-all cursor-pointer"
           >
             <span>Ajouter un aliment</span>
@@ -721,6 +684,35 @@ export const JournalView: React.FC<JournalViewProps> = ({
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
               Tapez simplement ce que vous mangez (ex : <em>une omelette et mousse chocolat</em>). Les calories et quantités sont calculées directement !
             </p>
+
+            {/* Meal Category Switcher Tabs */}
+            <div className="mb-3.5">
+              <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-1.5">
+                Enregistrer dans quel repas ?
+              </label>
+              <div className="grid grid-cols-4 gap-1.5 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700">
+                {[
+                  { id: 'petit_dejeuner' as MealType, label: 'Petit-déj.', icon: '☀️' },
+                  { id: 'dejeuner' as MealType, label: 'Déjeuner', icon: '🥗' },
+                  { id: 'collation' as MealType, label: 'Collation', icon: '🍎' },
+                  { id: 'diner' as MealType, label: 'Dîner', icon: '🌙' },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setSelectedMealType(item.id)}
+                    className={`py-2 px-1 rounded-xl text-xs font-black flex flex-col sm:flex-row items-center justify-center gap-1 transition-all cursor-pointer ${
+                      selectedMealType === item.id
+                        ? 'bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-300 shadow-xs border border-emerald-300 dark:border-emerald-600 font-black'
+                        : 'text-slate-500 hover:text-slate-800 dark:text-slate-400'
+                    }`}
+                  >
+                    <span>{item.icon}</span>
+                    <span className="truncate">{item.label}</span>
+                  </button>
+                ))}
+              </div>
+            </div>
 
             {/* Quick Suggestions Chips */}
             <div className="mb-4">

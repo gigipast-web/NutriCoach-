@@ -89,37 +89,50 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const currentLiters = water.amountMl > 0 ? water.amountMl / 1000 : 1.5;
   const waterPercent = Math.min(100, Math.round((currentLiters / targetLiters) * 100));
 
-  // Curated representative meals for today's visual row (mockup Screen 1)
+  // Representative meals for today's visual row computed dynamically from todayMeals
   const mealPreviews = [
     {
       id: 'petit_dej',
       title: 'Petit-déj.',
-      kcal: 350,
+      mealType: 'petit_dejeuner',
+      defaultKcal: 350,
       image: 'https://images.unsplash.com/photo-1517673132405-a56a62b18caf?auto=format&fit=crop&w=260&q=80',
       alt: 'Bol flocons avoine et fruits',
     },
     {
       id: 'dejeuner',
       title: 'Déjeuner',
-      kcal: 520,
+      mealType: 'dejeuner',
+      defaultKcal: 520,
       image: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=260&q=80',
       alt: 'Salade quinoa avocat saumon',
     },
     {
-      id: 'diner',
-      title: 'Dîner',
-      kcal: 450,
-      image: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=260&q=80',
-      alt: 'Poulet grillé et légumes',
-    },
-    {
       id: 'collation',
       title: 'Collation',
-      kcal: 120,
+      mealType: 'collation',
+      defaultKcal: 120,
       image: 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?auto=format&fit=crop&w=260&q=80',
       alt: 'Pomme rouge fraîche',
     },
-  ];
+    {
+      id: 'diner',
+      title: 'Dîner',
+      mealType: 'diner',
+      defaultKcal: 450,
+      image: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=260&q=80',
+      alt: 'Poulet grillé et légumes',
+    },
+  ].map((meal) => {
+    const typeMeals = todayMeals.filter((m) => m.mealType === meal.mealType);
+    const kcal = typeMeals.length > 0 ? typeMeals.reduce((sum, m) => sum + m.calories, 0) : meal.defaultKcal;
+    return {
+      ...meal,
+      kcal,
+      count: typeMeals.length,
+      hasLogged: typeMeals.length > 0,
+    };
+  });
 
   return (
     <div id="dashboard-view" className="space-y-6 pb-20 max-w-4xl mx-auto">
@@ -421,7 +434,10 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 {meal.title}
               </span>
               <span className="text-[11px] font-bold text-[#5A7363] dark:text-slate-400 block mt-0.5">
-                {meal.kcal} kcal
+                <strong className={meal.hasLogged ? 'text-[#1F6F43] dark:text-emerald-400 font-black' : 'font-semibold'}>
+                  {meal.kcal}
+                </strong>{' '}
+                kcal
               </span>
             </div>
           ))}
