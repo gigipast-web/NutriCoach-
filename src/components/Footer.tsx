@@ -78,6 +78,15 @@ export const Footer: React.FC<FooterProps> = ({
             {onNavigateTab && (
               <button
                 type="button"
+                onClick={() => onNavigateTab('recipes')}
+                className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors cursor-pointer"
+              >
+                {t('navRecipes')}
+              </button>
+            )}
+            {onNavigateTab && (
+              <button
+                type="button"
                 onClick={() => onNavigateTab('aicoach')}
                 className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors cursor-pointer flex items-center gap-1"
               >

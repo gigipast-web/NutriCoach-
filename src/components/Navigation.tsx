@@ -15,6 +15,7 @@ import {
   VolumeX,
   Bell,
   Sparkles,
+  ChefHat,
 } from 'lucide-react';
 import { TabType, UserProfile } from '../types.ts';
 import { PWAInstallButton } from './PWAInstallButton.tsx';
@@ -50,18 +51,18 @@ export const Navigation: React.FC<NavigationProps> = ({
   const { t } = useLanguage();
   const [showBellNotice, setShowBellNotice] = useState(false);
 
-  // The 5 canonical tabs from the mockup (Screens 1 to 6)
+  // Primary navigation tabs visible on both Desktop and Mobile bottom bar
   const mainTabs = [
-    { id: 'dashboard' as TabType, label: 'Accueil', icon: Home },
-    { id: 'journal' as TabType, label: 'Alimentation', icon: Utensils },
-    { id: 'progress' as TabType, label: 'Mon évolution', icon: BarChart2 },
-    { id: 'hydration' as TabType, label: 'Hydratation', icon: Droplets },
-    { id: 'aicoach' as TabType, label: 'Mon coach', isRobot: true },
+    { id: 'dashboard' as TabType, label: 'Accueil', mobileLabel: 'Accueil', icon: Home },
+    { id: 'journal' as TabType, label: 'Alimentation', mobileLabel: 'Aliments', icon: Utensils },
+    { id: 'recipes' as TabType, label: t('navRecipes'), mobileLabel: t('navRecipes'), icon: ChefHat },
+    { id: 'progress' as TabType, label: 'Mon évolution', mobileLabel: 'Évolution', icon: BarChart2 },
+    { id: 'hydration' as TabType, label: 'Hydratation', mobileLabel: 'Hydrat.', icon: Droplets },
+    { id: 'aicoach' as TabType, label: 'Mon coach', mobileLabel: 'Coach', isRobot: true },
   ];
 
   // Secondary desktop tabs for full feature access
   const secondaryTabs = [
-    { id: 'recipes' as TabType, label: t('navRecipes'), icon: Utensils },
     { id: 'badges' as TabType, label: 'Réussites', icon: Award },
     { id: 'profile' as TabType, label: 'Profil', icon: User },
   ];
@@ -140,8 +141,8 @@ export const Navigation: React.FC<NavigationProps> = ({
               </div>
             </div>
 
-            {/* Desktop Navigation (Main 5 tabs + Secondary) */}
-            <nav id="desktop-nav" className="hidden lg:flex items-center space-x-1">
+            {/* Desktop Navigation (Main 6 tabs + Secondary) */}
+            <nav id="desktop-nav" className="hidden lg:flex items-center gap-0.5 xl:gap-1 flex-wrap justify-center">
               {mainTabs.map((tab) => {
                 const Icon = tab.icon;
                 const isActive = activeTab === tab.id;
@@ -150,7 +151,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                     key={tab.id}
                     id={`nav-tab-${tab.id}`}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`flex items-center gap-2 px-3 py-2 rounded-full text-xs font-black transition-all cursor-pointer ${
+                    className={`flex items-center gap-1.5 px-2.5 xl:px-3 py-1.5 rounded-full text-[11px] xl:text-xs font-black transition-all cursor-pointer whitespace-nowrap ${
                       isActive
                         ? 'bg-[#1F6F43] text-white shadow-xs'
                         : isDarkMode
@@ -159,16 +160,16 @@ export const Navigation: React.FC<NavigationProps> = ({
                     }`}
                   >
                     {tab.isRobot ? (
-                      <RobotCoachMascot size={18} waving={false} />
+                      <RobotCoachMascot size={17} waving={false} />
                     ) : (
-                      Icon && <Icon className="w-4 h-4" />
+                      Icon && <Icon className="w-3.5 h-3.5 xl:w-4 xl:h-4 shrink-0" />
                     )}
                     <span>{tab.label}</span>
                   </button>
                 );
               })}
 
-              <div className="w-px h-6 bg-slate-200 dark:bg-slate-800 mx-1" />
+              <div className="w-px h-5 bg-slate-200 dark:bg-slate-800 mx-0.5" />
 
               {secondaryTabs.map((tab) => {
                 const Icon = tab.icon;
@@ -176,8 +177,9 @@ export const Navigation: React.FC<NavigationProps> = ({
                 return (
                   <button
                     key={tab.id}
+                    id={`nav-tab-${tab.id}`}
                     onClick={() => setActiveTab(tab.id)}
-                    className={`px-3 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
+                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] xl:text-xs font-bold transition-all cursor-pointer whitespace-nowrap ${
                       isActive
                         ? 'bg-[#1F6F43] text-white shadow-xs'
                         : isDarkMode
@@ -185,7 +187,8 @@ export const Navigation: React.FC<NavigationProps> = ({
                         : 'text-black hover:text-[#1F6F43]'
                     }`}
                   >
-                    {tab.label}
+                    {Icon && <Icon className="w-3.5 h-3.5 shrink-0" />}
+                    <span>{tab.label}</span>
                   </button>
                 );
               })}
@@ -276,14 +279,14 @@ export const Navigation: React.FC<NavigationProps> = ({
         </div>
       </header>
 
-      {/* 5-Tab Fixed Mobile Bottom Navigation Bar (Matching Screens 1 through 6) */}
+      {/* 6-Tab Fixed Mobile Bottom Navigation Bar (with Recettes always visible) */}
       <nav
         id="mobile-bottom-nav-bar"
         className={`lg:hidden fixed bottom-0 left-0 right-0 z-40 ${
           isDarkMode
             ? 'bg-slate-900/95 border-slate-800 text-white'
             : 'bg-white/95 border-[#E2ECE2] text-black'
-        } backdrop-blur-md border-t px-2 py-2 flex items-center justify-around shadow-[0_-4px_16px_rgba(31,111,67,0.06)]`}
+        } backdrop-blur-md border-t px-1 py-1.5 grid grid-cols-6 gap-0.5 shadow-[0_-4px_16px_rgba(31,111,67,0.06)]`}
       >
         {mainTabs.map((tab) => {
           const Icon = tab.icon;
@@ -293,9 +296,9 @@ export const Navigation: React.FC<NavigationProps> = ({
               key={tab.id}
               id={`mobile-nav-tab-${tab.id}`}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex flex-col items-center justify-center py-1 px-2 rounded-2xl text-[10px] font-black transition-all cursor-pointer ${
+              className={`min-w-0 w-full flex flex-col items-center justify-center py-1 px-0.5 rounded-2xl text-[9.5px] sm:text-[10px] font-black transition-all cursor-pointer ${
                 isActive
-                  ? 'text-[#1F6F43] dark:text-emerald-400 font-black scale-105'
+                  ? 'text-[#1F6F43] dark:text-emerald-400 font-black scale-[1.03]'
                   : 'text-black dark:text-slate-300 hover:text-black font-extrabold'
               }`}
             >
@@ -305,12 +308,14 @@ export const Navigation: React.FC<NavigationProps> = ({
                 }`}
               >
                 {tab.isRobot ? (
-                  <RobotCoachMascot size={22} waving={false} />
+                  <RobotCoachMascot size={20} waving={false} />
                 ) : (
-                  Icon && <Icon className={`w-5 h-5 ${isActive ? 'stroke-[2.5]' : 'stroke-2'}`} />
+                  Icon && <Icon className={`w-4 h-4 sm:w-5 sm:h-5 ${isActive ? 'stroke-[2.5]' : 'stroke-2'}`} />
                 )}
               </div>
-              <span className="truncate max-w-[68px] leading-tight font-extrabold">{tab.label}</span>
+              <span className="truncate w-full text-center leading-tight font-extrabold">
+                {tab.mobileLabel || tab.label}
+              </span>
             </button>
           );
         })}

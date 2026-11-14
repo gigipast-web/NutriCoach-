@@ -5,6 +5,7 @@ import Stripe from "stripe";
 import {
   chatWithCoach,
   analyzeMealPhoto,
+  analyzeBarcodeOrLabelPhoto,
   calculateMealFromText,
   generateMenuPlan,
   generateWeeklyRecipes,
@@ -19,6 +20,104 @@ import {
 } from "./stripeService.ts";
 
 export const apiRouter = Router();
+
+interface BarcodeProductPayload {
+  barcode: string;
+  name: string;
+  brand: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  servingGrams: number;
+  nutriscore?: string;
+  imageUrl?: string;
+  quantityLabel?: string;
+  source: "openfoodfacts" | "gemini-vision" | "local";
+}
+
+async function lookupOpenFoodFacts(rawBarcode: string): Promise<BarcodeProductPayload | null> {
+  const cleanCode = rawBarcode.replace(/\D/g, "");
+  if (!/^\d{8,14}$/.test(cleanCode)) {
+    return null;
+  }
+
+  const fields =
+    "code,product_name,product_name_fr,generic_name_fr,brands,quantity,serving_size,nutriscore_grade,image_front_small_url,nutriments";
+  const endpoints = [
+    `https://world.openfoodfacts.org/api/v2/product/${cleanCode}.json?fields=${fields}`,
+    `https://fr.openfoodfacts.org/api/v0/product/${cleanCode}.json`,
+  ];
+
+  for (const url of endpoints) {
+    try {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 9000);
+      const res = await fetch(url, {
+        headers: {
+          "User-Agent": "NutriCoach/1.0 (nutrition-app)",
+          Accept: "application/json",
+        },
+        signal: controller.signal,
+      }).finally(() => clearTimeout(timeout));
+
+      if (!res.ok) continue;
+      const data: any = await res.json();
+      if (!data || data.status !== 1 || !data.product) continue;
+
+      const p = data.product;
+      const n = p.nutriments || {};
+      const protein = Math.max(0, Math.round((Number(n.proteins_100g) || 0) * 10) / 10);
+      const carbs = Math.max(0, Math.round((Number(n.carbohydrates_100g) || 0) * 10) / 10);
+      const fat = Math.max(0, Math.round((Number(n.fat_100g) || 0) * 10) / 10);
+
+      let kcal = Number(n["energy-kcal_100g"] ?? n["energy-kcal"]);
+      if (!Number.isFinite(kcal) || kcal <= 0) {
+        const kj = Number(n["energy-kj_100g"] ?? n.energy_100g);
+        if (Number.isFinite(kj) && kj > 0) {
+          kcal = Math.round(kj / 4.184);
+        } else {
+          kcal = Math.round(protein * 4 + carbs * 4 + fat * 9);
+        }
+      }
+
+      const rawName = p.product_name_fr || p.product_name || p.generic_name_fr || "Produit alimentaire";
+      const brand = (p.brands || "").split(",")[0]?.trim() || "";
+      const fullName = brand && !rawName.toLowerCase().includes(brand.toLowerCase())
+        ? `${rawName} (${brand})`
+        : rawName;
+
+      // Parse serving size if possible (e.g. "15 g" or "125g")
+      let servingGrams = 100;
+      if (typeof p.serving_size === "string") {
+        const m = p.serving_size.match(/(\d+(?:[.,]\d+)?)\s*(g|ml)/i);
+        if (m) {
+          const parsed = Math.round(parseFloat(m[1].replace(",", ".")));
+          if (parsed >= 5 && parsed <= 1000) servingGrams = parsed;
+        }
+      }
+
+      return {
+        barcode: cleanCode,
+        name: fullName.trim(),
+        brand,
+        calories: Math.max(0, Math.round(kcal)),
+        protein,
+        carbs,
+        fat,
+        servingGrams,
+        nutriscore: typeof p.nutriscore_grade === "string" ? p.nutriscore_grade.toUpperCase() : undefined,
+        imageUrl: p.image_front_small_url || undefined,
+        quantityLabel: p.quantity || undefined,
+        source: "openfoodfacts",
+      };
+    } catch (err) {
+      // Try next endpoint
+    }
+  }
+
+  return null;
+}
 
 // Health Check
 const handleHealth = (_req: Request, res: Response) => {
@@ -53,24 +152,107 @@ apiRouter.post("/api/ai/chat", handleChat);
 const handleAnalyzeMeal = async (req: Request, res: Response) => {
   try {
     const { imageBase64, description, language } = req.body || {};
+    if (!imageBase64 && (!description || !String(description).trim())) {
+      return res.status(400).json({ error: "Veuillez fournir une photo ou une description du repas." });
+    }
     const analysis = await analyzeMealPhoto({ imageBase64, description, language });
     res.json(analysis);
   } catch (error: any) {
     console.error("Meal analysis error:", error);
-    res.json({
-      foodName: "Assiette diététique minceur",
-      calories: 390,
-      protein: 30,
-      carbs: 32,
-      fat: 12,
-      portionGrams: 300,
-      analysis: "Plat sain favorisant la satiété avec un apport énergétique équilibré.",
-      advice: "Prenez le temps de bien mastiquer pour une digestion optimale.",
+    res.status(500).json({
+      error: error?.message || "Impossible d'analyser cette photo pour le moment. Veuillez réessayer.",
     });
   }
 };
 apiRouter.post("/ai/analyze-meal", handleAnalyzeMeal);
 apiRouter.post("/api/ai/analyze-meal", handleAnalyzeMeal);
+
+// Barcode Lookup via OpenFoodFacts
+const handleLookupBarcode = async (req: Request, res: Response) => {
+  try {
+    const code = String(req.params.code || "").replace(/\D/g, "");
+    if (!/^\d{8,14}$/.test(code)) {
+      return res.status(400).json({
+        found: false,
+        error: "Code-barres invalide. Saisissez entre 8 et 14 chiffres (EAN-8, UPC ou EAN-13).",
+      });
+    }
+
+    const product = await lookupOpenFoodFacts(code);
+    if (!product) {
+      return res.status(404).json({
+        found: false,
+        barcode: code,
+        error: `Produit introuvable pour le code-barres ${code}. Essayez la photo de l'étiquette nutritionnelle.`,
+      });
+    }
+
+    res.json({ found: true, product });
+  } catch (error: any) {
+    console.error("Barcode lookup error:", error);
+    res.status(500).json({
+      found: false,
+      error: "Erreur lors de la recherche du produit. Vérifiez votre connexion.",
+    });
+  }
+};
+apiRouter.get("/barcode/:code", handleLookupBarcode);
+apiRouter.get("/api/barcode/:code", handleLookupBarcode);
+
+// AI Barcode / Packaging Vision Scanner
+const handleScanBarcodeImage = async (req: Request, res: Response) => {
+  try {
+    const { imageBase64, language } = req.body || {};
+    if (!imageBase64) {
+      return res.status(400).json({ found: false, error: "Image requise pour analyser le code-barres." });
+    }
+
+    const visionResult = await analyzeBarcodeOrLabelPhoto({ imageBase64, language });
+
+    // If Gemini extracted a barcode, prioritize looking up the verified OpenFoodFacts product
+    if (visionResult.barcode && /^\d{8,14}$/.test(visionResult.barcode)) {
+      const offProduct = await lookupOpenFoodFacts(visionResult.barcode);
+      if (offProduct) {
+        return res.json({ found: true, product: offProduct, detectedBarcode: visionResult.barcode });
+      }
+    }
+
+    // Fallback to nutrition label / packaging recognized by Gemini Vision
+    if (visionResult.productName && visionResult.calories > 0) {
+      const product: BarcodeProductPayload = {
+        barcode: visionResult.barcode || "",
+        name:
+          visionResult.brand && !visionResult.productName.toLowerCase().includes(visionResult.brand.toLowerCase())
+            ? `${visionResult.productName} (${visionResult.brand})`
+            : visionResult.productName,
+        brand: visionResult.brand,
+        calories: visionResult.calories,
+        protein: visionResult.protein,
+        carbs: visionResult.carbs,
+        fat: visionResult.fat,
+        servingGrams: visionResult.servingGrams || 100,
+        source: "gemini-vision",
+      };
+      return res.json({ found: true, product, detectedBarcode: visionResult.barcode || undefined });
+    }
+
+    return res.status(404).json({
+      found: false,
+      detectedBarcode: visionResult.barcode || undefined,
+      error: visionResult.barcode
+        ? `Code-barres ${visionResult.barcode} lu, mais produit absent de la base OpenFoodFacts.`
+        : "Aucun code-barres ou tableau nutritionnel lisible détecté sur cette image. Rapprochez l'appareil ou saisissez les chiffres manuellement.",
+    });
+  } catch (error: any) {
+    console.error("AI Barcode scan error:", error);
+    res.status(500).json({
+      found: false,
+      error: error?.message || "Impossible de lire le code-barres sur cette image.",
+    });
+  }
+};
+apiRouter.post("/ai/scan-barcode", handleScanBarcodeImage);
+apiRouter.post("/api/ai/scan-barcode", handleScanBarcodeImage);
 
 // AI Calculate Meal from description
 const handleCalculateMeal = async (req: Request, res: Response) => {

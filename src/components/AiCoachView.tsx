@@ -20,11 +20,14 @@ import {
   VolumeX,
   Mic,
   MoreHorizontal,
+  AlertCircle,
+  Upload,
 } from 'lucide-react';
-import { UserProfile, UserMetrics, ChatMessage, MealEntry } from '../types.ts';
+import { UserProfile, UserMetrics, ChatMessage, MealEntry, MealType } from '../types.ts';
 import { useLanguage } from '../i18n/LanguageContext.tsx';
 import { LANGUAGES, POPULAR_LANGUAGE_CODES, Language } from '../i18n/translations.ts';
 import { playMealVoiceReminder, speakText, stopSpeaking } from '../utils/voiceCoach.ts';
+import { compressImageFileToDataUrl, captureVideoFrameToDataUrl } from '../utils/imageCompressor.ts';
 import { RobotCoachMascot } from './RobotCoachMascot.tsx';
 import {
   BlossomFlower,
@@ -36,10 +39,17 @@ interface AiCoachViewProps {
   user: UserProfile;
   metrics: UserMetrics;
   messages: ChatMessage[];
+  initialSubTab?: 'chat' | 'photo' | 'generator';
+  subTabTrigger?: number;
   onSendMessage: (text: string) => Promise<void>;
   onAnalyzeMealPhoto: (imageBase64: string, description?: string) => Promise<any>;
   onGenerateMenu: (targetCalories: number, preference: string) => Promise<any>;
-  onAddMealFromAi: (meal: Pick<MealEntry, 'foodName' | 'calories' | 'protein' | 'carbs' | 'fat'>) => void;
+  onAddMealFromAi: (
+    meal: Pick<MealEntry, 'foodName' | 'calories' | 'protein' | 'carbs' | 'fat'> & {
+      mealType?: MealType;
+      portionGrams?: number;
+    }
+  ) => void;
   isDarkMode: boolean;
 }
 
@@ -47,6 +57,8 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
   user,
   metrics,
   messages,
+  initialSubTab,
+  subTabTrigger,
   onSendMessage,
   onAnalyzeMealPhoto,
   onGenerateMenu,
@@ -56,7 +68,13 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
   const { language, setLanguage, triggerGoogleTranslate } = useLanguage();
   const [inputText, setInputText] = useState('');
   const [isSending, setIsSending] = useState(false);
-  const [subTab, setSubTab] = useState<'chat' | 'photo' | 'generator'>('chat');
+  const [subTab, setSubTab] = useState<'chat' | 'photo' | 'generator'>(initialSubTab || 'chat');
+
+  useEffect(() => {
+    if (initialSubTab) {
+      setSubTab(initialSubTab);
+    }
+  }, [initialSubTab, subTabTrigger]);
 
   // Coach Polyglot dropdown menu state
   const [isCoachLangOpen, setIsCoachLangOpen] = useState(false);
@@ -151,6 +169,17 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
   const [photoDescription, setPhotoDescription] = useState('');
   const [isAnalyzingPhoto, setIsAnalyzingPhoto] = useState(false);
   const [photoAnalysisResult, setPhotoAnalysisResult] = useState<any | null>(null);
+  const [photoError, setPhotoError] = useState<string | null>(null);
+  const [photoAddedSuccess, setPhotoAddedSuccess] = useState(false);
+  const [photoMealType, setPhotoMealType] = useState<MealType>(() => {
+    const h = new Date().getHours();
+    if (h < 11) return 'petit_dejeuner';
+    if (h < 15) return 'dejeuner';
+    if (h < 18) return 'collation';
+    return 'diner';
+  });
+  const [isPhotoCameraOpen, setIsPhotoCameraOpen] = useState(false);
+  const [photoCameraError, setPhotoCameraError] = useState<string | null>(null);
 
   // Menu generator state
   const [generatorCalories, setGeneratorCalories] = useState(metrics.targetCalories || 1500);
@@ -160,6 +189,83 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const cameraFileInputRef = useRef<HTMLInputElement>(null);
+  const photoVideoRef = useRef<HTMLVideoElement | null>(null);
+  const photoStreamRef = useRef<MediaStream | null>(null);
+
+  const stopPhotoCamera = () => {
+    if (photoStreamRef.current) {
+      photoStreamRef.current.getTracks().forEach((t) => {
+        try {
+          t.stop();
+        } catch {}
+      });
+      photoStreamRef.current = null;
+    }
+    if (photoVideoRef.current) {
+      photoVideoRef.current.srcObject = null;
+    }
+    setIsPhotoCameraOpen(false);
+  };
+
+  useEffect(() => {
+    if (subTab !== 'photo') {
+      stopPhotoCamera();
+    }
+    return () => {
+      if (photoStreamRef.current) {
+        photoStreamRef.current.getTracks().forEach((t) => {
+          try {
+            t.stop();
+          } catch {}
+        });
+      }
+    };
+  }, [subTab]);
+
+  const handleOpenLiveCamera = async () => {
+    setPhotoCameraError(null);
+    setPhotoError(null);
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+      cameraFileInputRef.current?.click();
+      return;
+    }
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+          facingMode: { ideal: 'environment' },
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+        },
+        audio: false,
+      });
+      photoStreamRef.current = stream;
+      setIsPhotoCameraOpen(true);
+      setTimeout(() => {
+        if (photoVideoRef.current) {
+          photoVideoRef.current.srcObject = stream;
+          photoVideoRef.current.play().catch(() => {});
+        }
+      }, 60);
+    } catch {
+      setPhotoCameraError("Caméra en direct bloquée. Ouverture du sélecteur photo...");
+      cameraFileInputRef.current?.click();
+    }
+  };
+
+  const handleCapturePhotoFromCamera = () => {
+    if (!photoVideoRef.current) return;
+    const dataUrl = captureVideoFrameToDataUrl(photoVideoRef.current, 1024, 0.85);
+    if (dataUrl) {
+      setSelectedImage(dataUrl);
+      setPhotoAnalysisResult(null);
+      setPhotoAddedSuccess(false);
+      setPhotoError(null);
+      stopPhotoCamera();
+    } else {
+      setPhotoCameraError("Impossible de capturer l'image. Réessayez.");
+    }
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -174,34 +280,48 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
     setIsSending(false);
   };
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => {
-        setSelectedImage(reader.result as string);
-      };
-      reader.readAsDataURL(file);
+    e.target.value = '';
+    if (!file) return;
+
+    setPhotoError(null);
+    setPhotoAddedSuccess(false);
+    setPhotoAnalysisResult(null);
+    stopPhotoCamera();
+
+    try {
+      const compressed = await compressImageFileToDataUrl(file, 1024, 0.85);
+      setSelectedImage(compressed);
+    } catch (err: any) {
+      setPhotoError(err?.message || "Impossible de charger cette image.");
     }
   };
 
   const handleAnalyzePhoto = async () => {
-    if (!selectedImage && !photoDescription) return;
+    if (!selectedImage && !photoDescription.trim()) return;
     setIsAnalyzingPhoto(true);
+    setPhotoError(null);
+    setPhotoAddedSuccess(false);
     try {
       const res = await onAnalyzeMealPhoto(selectedImage || '', photoDescription);
-      // Map API fields if necessary
       setPhotoAnalysisResult({
         foodName: res.foodName || 'Repas analysé',
-        estimatedCalories: res.calories || 390,
-        protein: res.protein || 28,
-        carbs: res.carbs || 30,
-        fat: res.fat || 12,
+        estimatedCalories: Number(res.calories) ?? 0,
+        protein: Number(res.protein) ?? 0,
+        carbs: Number(res.carbs) ?? 0,
+        fat: Number(res.fat) ?? 0,
+        portionGrams: Number(res.portionGrams) || 250,
         portionDescription: res.portionGrams ? `${res.portionGrams}g` : 'Portion standard',
-        feedback: res.analysis || res.advice || 'Assiette équilibrée et adaptée à votre objectif.',
+        detectedItems: Array.isArray(res.detectedItems) ? res.detectedItems : [],
+        feedback: res.analysis || res.advice || 'Repas analysé avec succès.',
+        advice: res.advice || '',
       });
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      setPhotoError(
+        err?.message || "Impossible d'analyser cette photo pour le moment. Vérifiez votre image ou réessayez."
+      );
     } finally {
       setIsAnalyzingPhoto(false);
     }
@@ -1041,18 +1161,17 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
       {subTab === 'photo' && (
         <div
           id="photo-scan-container"
-          className={`p-6 rounded-3xl border ${
+          className={`p-5 sm:p-6 rounded-3xl border ${
             isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-          } shadow-sm space-y-6`}
+          } shadow-sm space-y-5`}
         >
           <div>
-            <h2 className="text-lg font-black text-slate-800 dark:text-white flex items-center gap-2">
+            <h2 className="text-lg font-black text-black dark:text-white flex items-center gap-2">
               <Camera className="w-5 h-5 text-emerald-600" />
-              Analyse de Repas par IA
+              Scanner Photo IA
             </h2>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              Prenez une photo de votre assiette pour estimer automatiquement les calories, protéines, glucides et
-              lipides.
+            <p className="text-xs text-black/75 dark:text-slate-300">
+              Prenez une photo de votre assiette ou importez une image pour estimer automatiquement les calories et macronutriments.
             </p>
           </div>
 
@@ -1066,42 +1185,118 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                 onChange={handleFileChange}
                 className="hidden"
               />
-              <div
-                id="dropzone-meal-photo"
-                onClick={() => fileInputRef.current?.click()}
-                className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-all ${
-                  selectedImage
-                    ? 'border-emerald-500 bg-emerald-50/20'
-                    : isDarkMode
-                    ? 'border-slate-700 hover:border-slate-600 bg-slate-800/50'
-                    : 'border-slate-300 hover:border-emerald-400 bg-slate-50'
-                }`}
-              >
-                {selectedImage ? (
-                  <div className="space-y-3">
-                    <img
-                      src={selectedImage}
-                      alt="Repas"
-                      className="max-h-48 rounded-xl mx-auto object-cover shadow-sm"
-                    />
-                    <p className="text-xs font-bold text-emerald-600">Image sélectionnée ! Cliquez pour changer.</p>
-                  </div>
-                ) : (
-                  <div className="space-y-2">
-                    <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center">
-                      <ImageIcon className="w-6 h-6" />
-                    </div>
-                    <span className="font-bold text-xs text-slate-700 dark:text-slate-200 block">
-                      Télécharger ou prendre une photo de votre assiette
-                    </span>
-                    <span className="text-[11px] text-slate-400 block">JPG, PNG supportés</span>
-                  </div>
-                )}
+              <input
+                id="camera-input-meal-photo"
+                type="file"
+                accept="image/*"
+                capture="environment"
+                ref={cameraFileInputRef}
+                onChange={handleFileChange}
+                className="hidden"
+              />
+
+              {/* Action buttons for Camera vs Gallery */}
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  id="btn-open-photo-camera"
+                  onClick={handleOpenLiveCamera}
+                  className="px-3 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+                >
+                  <Camera className="w-4 h-4" />
+                  <span>Prendre une photo</span>
+                </button>
+                <button
+                  type="button"
+                  id="btn-open-photo-gallery"
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`px-3 py-2.5 rounded-xl font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer border ${
+                    isDarkMode
+                      ? 'bg-slate-800 border-slate-700 text-white hover:bg-slate-700'
+                      : 'bg-emerald-50 border-emerald-200 text-black hover:bg-emerald-100'
+                  }`}
+                >
+                  <Upload className="w-4 h-4 text-emerald-600" />
+                  <span>Galerie / Fichier</span>
+                </button>
               </div>
 
+              {isPhotoCameraOpen ? (
+                <div className="rounded-2xl overflow-hidden border-2 border-emerald-500 bg-slate-950 relative">
+                  <video
+                    ref={photoVideoRef}
+                    playsInline
+                    muted
+                    autoPlay
+                    className="w-full h-56 object-cover"
+                  />
+                  <div className="p-2.5 bg-slate-900/90 flex items-center justify-between gap-2">
+                    <button
+                      type="button"
+                      onClick={stopPhotoCamera}
+                      className="px-3 py-2 rounded-xl bg-slate-700 text-white text-xs font-bold cursor-pointer"
+                    >
+                      Annuler
+                    </button>
+                    <button
+                      type="button"
+                      id="btn-capture-meal-camera"
+                      onClick={handleCapturePhotoFromCamera}
+                      className="flex-1 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer"
+                    >
+                      <Camera className="w-4 h-4" />
+                      <span>Capturer mon assiette</span>
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div
+                  id="dropzone-meal-photo"
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`border-2 border-dashed rounded-2xl p-5 text-center cursor-pointer transition-all ${
+                    selectedImage
+                      ? 'border-emerald-500 bg-emerald-50/20'
+                      : isDarkMode
+                      ? 'border-slate-700 hover:border-slate-600 bg-slate-800/50'
+                      : 'border-slate-300 hover:border-emerald-400 bg-slate-50'
+                  }`}
+                >
+                  {selectedImage ? (
+                    <div className="space-y-2.5">
+                      <img
+                        src={selectedImage}
+                        alt="Repas"
+                        className="max-h-48 rounded-xl mx-auto object-cover shadow-sm"
+                      />
+                      <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
+                        Photo prête ! Cliquez pour changer ou lancez l'analyse ci-dessous.
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2 py-2">
+                      <div className="w-12 h-12 rounded-full bg-emerald-100 text-emerald-600 mx-auto flex items-center justify-center">
+                        <ImageIcon className="w-6 h-6" />
+                      </div>
+                      <span className="font-bold text-xs text-black dark:text-slate-200 block">
+                        Appuyez ici pour choisir une photo de votre repas
+                      </span>
+                      <span className="text-[11px] text-black/60 dark:text-slate-400 block">
+                        JPG, PNG, WebP • Compression automatique
+                      </span>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {photoCameraError && (
+                <div className="p-2.5 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 text-xs font-bold text-amber-900 dark:text-amber-200">
+                  {photoCameraError}
+                </div>
+              )}
+
               <div>
-                <label className="text-xs font-bold text-slate-500 block mb-1">
-                  Description complémentaire (facultatif)
+                <label className="text-xs font-bold text-black dark:text-slate-300 block mb-1">
+                  Précision complémentaire (facultatif)
                 </label>
                 <input
                   id="input-photo-meal-description"
@@ -1110,16 +1305,26 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                   value={photoDescription}
                   onChange={(e) => setPhotoDescription(e.target.value)}
                   className={`w-full p-3 rounded-xl border text-sm font-medium outline-none ${
-                    isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'
+                    isDarkMode
+                      ? 'bg-slate-800 border-slate-700 text-white placeholder:text-slate-400'
+                      : 'bg-slate-50 border-slate-200 text-black placeholder:text-slate-500'
                   }`}
                 />
               </div>
 
+              {photoError && (
+                <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 flex items-start gap-2 text-xs font-bold text-rose-800 dark:text-rose-200">
+                  <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                  <span>{photoError}</span>
+                </div>
+              )}
+
               <button
                 id="btn-analyze-meal-photo-action"
+                type="button"
                 onClick={handleAnalyzePhoto}
-                disabled={isAnalyzingPhoto || (!selectedImage && !photoDescription)}
-                className="w-full bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-bold p-3.5 rounded-2xl transition-all shadow-md flex items-center justify-center gap-2 text-sm cursor-pointer"
+                disabled={isAnalyzingPhoto || (!selectedImage && !photoDescription.trim())}
+                className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50 text-white font-black p-3.5 rounded-2xl transition-all shadow-md flex items-center justify-center gap-2 text-sm cursor-pointer"
               >
                 {isAnalyzingPhoto ? (
                   <>
@@ -1139,50 +1344,96 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                 isDarkMode ? 'bg-slate-800/50 border-slate-700' : 'bg-slate-50 border-slate-200'
               }`}
             >
-              <h3 className="font-extrabold text-sm text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2">
+              <h3 className="font-extrabold text-sm text-black dark:text-slate-200 mb-3 flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-emerald-600" />
                 Résultat d'analyse nutritionnelle
               </h3>
 
               {photoAnalysisResult ? (
                 <div className="space-y-4">
-                  <div className="flex items-center justify-between border-b pb-3 border-slate-200 dark:border-slate-700">
-                    <div>
-                      <h4 className="font-black text-base text-slate-900 dark:text-white">
+                  <div className="flex items-center justify-between border-b pb-3 border-slate-200 dark:border-slate-700 gap-2">
+                    <div className="min-w-0">
+                      <h4 className="font-black text-base text-black dark:text-white leading-snug">
                         {photoAnalysisResult.foodName}
                       </h4>
-                      <p className="text-xs text-slate-500">
-                        {photoAnalysisResult.portionDescription || 'Portion standard'}
+                      <p className="text-xs text-black/70 dark:text-slate-400">
+                        Portion estimée : {photoAnalysisResult.portionDescription || 'Portion standard'}
                       </p>
                     </div>
-                    <div className="text-right">
-                      <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
+                    <div className="text-right shrink-0">
+                      <span className="text-2xl font-black text-emerald-700 dark:text-emerald-400">
                         {photoAnalysisResult.estimatedCalories} kcal
                       </span>
                     </div>
                   </div>
 
+                  {photoAnalysisResult.detectedItems && photoAnalysisResult.detectedItems.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5">
+                      {photoAnalysisResult.detectedItems.map((item: string, idx: number) => (
+                        <span
+                          key={idx}
+                          className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-900 dark:text-emerald-200"
+                        >
+                          {item}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-3 gap-2 text-center">
-                    <div className="p-2.5 rounded-xl bg-rose-500/10 text-rose-600 font-bold">
-                      <span className="text-[10px] block text-slate-400 uppercase">Protéines</span>
-                      <span className="text-sm">{photoAnalysisResult.protein}g</span>
+                    <div className="p-2.5 rounded-xl bg-rose-500/10 text-rose-700 dark:text-rose-400 font-bold">
+                      <span className="text-[10px] block text-black/65 dark:text-slate-400 uppercase">Protéines</span>
+                      <span className="text-sm font-black">{photoAnalysisResult.protein}g</span>
                     </div>
-                    <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-600 font-bold">
-                      <span className="text-[10px] block text-slate-400 uppercase">Glucides</span>
-                      <span className="text-sm">{photoAnalysisResult.carbs}g</span>
+                    <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400 font-bold">
+                      <span className="text-[10px] block text-black/65 dark:text-slate-400 uppercase">Glucides</span>
+                      <span className="text-sm font-black">{photoAnalysisResult.carbs}g</span>
                     </div>
-                    <div className="p-2.5 rounded-xl bg-sky-500/10 text-sky-600 font-bold">
-                      <span className="text-[10px] block text-slate-400 uppercase">Lipides</span>
-                      <span className="text-sm">{photoAnalysisResult.fat}g</span>
+                    <div className="p-2.5 rounded-xl bg-sky-500/10 text-sky-700 dark:text-sky-400 font-bold">
+                      <span className="text-[10px] block text-black/65 dark:text-slate-400 uppercase">Lipides</span>
+                      <span className="text-sm font-black">{photoAnalysisResult.fat}g</span>
                     </div>
                   </div>
 
-                  <p className="text-xs text-slate-600 dark:text-slate-300 italic bg-white/60 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800">
+                  <p className="text-xs text-black dark:text-slate-200 bg-white/80 dark:bg-slate-900/60 p-3 rounded-xl border border-slate-200 dark:border-slate-800 leading-relaxed">
                     "{photoAnalysisResult.feedback}"
                   </p>
 
+                  {/* Meal category selector */}
+                  <div className="space-y-1.5">
+                    <span className="text-[11px] font-extrabold text-black dark:text-slate-300 block">
+                      Enregistrer dans :
+                    </span>
+                    <div className="grid grid-cols-4 gap-1.5">
+                      {(
+                        [
+                          { type: 'petit_dejeuner', label: 'Petit-déj.' },
+                          { type: 'dejeuner', label: 'Déjeuner' },
+                          { type: 'collation', label: 'Collation' },
+                          { type: 'diner', label: 'Dîner' },
+                        ] as Array<{ type: MealType; label: string }>
+                      ).map((opt) => (
+                        <button
+                          key={opt.type}
+                          type="button"
+                          onClick={() => setPhotoMealType(opt.type)}
+                          className={`py-1.5 px-1 rounded-xl text-[10px] font-black cursor-pointer transition-all truncate ${
+                            photoMealType === opt.type
+                              ? 'bg-emerald-600 text-white shadow-xs'
+                              : isDarkMode
+                              ? 'bg-slate-900 text-slate-300 border border-slate-700'
+                              : 'bg-white text-black border border-slate-200'
+                          }`}
+                        >
+                          {opt.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <button
                     id="btn-add-analyzed-meal-to-journal"
+                    type="button"
                     onClick={() => {
                       onAddMealFromAi({
                         foodName: photoAnalysisResult.foodName,
@@ -1190,17 +1441,27 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                         protein: photoAnalysisResult.protein,
                         carbs: photoAnalysisResult.carbs,
                         fat: photoAnalysisResult.fat,
+                        mealType: photoMealType,
+                        portionGrams: photoAnalysisResult.portionGrams,
                       });
-                      alert('Repas ajouté avec succès à votre journal !');
+                      setPhotoAddedSuccess(true);
                     }}
-                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold p-3 rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
+                    className="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-black p-3 rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-sm"
                   >
-                    <Plus className="w-4 h-4" /> Ajouter ce repas à mon journal du jour
+                    {photoAddedSuccess ? (
+                      <>
+                        <Check className="w-4 h-4" /> Ajouté avec succès au journal !
+                      </>
+                    ) : (
+                      <>
+                        <Plus className="w-4 h-4" /> Ajouter ce repas à mon journal
+                      </>
+                    )}
                   </button>
                 </div>
               ) : (
-                <div className="py-12 text-center text-slate-400 text-xs">
-                  Téléchargez une photo et lancez l'analyse pour afficher les calories et macro-nutriments.
+                <div className="py-12 text-center text-black/65 dark:text-slate-400 text-xs">
+                  Prenez ou importez une photo de votre assiette puis cliquez sur « Analyser mon repas ».
                 </div>
               )}
             </div>

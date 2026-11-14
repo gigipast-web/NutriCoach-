@@ -9,6 +9,7 @@ import {
   FoodItem,
   Recipe,
   ChatMessage,
+  MealType,
 } from './types.ts';
 import {
   initialUser,
@@ -54,6 +55,8 @@ export default function App() {
 
   // Active Tab
   const [activeTab, setActiveTab] = useState<TabType>('dashboard');
+  const [coachSubTab, setCoachSubTab] = useState<'chat' | 'photo' | 'generator'>('chat');
+  const [coachSubTabTrigger, setCoachSubTabTrigger] = useState(0);
 
   // Payment notification banner
   const [paymentNotice, setPaymentNotice] = useState<{
@@ -265,6 +268,8 @@ export default function App() {
         } else if (decoded.includes('progress') || decoded.includes('poids') || decoded.includes('weight')) {
           setActiveTab('progress');
         } else if (decoded.includes('scan') || decoded.includes('scanner') || decoded.includes('photo')) {
+          setCoachSubTab('photo');
+          setCoachSubTabTrigger((c) => c + 1);
           setActiveTab('aicoach');
         } else if (decoded.includes('barcode') || decoded.includes('codebarre')) {
           setIsBarcodeModalOpen(true);
@@ -273,6 +278,8 @@ export default function App() {
 
       // 3. Quick action parameters (?action=scan, ?action=barcode, ?action=water, etc.)
       if (action === 'scan' || action === 'camera') {
+        setCoachSubTab('photo');
+        setCoachSubTabTrigger((c) => c + 1);
         setActiveTab('aicoach');
       } else if (action === 'barcode') {
         setIsBarcodeModalOpen(true);
@@ -616,28 +623,33 @@ export default function App() {
     });
   };
 
-  const handleScannedFood = (food: FoodItem) => {
+  const handleScannedFood = (food: FoodItem, mealType: MealType = 'collation', portionGrams = 100) => {
     handleAddMeal({
-      mealType: 'collation',
+      mealType,
       foodName: food.name,
       calories: food.calories,
       protein: food.protein,
       carbs: food.carbs,
       fat: food.fat,
-      portionGrams: 100,
+      portionGrams,
       timestamp: new Date().toISOString(),
     });
   };
 
-  const handleAddMealFromAi = (meal: Pick<MealEntry, 'foodName' | 'calories' | 'protein' | 'carbs' | 'fat'>) => {
+  const handleAddMealFromAi = (
+    meal: Pick<MealEntry, 'foodName' | 'calories' | 'protein' | 'carbs' | 'fat'> & {
+      mealType?: MealType;
+      portionGrams?: number;
+    }
+  ) => {
     handleAddMeal({
-      mealType: 'dejeuner',
+      mealType: meal.mealType || 'dejeuner',
       foodName: meal.foodName,
       calories: meal.calories,
       protein: meal.protein,
       carbs: meal.carbs,
       fat: meal.fat,
-      portionGrams: 200,
+      portionGrams: meal.portionGrams || 200,
       timestamp: new Date().toISOString(),
     });
   };
@@ -739,10 +751,11 @@ export default function App() {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ imageBase64, description, language }),
     });
+    const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      throw new Error("Erreur lors de l'analyse");
+      throw new Error(data?.error || "Erreur lors de l'analyse de la photo.");
     }
-    return res.json();
+    return data;
   };
 
   const handleGenerateMenu = async (targetCalories: number, preference: string) => {
@@ -954,7 +967,11 @@ export default function App() {
             onDeleteMeal={handleDeleteMeal}
             onResetTodayMeals={handleResetTodayMeals}
             onOpenBarcodeScanner={() => setIsBarcodeModalOpen(true)}
-            onOpenAiScan={() => setActiveTab('aicoach')}
+            onOpenAiScan={() => {
+              setCoachSubTab('photo');
+              setCoachSubTabTrigger((c) => c + 1);
+              setActiveTab('aicoach');
+            }}
             isDarkMode={isDarkMode}
           />
         )}
@@ -964,6 +981,8 @@ export default function App() {
             user={user}
             metrics={metrics}
             messages={messages}
+            initialSubTab={coachSubTab}
+            subTabTrigger={coachSubTabTrigger}
             onSendMessage={handleSendMessage}
             onAnalyzeMealPhoto={handleAnalyzeMealPhoto}
             onGenerateMenu={handleGenerateMenu}

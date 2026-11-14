@@ -1,4 +1,4 @@
-import { GoogleGenAI } from "@google/genai";
+import { GoogleGenAI, Type, ThinkingLevel } from "@google/genai";
 import { estimateMealFromText } from "../src/utils/mealEstimator.ts";
 
 let genAIClient: GoogleGenAI | null = null;
@@ -9,7 +9,14 @@ export function getGenAI(): GoogleGenAI | null {
     return null;
   }
   if (!genAIClient) {
-    genAIClient = new GoogleGenAI({ apiKey });
+    genAIClient = new GoogleGenAI({
+      apiKey,
+      httpOptions: {
+        headers: {
+          "User-Agent": "aistudio-build",
+        },
+      },
+    });
   }
   return genAIClient;
 }
@@ -34,14 +41,54 @@ export interface ChatHistoryItem {
 }
 
 // Timeout helper to avoid any hanging serverless function
-function withTimeout<T>(promise: Promise<T>, timeoutMs = 9000): Promise<T> {
-  let timer: any;
+function withTimeout<T>(promise: Promise<T>, timeoutMs = 25000): Promise<T> {
+  let timer: ReturnType<typeof setTimeout> | undefined;
   const timeoutPromise = new Promise<never>((_, reject) => {
-    timer = setTimeout(() => reject(new Error("Timeout waiting for AI response")), timeoutMs);
+    timer = setTimeout(() => reject(new Error("Délai d'attente dépassé pour l'analyse IA.")), timeoutMs);
   });
   return Promise.race([promise, timeoutPromise]).finally(() => {
-    clearTimeout(timer);
+    if (timer) clearTimeout(timer);
   });
+}
+
+function parseBase64Image(imageBase64?: string): { mimeType: string; data: string } | null {
+  if (!imageBase64 || typeof imageBase64 !== "string") return null;
+  const trimmed = imageBase64.trim();
+  if (!trimmed) return null;
+
+  const dataUrlMatch = trimmed.match(/^data:([^;]+);base64,(.+)$/s);
+  if (dataUrlMatch) {
+    const rawMime = dataUrlMatch[1].toLowerCase().trim();
+    const mimeType = rawMime.startsWith("image/") ? rawMime : "image/jpeg";
+    const data = dataUrlMatch[2].replace(/\s+/g, "");
+    if (!data) return null;
+    return { mimeType, data };
+  }
+
+  // Fallback for raw base64 without data URL prefix
+  const cleaned = trimmed.replace(/\s+/g, "");
+  if (cleaned.length > 64 && /^[A-Za-z0-9+/=]+$/.test(cleaned)) {
+    return { mimeType: "image/jpeg", data: cleaned };
+  }
+
+  return null;
+}
+
+function formatGeminiErrorMessage(error: any): string {
+  const raw = String(error?.message || error || "");
+  if (/403|PERMISSION_DENIED|API_KEY_INVALID|API key not valid/i.test(raw)) {
+    return "Clé API Gemini invalide ou manquante. Vérifiez la configuration dans Settings > Secrets.";
+  }
+  if (/429|RESOURCE_EXHAUSTED|quota/i.test(raw)) {
+    return "Quota de requêtes IA temporairement atteint. Veuillez réessayer dans quelques secondes.";
+  }
+  if (/404|NOT_FOUND/i.test(raw)) {
+    return "Modèle IA indisponible pour cette requête.";
+  }
+  if (/Délai d'attente|Timeout/i.test(raw)) {
+    return "L'analyse IA a pris trop de temps. Essayez avec une image plus légère ou réessayez.";
+  }
+  return raw || "Erreur lors de l'analyse par l'intelligence artificielle.";
 }
 
 function getFallbackReply(params: {
@@ -157,14 +204,14 @@ CONSIGNES DE COACHING BIENVEILLANT :
   try {
     const response = await withTimeout(
       ai.models.generateContent({
-        model: "gemini-3.8-flash",
+        model: "gemini-4-hydrogen",
         contents,
         config: {
           systemInstruction,
-          temperature: 0.7,
+          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
         },
       }),
-      8000
+      15000
     );
 
     return response.text || fallbackReply;
@@ -183,6 +230,7 @@ export interface MealAnalysisResult {
   portionGrams: number;
   analysis: string;
   advice: string;
+  detectedItems?: string[];
 }
 
 export async function analyzeMealPhoto(params: {
@@ -192,23 +240,28 @@ export async function analyzeMealPhoto(params: {
 }): Promise<MealAnalysisResult> {
   const { imageBase64, description, language } = params;
   const lang = (language || "fr").toLowerCase();
+  const parsedImage = parseBase64Image(imageBase64);
+
+  if (!parsedImage && !description?.trim()) {
+    throw new Error("Veuillez sélectionner une photo ou décrire votre repas.");
+  }
+
   const ai = getGenAI();
-
-  const baselineEstimate = description ? estimateMealFromText(description) : null;
-  const defaultAnalysis: MealAnalysisResult = {
-    foodName: description || "Assiette équilibrée poulet & légumes",
-    calories: baselineEstimate ? baselineEstimate.totalCalories : 350,
-    protein: baselineEstimate ? baselineEstimate.totalProtein : 28,
-    carbs: baselineEstimate ? baselineEstimate.totalCarbs : 24,
-    fat: baselineEstimate ? baselineEstimate.totalFat : 11,
-    portionGrams: baselineEstimate ? baselineEstimate.totalPortionGrams : 280,
-    analysis:
-      "Une excellente composition favorisant la satiété avec un apport énergétique équilibré.",
-    advice: "Prenez le temps de bien mastiquer pour une digestion optimale.",
-  };
-
   if (!ai) {
-    return defaultAnalysis;
+    if (!parsedImage && description?.trim()) {
+      const baselineEstimate = estimateMealFromText(description);
+      return {
+        foodName: baselineEstimate.foodName || description,
+        calories: baselineEstimate.totalCalories,
+        protein: baselineEstimate.totalProtein,
+        carbs: baselineEstimate.totalCarbs,
+        fat: baselineEstimate.totalFat,
+        portionGrams: baselineEstimate.totalPortionGrams,
+        analysis: baselineEstimate.explanation || "Estimation nutritionnelle calculée à partir des tables de référence.",
+        advice: "Pensez à accompagner votre repas d'un grand verre d'eau et de légumes riches en fibres.",
+      };
+    }
+    throw new Error("Service d'analyse photo IA indisponible : clé GEMINI_API_KEY manquante.");
   }
 
   const langName =
@@ -227,78 +280,238 @@ export async function analyzeMealPhoto(params: {
       : "Français";
 
   const prompt = `Tu es un nutritionniste et diététicien clinicien expert doté d'une précision analytique maximale.
-Analyse ce repas ${description ? `(Description: ${description})` : ""}.
-Règles strictes de calcul nutritionnel :
-1. Fonde tes estimations sur les tables de composition nutritionnelle de référence (table CIQUAL de l'ANSES et USDA FoodData Central).
-2. Prends en compte la réalité des portions (poids cuit vs cru, matières grasses de cuisson cachées, sauces, vinaigrettes, sucres ajoutés).
-3. Utilise le système officiel des facteurs d'Atwater pour garantir une cohérence mathématique exacte :
-   Calories totales ≈ (Protéines x 4) + (Glucides x 4) + (Lipides x 9).
-4. Rédige les champs textuels ("foodName", "analysis", "advice") dans la langue demandée : ${langName}.
+Observe attentivement la photo fournie${description ? ` et la description complémentaire ("${description}")` : ""}.
+Identifie chaque aliment visible dans l'assiette, le bol, la tasse ou l'emballage, puis calcule les apports nutritionnels réalistes.
 
-Champs requis :
-- foodName: nom précis et clair du plat dans la langue ${langName}
-- calories: calories totales estimées en kcal (nombre entier vérifié)
-- protein: protéines totales en grammes (nombre entier)
-- carbs: glucides totaux en grammes (nombre entier)
-- fat: lipides totaux en grammes (nombre entier)
-- portionGrams: poids estimé de l'ensemble de la portion en grammes (nombre entier)
-- analysis: analyse diététique détaillée et factuelle (qualité des macronutriments, index glycémique, densité nutritionnelle) (2 phrases)
-- advice: un conseil diététique concret pour optimiser ce repas ou la satiété (1 à 2 phrases)
-
-Réponds STRICTEMENT au format JSON valide avec ces clés :
-{"foodName": "...", "calories": 450, "protein": 35, "carbs": 40, "fat": 15, "portionGrams": 320, "analysis": "...", "advice": "..."}`;
+Règles strictes :
+1. Fonde tes estimations sur les tables CIQUAL (ANSES) et USDA FoodData Central.
+2. Prends en compte la taille visuelle de la portion (grammes estimés), le mode de cuisson, les sauces et accompagnements visibles.
+3. Respecte les facteurs d'Atwater : Calories ≈ (Protéines × 4) + (Glucides × 4) + (Lipides × 9).
+4. Si la photo montre une boisson simple (café noir, thé sans sucre, eau), ne surestime pas (ex: 2–5 kcal pour café noir).
+5. Rédige "foodName", "detectedItems", "analysis" et "advice" en ${langName}.`;
 
   const parts: any[] = [];
-  if (imageBase64) {
-    const match = imageBase64.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
-    if (match) {
-      parts.push({
-        inlineData: {
-          mimeType: match[1],
-          data: match[2],
-        },
-      });
-    }
+  if (parsedImage) {
+    parts.push({
+      inlineData: {
+        mimeType: parsedImage.mimeType,
+        data: parsedImage.data,
+      },
+    });
   }
   parts.push({ text: prompt });
 
   try {
     const response = await withTimeout(
       ai.models.generateContent({
-        model: "gemini-3.8-flash",
-        contents: [{ role: "user", parts }],
+        model: "gemini-4-hydrogen",
+        contents: { parts },
         config: {
           responseMimeType: "application/json",
+          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              foodName: {
+                type: Type.STRING,
+                description: "Nom précis et clair du repas identifié.",
+              },
+              calories: {
+                type: Type.INTEGER,
+                description: "Calories totales estimées en kcal.",
+              },
+              protein: {
+                type: Type.NUMBER,
+                description: "Protéines totales en grammes.",
+              },
+              carbs: {
+                type: Type.NUMBER,
+                description: "Glucides totaux en grammes.",
+              },
+              fat: {
+                type: Type.NUMBER,
+                description: "Lipides totaux en grammes.",
+              },
+              portionGrams: {
+                type: Type.INTEGER,
+                description: "Poids estimé de la portion totale en grammes.",
+              },
+              detectedItems: {
+                type: Type.ARRAY,
+                items: { type: Type.STRING },
+                description: "Liste courte des aliments visibles détectés.",
+              },
+              analysis: {
+                type: Type.STRING,
+                description: "Analyse diététique factuelle en 1 à 2 phrases.",
+              },
+              advice: {
+                type: Type.STRING,
+                description: "Conseil concret du coach en 1 phrase.",
+              },
+            },
+            required: ["foodName", "calories", "protein", "carbs", "fat", "portionGrams", "analysis", "advice"],
+          },
         },
       }),
-      8000
+      25000
     );
 
-    const parsed = JSON.parse(response.text || "{}");
-    const protein = Math.max(0, Math.round(Number(parsed.protein) || 28));
-    const carbs = Math.max(0, Math.round(Number(parsed.carbs) || 30));
-    const fat = Math.max(0, Math.round(Number(parsed.fat) || 12));
+    const parsed = JSON.parse((response.text || "{}").trim());
+    const protein = Math.max(0, Math.round((Number(parsed.protein) || 0) * 10) / 10);
+    const carbs = Math.max(0, Math.round((Number(parsed.carbs) || 0) * 10) / 10);
+    const fat = Math.max(0, Math.round((Number(parsed.fat) || 0) * 10) / 10);
     const atwaterKcal = Math.round(protein * 4 + carbs * 4 + fat * 9);
-    let finalKcal = Math.round(Number(parsed.calories) || atwaterKcal || 390);
+    let finalKcal = Math.max(0, Math.round(Number(parsed.calories) ?? atwaterKcal));
 
-    // Reconcile with Atwater formula if divergence is unreasonable
-    if (atwaterKcal > 0 && Math.abs(finalKcal - atwaterKcal) > Math.max(40, atwaterKcal * 0.25)) {
+    if (finalKcal === 0 && atwaterKcal > 0) {
+      finalKcal = atwaterKcal;
+    } else if (atwaterKcal > 15 && Math.abs(finalKcal - atwaterKcal) > Math.max(50, atwaterKcal * 0.3)) {
       finalKcal = atwaterKcal;
     }
 
     return {
-      foodName: parsed.foodName || description || "Repas équilibré",
+      foodName: parsed.foodName || description || "Repas analysé par IA",
       calories: finalKcal,
       protein,
       carbs,
       fat,
-      portionGrams: Number(parsed.portionGrams) || 280,
-      analysis: parsed.analysis || "Assiette bien proportionnée.",
-      advice: parsed.advice || "Parfait pour votre objectif !",
+      portionGrams: Math.max(10, Math.round(Number(parsed.portionGrams) || 250)),
+      analysis: parsed.analysis || "Repas analysé avec succès à partir de votre image.",
+      advice: parsed.advice || "Prenez le temps de bien mastiquer et hydratez-vous régulièrement.",
+      detectedItems: Array.isArray(parsed.detectedItems) ? parsed.detectedItems : undefined,
     };
-  } catch (error) {
-    console.warn("Meal analysis error (falling back to standard clinical estimation):", error);
-    return defaultAnalysis;
+  } catch (error: any) {
+    console.error("Meal photo analysis error:", error);
+    if (!parsedImage && description?.trim()) {
+      const baselineEstimate = estimateMealFromText(description);
+      return {
+        foodName: baselineEstimate.foodName || description,
+        calories: baselineEstimate.totalCalories,
+        protein: baselineEstimate.totalProtein,
+        carbs: baselineEstimate.totalCarbs,
+        fat: baselineEstimate.totalFat,
+        portionGrams: baselineEstimate.totalPortionGrams,
+        analysis: baselineEstimate.explanation || "Estimation nutritionnelle calculée localement.",
+        advice: "Prenez le temps de bien mastiquer pour une digestion optimale.",
+      };
+    }
+    throw new Error(formatGeminiErrorMessage(error));
+  }
+}
+
+export interface BarcodeVisionResult {
+  barcode: string;
+  productName: string;
+  brand: string;
+  calories: number;
+  protein: number;
+  carbs: number;
+  fat: number;
+  servingGrams: number;
+  confidence: string;
+}
+
+export async function analyzeBarcodeOrLabelPhoto(params: {
+  imageBase64: string;
+  language?: string;
+}): Promise<BarcodeVisionResult> {
+  const { imageBase64, language } = params;
+  const parsedImage = parseBase64Image(imageBase64);
+  if (!parsedImage) {
+    throw new Error("Image invalide pour la lecture du code-barres.");
+  }
+
+  const ai = getGenAI();
+  if (!ai) {
+    throw new Error("Lecture IA indisponible : clé GEMINI_API_KEY manquante.");
+  }
+
+  const prompt = `Analyse cette photo d'un produit alimentaire ou de son code-barres (${language || "fr"}).
+1. Si un code-barres EAN-13, EAN-8, UPC-A ou GTIN est visible et lisible, extrais exactement ses chiffres dans "barcode" (uniquement les chiffres, sinon chaîne vide "").
+2. Identifie également le nom du produit ("productName") et la marque ("brand") si visibles sur l'emballage ou l'étiquette nutritionnelle.
+3. Si un tableau nutritionnel (valeurs pour 100g) est visible ou si tu reconnais précisément ce produit commercial, fournis "calories", "protein", "carbs", "fat" pour 100g et une portion typique "servingGrams". Sinon mets 0 pour les valeurs inconnues.`;
+
+  try {
+    const response = await withTimeout(
+      ai.models.generateContent({
+        model: "gemini-4-hydrogen",
+        contents: {
+          parts: [
+            {
+              inlineData: {
+                mimeType: parsedImage.mimeType,
+                data: parsedImage.data,
+              },
+            },
+            { text: prompt },
+          ],
+        },
+        config: {
+          responseMimeType: "application/json",
+          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              barcode: {
+                type: Type.STRING,
+                description: "Chiffres exacts du code-barres si lisible, sinon chaîne vide.",
+              },
+              productName: {
+                type: Type.STRING,
+                description: "Nom du produit visible sur l'emballage, sinon chaîne vide.",
+              },
+              brand: {
+                type: Type.STRING,
+                description: "Marque visible sur l'emballage, sinon chaîne vide.",
+              },
+              calories: {
+                type: Type.NUMBER,
+                description: "Calories en kcal pour 100g (0 si inconnu).",
+              },
+              protein: {
+                type: Type.NUMBER,
+                description: "Protéines en g pour 100g (0 si inconnu).",
+              },
+              carbs: {
+                type: Type.NUMBER,
+                description: "Glucides en g pour 100g (0 si inconnu).",
+              },
+              fat: {
+                type: Type.NUMBER,
+                description: "Lipides en g pour 100g (0 si inconnu).",
+              },
+              servingGrams: {
+                type: Type.INTEGER,
+                description: "Portion typique en grammes (ex: 100).",
+              },
+              confidence: {
+                type: Type.STRING,
+                description: "high, medium ou low.",
+              },
+            },
+            required: ["barcode", "productName", "brand", "calories", "protein", "carbs", "fat", "servingGrams", "confidence"],
+          },
+        },
+      }),
+      20000
+    );
+
+    const parsed = JSON.parse((response.text || "{}").trim());
+    return {
+      barcode: String(parsed.barcode || "").replace(/\D/g, ""),
+      productName: String(parsed.productName || "").trim(),
+      brand: String(parsed.brand || "").trim(),
+      calories: Math.max(0, Math.round(Number(parsed.calories) || 0)),
+      protein: Math.max(0, Math.round((Number(parsed.protein) || 0) * 10) / 10),
+      carbs: Math.max(0, Math.round((Number(parsed.carbs) || 0) * 10) / 10),
+      fat: Math.max(0, Math.round((Number(parsed.fat) || 0) * 10) / 10),
+      servingGrams: Math.max(10, Math.round(Number(parsed.servingGrams) || 100)),
+      confidence: String(parsed.confidence || "medium"),
+    };
+  } catch (error: any) {
+    console.error("Barcode vision scan error:", error);
+    throw new Error(formatGeminiErrorMessage(error));
   }
 }
 
@@ -341,11 +554,6 @@ RÈGLES NUTRITIONNELLES STRICTES (TABLES DE RÉFÉRENCE CIQUAL & USDA) :
 2. NE JAMAIS assigner de calories de plat complet (ex: 300-400 kcal) à une simple boisson ou collation légère !
 3. Pour les plats composés, décompose chaque aliment avec sa portion réaliste.
 
-Exemple pour "une omelette et mousse chocolat" :
-- Omelette (environ 2 œufs) : ~140g, 185 kcal, 14g protéines, 1.5g glucides, 14g lipides
-- Mousse au chocolat (1 ramequin classique) : ~100g, 240 kcal, 4.5g protéines, 23g glucides, 14g lipides
-- Total : 425 kcal, 240g, 18.5g protéines, 24.5g glucides, 28g lipides.
-
 Réponds STRICTEMENT sous format JSON valide avec la structure suivante :
 {
   "foodName": "Nom propre et clair du plat/composition dans la langue du texte",
@@ -370,20 +578,19 @@ Réponds STRICTEMENT sous format JSON valide avec la structure suivante :
   try {
     const response = await withTimeout(
       ai.models.generateContent({
-        model: "gemini-3.8-flash",
+        model: "gemini-4-hydrogen",
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         config: {
           responseMimeType: "application/json",
+          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
         },
       }),
-      8000
+      15000
     );
 
     const parsed = JSON.parse(response.text || "{}");
     const rawCalories = Math.round(Number(parsed.calories) || localEstimate.totalCalories);
 
-    // Sanity check: If local reference detected a zero/low-calorie drink (<= 15 kcal) like black coffee or tea,
-    // do not allow an AI hallucination of 100+ or 300+ kcal.
     let finalCalories = rawCalories;
     if (localEstimate.totalCalories <= 15 && rawCalories > 25) {
       finalCalories = localEstimate.totalCalories;
@@ -476,13 +683,14 @@ Structure JSON requise :
   try {
     const response = await withTimeout(
       ai.models.generateContent({
-        model: "gemini-3.8-flash",
+        model: "gemini-4-hydrogen",
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         config: {
           responseMimeType: "application/json",
+          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
         },
       }),
-      8000
+      15000
     );
 
     return JSON.parse(response.text || "{}");
@@ -619,13 +827,14 @@ Retourne STRICTEMENT du JSON au format suivant :
   try {
     const response = await withTimeout(
       ai.models.generateContent({
-        model: "gemini-3.8-flash",
+        model: "gemini-4-hydrogen",
         contents: [{ role: "user", parts: [{ text: prompt }] }],
         config: {
           responseMimeType: "application/json",
+          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
         },
       }),
-      8000
+      15000
     );
 
     return JSON.parse(response.text || "{}");
