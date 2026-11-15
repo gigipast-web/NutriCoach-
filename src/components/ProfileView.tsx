@@ -6,7 +6,6 @@ import {
   Activity,
   Flame,
   Target,
-  FileText,
   Trash2,
   Smartphone,
   ExternalLink,
@@ -20,8 +19,6 @@ import {
   RefreshCw,
   Watch,
   Mic,
-  Sparkles,
-  ArrowRight,
   Settings,
   HelpCircle,
   BarChart2,
@@ -860,43 +857,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <LanguageSelector variant="full" />
         </div>
 
-        {/* Google Play Closed Testing Banner with Clickable Image */}
-        <div className="p-5 sm:p-6 rounded-3xl bg-gradient-to-br from-emerald-950 via-slate-900 to-teal-950 border border-emerald-500/40 text-white shadow-xl space-y-4">
-          <div className="flex items-center justify-between gap-3 flex-wrap">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
-              <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-              Test Fermé Google Play
-            </span>
-            <span className="text-xs text-slate-400 font-mono">com.nutricoach.nutrition.coach</span>
-          </div>
-          <div>
-            <h3 className="text-lg font-black text-white">Rejoignez l'Aventure NutriCoach sur Google Play</h3>
-            <p className="text-xs text-slate-300 mt-1">
-              Touchez l'image ci-dessous pour accéder directement au lien d'invitation officiel pour les bêta-testeurs :
-            </p>
-          </div>
-          <div className="text-center">
-            <a
-              id="profile-link-google-play-testing"
-              href="https://play.google.com/apps/testing/com.nutricoach.nutrition.coach"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group inline-block max-w-xs sm:max-w-sm rounded-2xl overflow-hidden border-2 border-emerald-500/50 hover:border-emerald-400 shadow-2xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
-              title="Cliquez pour ouvrir le lien de test Google Play"
-            >
-              <img
-                src="/assets/aistudio/pub_testeur_e9f48c8d.png"
-                alt="Rejoignez l'Aventure NutriCoach - Cliquez pour accéder au test Google Play"
-                className="w-full h-auto object-cover group-hover:brightness-105 transition-all"
-              />
-              <div className="bg-emerald-600 hover:bg-emerald-700 text-white p-3 font-extrabold text-xs flex items-center justify-center gap-2 transition-colors">
-                <span>🚀 Ouvrir le lien de test fermé Google Play</span>
-                <ArrowRight className="w-4 h-4" />
-              </div>
-            </a>
-          </div>
-        </div>
-
         <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
           <div>
             <div className="text-sm font-bold text-slate-800 dark:text-slate-100">
@@ -933,15 +893,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               className="px-3 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-700"
             >
               {t('profilePrivacy')}
-            </a>
-            <a
-              id="link-tester-sheet"
-              href="/tester.html"
-              target="_blank"
-              rel="noreferrer"
-              className="px-3 py-2 rounded-xl text-xs font-semibold text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 border border-emerald-300 dark:border-emerald-800"
-            >
-              Fiche Testeur
             </a>
             <a
               id="link-delete-account"

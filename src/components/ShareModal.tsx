@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Share2, Copy, Check, X, Smartphone, Globe, MessageCircle, Mail } from 'lucide-react';
+import { Share2, Copy, Check, X, Globe, MessageCircle, Mail } from 'lucide-react';
 
 interface ShareModalProps {
   isOpen: boolean;
@@ -8,19 +8,18 @@ interface ShareModalProps {
 }
 
 export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, isDarkMode }) => {
-  const [copiedType, setCopiedType] = useState<'app' | 'play' | null>(null);
+  const [copiedApp, setCopiedApp] = useState(false);
 
   if (!isOpen) return null;
 
   const webAppUrl = typeof window !== 'undefined' ? window.location.origin : 'https://ais-pre-jvehdpluienrd2edq3fw3u-665307952988.europe-west2.run.app';
-  const playTestingUrl = 'https://play.google.com/apps/testing/com.nutricoach.nutrition.coach';
 
   const shareText = "Découvrez NutriCoach Minceur : coach nutritionnel IA, scanner de repas photo et recettes saines ! 30 jours gratuits :";
 
-  const handleCopy = (text: string, type: 'app' | 'play') => {
+  const handleCopy = (text: string) => {
     navigator.clipboard.writeText(text);
-    setCopiedType(type);
-    setTimeout(() => setCopiedType(null), 2500);
+    setCopiedApp(true);
+    setTimeout(() => setCopiedApp(false), 2500);
   };
 
   const handleNativeShare = async () => {
@@ -38,7 +37,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, isDarkM
   };
 
   const whatsappShareUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(shareText + ' ' + webAppUrl)}`;
-  const emailShareUrl = `mailto:?subject=${encodeURIComponent("Découvre l'application NutriCoach Minceur")}&body=${encodeURIComponent(shareText + '\n\nLien application : ' + webAppUrl + '\n\nProgramme Testeur Google Play : ' + playTestingUrl)}`;
+  const emailShareUrl = `mailto:?subject=${encodeURIComponent("Découvre l'application NutriCoach Minceur")}&body=${encodeURIComponent(shareText + '\n\nLien application : ' + webAppUrl)}`;
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200">
@@ -65,7 +64,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, isDarkM
           <div>
             <h2 className="text-xl font-black">Partager NutriCoach</h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Invitez vos amis, proches et testeurs en 1 clic
+              Invitez vos amis et vos proches en 1 clic
             </p>
           </div>
         </div>
@@ -122,49 +121,16 @@ export const ShareModal: React.FC<ShareModalProps> = ({ isOpen, onClose, isDarkM
                 className="w-full text-xs font-mono px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 select-all"
               />
               <button
-                onClick={() => handleCopy(webAppUrl, 'app')}
+                onClick={() => handleCopy(webAppUrl)}
                 className="p-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white shrink-0 transition-colors cursor-pointer"
                 title="Copier le lien"
               >
-                {copiedType === 'app' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
+                {copiedApp ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
               </button>
             </div>
-            {copiedType === 'app' && (
+            {copiedApp && (
               <p className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
                 <Check className="w-3 h-3" /> Lien copié dans votre presse-papier !
-              </p>
-            )}
-          </div>
-
-          {/* Link 2: Google Play Testing Link */}
-          <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-700/80 space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-xs font-bold flex items-center gap-1.5 text-slate-800 dark:text-slate-200">
-                <Smartphone className="w-3.5 h-3.5 text-amber-500" />
-                Lien Testeur Google Play Store (Android)
-              </span>
-              <span className="text-[10px] font-semibold text-amber-600 dark:text-amber-400 bg-amber-100 dark:bg-amber-950/60 px-2 py-0.5 rounded-full">
-                Test fermé
-              </span>
-            </div>
-            <div className="flex items-center gap-2">
-              <input
-                type="text"
-                readOnly
-                value={playTestingUrl}
-                className="w-full text-xs font-mono px-3 py-2 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 select-all"
-              />
-              <button
-                onClick={() => handleCopy(playTestingUrl, 'play')}
-                className="p-2 rounded-xl bg-amber-600 hover:bg-amber-700 text-white shrink-0 transition-colors cursor-pointer"
-                title="Copier le lien"
-              >
-                {copiedType === 'play' ? <Check className="w-4 h-4" /> : <Copy className="w-4 h-4" />}
-              </button>
-            </div>
-            {copiedType === 'play' && (
-              <p className="text-[11px] text-amber-600 dark:text-amber-400 font-bold flex items-center gap-1">
-                <Check className="w-3 h-3" /> Lien testeur Google Play copié !
               </p>
             )}
           </div>

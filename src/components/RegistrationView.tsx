@@ -407,60 +407,6 @@ export const RegistrationView: React.FC<RegistrationViewProps> = ({
             </p>
           </div>
 
-          {/* Official Google Play Tester Recruitment Image Button */}
-          <div className="p-4 sm:p-5 rounded-3xl bg-gradient-to-br from-emerald-950/50 via-slate-900/70 to-teal-950/50 border border-emerald-500/30 shadow-xl text-center space-y-3.5">
-            <div className="flex items-center justify-center gap-2">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
-                <Sparkles className="w-3.5 h-3.5 text-emerald-400" />
-                Programme Bêta-Testeurs Google Play
-              </span>
-            </div>
-            <div>
-              <h3 className="text-base sm:text-lg font-black text-white">
-                Rejoignez l'Aventure NutriCoach sur Android
-              </h3>
-              <p className="text-xs text-slate-300 mt-1 max-w-md mx-auto">
-                Cliquez sur l'image ci-dessous pour accéder directement au programme de test fermé officiel sur le Google Play Store :
-              </p>
-            </div>
-
-            {/* Clickable Image Button */}
-            <a
-              id="btn-link-google-play-testing"
-              href="https://play.google.com/apps/testing/com.nutricoach.nutrition.coach"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group block relative max-w-xs sm:max-w-sm mx-auto overflow-hidden rounded-2xl border-2 border-emerald-500/40 hover:border-emerald-400 shadow-2xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
-              title="Cliquez sur l'image pour ouvrir le lien Google Play Testing"
-            >
-              <img
-                src="/assets/aistudio/pub_testeur_e9f48c8d.png"
-                alt="Rejoignez l'Aventure NutriCoach - Cliquez pour accéder au test Google Play"
-                className="w-full h-auto object-cover group-hover:brightness-105 transition-all"
-              />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/30 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-center p-3">
-                <span className="text-xs font-extrabold text-white bg-emerald-600 px-3.5 py-1.5 rounded-xl shadow-lg flex items-center gap-1.5">
-                  <ArrowRight className="w-4 h-4" /> Rejoindre le test Google Play
-                </span>
-              </div>
-            </a>
-
-            <div>
-              <a
-                href="https://play.google.com/apps/testing/com.nutricoach.nutrition.coach"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-extrabold text-xs shadow-md transition-all cursor-pointer"
-              >
-                <span>🚀 Accéder à la page Google Play Testing</span>
-                <ArrowRight className="w-3.5 h-3.5" />
-              </a>
-              <span className="block text-[11px] text-slate-400 mt-1">
-                ID du package : com.nutricoach.nutrition.coach
-              </span>
-            </div>
-          </div>
-
           {/* Helper for Samsung Galaxy Note9 / Android Browsers */}
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700/60 flex items-start gap-3">
             <div className="w-9 h-9 rounded-xl bg-slate-200 dark:bg-slate-700 text-slate-700 dark:text-slate-300 flex items-center justify-center shrink-0">

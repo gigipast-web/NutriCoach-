@@ -437,69 +437,84 @@ export const RecipesView: React.FC<RecipesViewProps> = ({
 
       {/* Recipe Detail Modal */}
       {selectedRecipe && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+        <div
+          id="modal-recipe-detail"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setSelectedRecipe(null);
+          }}
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-end sm:items-center justify-center p-0 sm:p-4"
+        >
           <div
-            className={`w-full max-w-lg p-6 rounded-3xl border shadow-xl my-8 ${
+            className={`w-full max-w-lg max-h-[92dvh] sm:max-h-[90vh] flex flex-col rounded-t-3xl sm:rounded-3xl border shadow-2xl overflow-hidden ${
               isDarkMode ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'
             }`}
           >
-            <div className="flex items-center justify-between mb-4">
-              <span className="text-[10px] uppercase font-black tracking-wider text-emerald-600 bg-emerald-50 dark:bg-emerald-950 px-2.5 py-1 rounded-full">
+            {/* Fixed Modal Header */}
+            <div
+              className={`shrink-0 flex items-center justify-between gap-2 px-4 sm:px-6 pt-4 pb-3 border-b ${
+                isDarkMode ? 'border-slate-800' : 'border-slate-100'
+              }`}
+            >
+              <span className="text-[10px] uppercase font-black tracking-wider text-emerald-600 bg-emerald-50 dark:bg-emerald-950 px-2.5 py-1 rounded-full truncate">
                 {selectedRecipe.tags?.join(' • ') || 'Recette Minceur'}
               </span>
               <button
                 type="button"
+                aria-label="Fermer la recette"
                 onClick={() => setSelectedRecipe(null)}
-                className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
+                className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer shrink-0"
               >
                 <X className="w-5 h-5 text-slate-400" />
               </button>
             </div>
 
-            <div className="h-52 w-full rounded-2xl overflow-hidden mb-4 border border-slate-200 dark:border-slate-700">
-              <img
-                src={selectedRecipe.imageUrl}
-                alt={selectedRecipe.title}
-                className="w-full h-full object-cover"
-              />
-            </div>
+            {/* Single Smooth Scrollable Body (all ingredients & steps visible on mobile) */}
+            <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-4 sm:px-6 py-4 space-y-4">
+              <div className="h-36 sm:h-48 w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-slate-700">
+                <img
+                  src={selectedRecipe.imageUrl}
+                  alt={selectedRecipe.title}
+                  className="w-full h-full object-cover"
+                />
+              </div>
 
-            <h3 className="text-xl font-black mb-1">{selectedRecipe.title}</h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
-              {selectedRecipe.description}
-            </p>
+              <div>
+                <h3 className="text-lg sm:text-xl font-black mb-1">{selectedRecipe.title}</h3>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  {selectedRecipe.description}
+                </p>
+              </div>
 
-            <div className="grid grid-cols-4 gap-2 mb-4 p-3 rounded-2xl bg-slate-50 dark:bg-slate-800 text-center">
-              <div>
-                <span className="text-[10px] text-slate-400 block font-bold">Calories</span>
-                <span className="text-sm font-black text-emerald-600 dark:text-emerald-400">
-                  {selectedRecipe.calories} kcal
-                </span>
+              <div className="grid grid-cols-4 gap-1.5 sm:gap-2 p-2.5 sm:p-3 rounded-2xl bg-slate-50 dark:bg-slate-800 text-center">
+                <div>
+                  <span className="text-[10px] text-slate-400 block font-bold">Calories</span>
+                  <span className="text-xs sm:text-sm font-black text-emerald-600 dark:text-emerald-400">
+                    {selectedRecipe.calories} kcal
+                  </span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 block font-bold">Protéines</span>
+                  <span className="text-xs sm:text-sm font-black text-rose-600">{selectedRecipe.protein}g</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 block font-bold">Glucides</span>
+                  <span className="text-xs sm:text-sm font-black text-amber-600">{selectedRecipe.carbs}g</span>
+                </div>
+                <div>
+                  <span className="text-[10px] text-slate-400 block font-bold">Lipides</span>
+                  <span className="text-xs sm:text-sm font-black text-sky-600">{selectedRecipe.fat}g</span>
+                </div>
               </div>
-              <div>
-                <span className="text-[10px] text-slate-400 block font-bold">Protéines</span>
-                <span className="text-sm font-black text-rose-600">{selectedRecipe.protein}g</span>
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-400 block font-bold">Glucides</span>
-                <span className="text-sm font-black text-amber-600">{selectedRecipe.carbs}g</span>
-              </div>
-              <div>
-                <span className="text-[10px] text-slate-400 block font-bold">Lipides</span>
-                <span className="text-sm font-black text-sky-600">{selectedRecipe.fat}g</span>
-              </div>
-            </div>
 
-            <div className="space-y-4 max-h-60 overflow-y-auto pr-1 mb-6">
-              <div>
-                <h4 className="font-extrabold text-xs uppercase tracking-wider text-slate-400 mb-2">
-                  Ingrédients
+              <div className="p-3.5 rounded-2xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-200/70 dark:border-emerald-800/40">
+                <h4 className="font-extrabold text-xs uppercase tracking-wider text-emerald-700 dark:text-emerald-400 mb-2.5">
+                  Ingrédients ({selectedRecipe.ingredients.length})
                 </h4>
-                <ul className="space-y-1 text-xs">
+                <ul className="space-y-1.5 text-sm sm:text-xs">
                   {selectedRecipe.ingredients.map((ing, i) => (
-                    <li key={i} className="flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block" />
-                      <span>{ing}</span>
+                    <li key={i} className="flex items-start gap-2.5">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 inline-block shrink-0 mt-1.5" />
+                      <span className="leading-snug break-words">{ing}</span>
                     </li>
                   ))}
                 </ul>
@@ -509,20 +524,25 @@ export const RecipesView: React.FC<RecipesViewProps> = ({
                 <h4 className="font-extrabold text-xs uppercase tracking-wider text-slate-400 mb-2">
                   Préparation ({selectedRecipe.prepTimeMinutes} min)
                 </h4>
-                <ol className="space-y-2 text-xs">
+                <ol className="space-y-2 text-sm sm:text-xs pb-2">
                   {selectedRecipe.instructions.map((step, i) => (
                     <li key={i} className="flex items-start gap-2">
                       <span className="font-extrabold text-emerald-600 dark:text-emerald-400 shrink-0">
                         {i + 1}.
                       </span>
-                      <span>{step}</span>
+                      <span className="leading-relaxed break-words">{step}</span>
                     </li>
                   ))}
                 </ol>
               </div>
             </div>
 
-            <div className="flex gap-2">
+            {/* Sticky Bottom Action Bar */}
+            <div
+              className={`shrink-0 flex gap-2 px-4 sm:px-6 py-3.5 border-t ${
+                isDarkMode ? 'border-slate-800 bg-slate-900' : 'border-slate-100 bg-white'
+              }`}
+            >
               <button
                 type="button"
                 onClick={() => handleAddIngredientsToShopping(selectedRecipe)}

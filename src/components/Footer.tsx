@@ -1,5 +1,5 @@
 import React from 'react';
-import { Sparkles, Heart, Shield, FileText, Trash2, Crown, Smartphone } from 'lucide-react';
+import { Sparkles, Heart, Shield, Trash2, Crown } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext.tsx';
 
 interface FooterProps {
@@ -113,26 +113,6 @@ export const Footer: React.FC<FooterProps> = ({
             >
               <Shield className="w-3.5 h-3.5" />
               {t('footerPrivacy')}
-            </a>
-            <a
-              id="footer-link-tester"
-              href="/tester.html"
-              target="_blank"
-              rel="noreferrer"
-              className="hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors flex items-center gap-1"
-            >
-              <FileText className="w-3.5 h-3.5" />
-              {t('footerTester')}
-            </a>
-            <a
-              id="footer-link-play-testing"
-              href="https://play.google.com/apps/testing/com.nutricoach.nutrition.coach"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-emerald-500 text-emerald-600 dark:text-emerald-400 font-bold transition-colors flex items-center gap-1"
-            >
-              <Smartphone className="w-3.5 h-3.5" />
-              <span>Test Google Play</span>
             </a>
             <a
               id="footer-link-delete-account"
