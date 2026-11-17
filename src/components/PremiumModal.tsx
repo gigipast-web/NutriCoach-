@@ -30,12 +30,14 @@ export const PremiumModal: React.FC<PremiumModalProps> = ({
   const [isCancelling, setIsCancelling] = useState(false);
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
   const [statusNotice, setStatusNotice] = useState<string | null>(null);
+  const [statusIsError, setStatusIsError] = useState(false);
 
   if (!isOpen) return null;
 
   const handleCheckout = async () => {
     setIsLoading(true);
     setStatusNotice(null);
+    setStatusIsError(false);
 
     try {
       const response = await fetch('/api/stripe/create-checkout-session', {
@@ -56,6 +58,14 @@ export const PremiumModal: React.FC<PremiumModalProps> = ({
         return;
       }
 
+      if (!response.ok || data.error) {
+        setStatusIsError(true);
+        setStatusNotice(
+          data.error || 'Impossible de contacter Stripe pour le moment. Veuillez réessayer.'
+        );
+        return;
+      }
+
       // If Stripe secret is not configured yet (mock/preview mode)
       confetti({
         particleCount: 100,
@@ -72,9 +82,8 @@ export const PremiumModal: React.FC<PremiumModalProps> = ({
       }, 1600);
     } catch (err: any) {
       console.error('Erreur Stripe Checkout:', err);
-      // Fallback upgrade
-      onUpgrade();
-      onClose();
+      setStatusIsError(true);
+      setStatusNotice('Erreur réseau lors de la connexion à Stripe. Veuillez réessayer.');
     } finally {
       setIsLoading(false);
     }
@@ -282,7 +291,13 @@ export const PremiumModal: React.FC<PremiumModalProps> = ({
             </div>
 
             {statusNotice && (
-              <div className="p-3 mb-4 rounded-xl bg-emerald-100/70 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300 text-xs font-medium text-center">
+              <div
+                className={`p-3 mb-4 rounded-xl text-xs font-medium text-center ${
+                  statusIsError
+                    ? 'bg-rose-100/80 dark:bg-rose-950/60 text-rose-800 dark:text-rose-200 border border-rose-200 dark:border-rose-800'
+                    : 'bg-emerald-100/70 dark:bg-emerald-950/60 text-emerald-800 dark:text-emerald-300'
+                }`}
+              >
                 {statusNotice}
               </div>
             )}

@@ -69,25 +69,39 @@ export async function createCheckoutSession(params: {
   const isYearly = plan === "yearly";
   let lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
 
-  const customPriceId = isYearly
+  const rawCustomPriceId = isYearly
     ? process.env.STRIPE_PRICE_ID_YEARLY
     : process.env.STRIPE_PRICE_ID_MONTHLY;
+  const customPriceId =
+    rawCustomPriceId && rawCustomPriceId.trim().startsWith("price_")
+      ? rawCustomPriceId.trim()
+      : null;
+
+  if (rawCustomPriceId && !customPriceId) {
+    console.warn(
+      `[Stripe] ${isYearly ? "STRIPE_PRICE_ID_YEARLY" : "STRIPE_PRICE_ID_MONTHLY"} ignoré car ce n'est pas un identifiant de prix valide (attendu: price_...). Utilisation du tarif par défaut.`
+    );
+  }
 
   if (customPriceId) {
     lineItems = [{ price: customPriceId, quantity: 1 }];
   } else {
+    const productData: Stripe.Checkout.SessionCreateParams.LineItem.PriceData.ProductData = {
+      name: isYearly
+        ? "NutriCoach Premium - Abonnement Annuel"
+        : "NutriCoach Premium - Abonnement Mensuel",
+      description:
+        "Accès complet : Menus IA sur-mesure, Coach IA illimité, Scan photo de repas, 100+ recettes exclusives et synchronisation.",
+    };
+    if (origin.startsWith("https://")) {
+      productData.images = [`${origin}/pwa-512x512.png`];
+    }
+
     lineItems = [
       {
         price_data: {
           currency: "eur",
-          product_data: {
-            name: isYearly
-              ? "NutriCoach Premium - Abonnement Annuel"
-              : "NutriCoach Premium - Abonnement Mensuel",
-            description:
-              "Accès complet : Menus IA sur-mesure, Coach IA illimité, Scan photo de repas, 100+ recettes exclusives et synchronisation.",
-            images: [`${origin}/pwa-512x512.png`],
-          },
+          product_data: productData,
           unit_amount: isYearly ? 3999 : 499,
           recurring: {
             interval: isYearly ? "year" : "month",
