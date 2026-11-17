@@ -11,8 +11,6 @@ import {
   Sun,
   Moon,
   Timer,
-  Volume2,
-  VolumeX,
   Bell,
   Sparkles,
   ChefHat,
@@ -31,8 +29,6 @@ interface NavigationProps {
   isDarkMode: boolean;
   toggleDarkMode: () => void;
   streakDays: number;
-  onTriggerVoiceCoach?: () => void;
-  isVoiceSpeaking?: boolean;
   onOpenShare?: () => void;
 }
 
@@ -44,8 +40,6 @@ export const Navigation: React.FC<NavigationProps> = ({
   isDarkMode,
   toggleDarkMode,
   streakDays,
-  onTriggerVoiceCoach,
-  isVoiceSpeaking,
   onOpenShare,
 }) => {
   const { t } = useLanguage();
@@ -108,27 +102,16 @@ export const Navigation: React.FC<NavigationProps> = ({
         {/* Main Header Bar */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16 sm:h-20">
-            {/* Mockup Logo: Two fresh organic leaves + "NutriCoach" */}
+            {/* Brand Title: "NutriCoach" */}
             <div className="flex items-center gap-3">
               <div
                 id="brand-logo-btn"
                 onClick={() => setActiveTab('dashboard')}
-                className="flex items-center gap-2.5 cursor-pointer group select-none"
+                className="flex items-center cursor-pointer group select-none"
               >
-                {/* Organic Leaf Logo SVG from mockup */}
-                <div className="w-9 h-9 flex items-center justify-center text-[#1F6F43] group-hover:scale-105 transition-transform">
-                  <svg viewBox="0 0 40 40" className="w-full h-full fill-[#1F6F43]">
-                    {/* Big Leaf */}
-                    <path d="M12 28 C 12 16, 22 10, 32 8 C 30 18, 24 28, 12 28 Z" />
-                    {/* Small Leaf */}
-                    <path d="M14 28 C 16 22, 22 20, 26 18 C 24 24, 20 28, 14 28 Z" fill="#4ADE80" opacity="0.9" />
-                  </svg>
-                </div>
-                <div>
-                  <h1 className="text-xl sm:text-2xl font-black tracking-tight text-[#163321] dark:text-emerald-300 leading-none">
-                    NutriCoach
-                  </h1>
-                </div>
+                <h1 className="text-xl sm:text-2xl font-black tracking-tight text-[#163321] dark:text-emerald-300 leading-none group-hover:opacity-85 transition-opacity">
+                  NutriCoach
+                </h1>
               </div>
 
               {/* Streak Pill */}
@@ -224,27 +207,6 @@ export const Navigation: React.FC<NavigationProps> = ({
                   </div>
                 )}
               </div>
-
-              {/* Voice Coach Button */}
-              {onTriggerVoiceCoach && (
-                <button
-                  id="btn-nav-coach-voice"
-                  type="button"
-                  onClick={onTriggerVoiceCoach}
-                  className={`p-2 rounded-full transition-all cursor-pointer flex items-center gap-1 font-black text-xs ${
-                    isVoiceSpeaking
-                      ? 'bg-amber-500 text-white animate-pulse shadow-md shadow-amber-500/30'
-                      : 'bg-[#EDF3ED] dark:bg-slate-800 text-[#1F6F43] dark:text-emerald-300 hover:bg-[#DFEADF]'
-                  }`}
-                  title="Écouter le Coach Vocal"
-                >
-                  {isVoiceSpeaking ? (
-                    <VolumeX className="w-4 h-4 text-white" />
-                  ) : (
-                    <Volume2 className="w-4 h-4 text-[#1F6F43] dark:text-emerald-400" />
-                  )}
-                </button>
-              )}
 
               <LanguageSelector />
               <PWAInstallButton />

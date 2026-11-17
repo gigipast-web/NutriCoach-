@@ -855,8 +855,6 @@ export default function App() {
         isDarkMode={isDarkMode}
         toggleDarkMode={handleToggleDarkMode}
         streakDays={streakDays}
-        onTriggerVoiceCoach={handleTriggerWelcomeVoice}
-        isVoiceSpeaking={isVoiceSpeakingGreeting}
         onOpenShare={() => setIsShareModalOpen(true)}
       />
 
