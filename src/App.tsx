@@ -38,14 +38,19 @@ import { PremiumModal } from './components/PremiumModal.tsx';
 import { AuthModal } from './components/AuthModal.tsx';
 import { ShareModal } from './components/ShareModal.tsx';
 import { OfflineIndicator } from './components/OfflineIndicator.tsx';
+import { PWAInstallBanner } from './components/PWAInstallBanner.tsx';
+import { TrialExpiredPaywall } from './components/TrialExpiredPaywall.tsx';
 import { Footer } from './components/Footer.tsx';
+import { usePWAInstall } from './hooks/usePWAInstall.ts';
 import { useLanguage } from './i18n/LanguageContext.tsx';
+import { getDashboardUi } from './i18n/dashboardI18n.ts';
 import confetti from 'canvas-confetti';
 import { CheckCircle2, AlertCircle, X, Volume2, VolumeX, Mic } from 'lucide-react';
 import { playWelcomeVoiceGreeting, stopSpeaking } from './utils/voiceCoach.ts';
 
 export default function App() {
   const { language } = useLanguage();
+  const { isInstalled: isStandaloneApp } = usePWAInstall();
 
   // Theme state
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -64,6 +69,22 @@ export default function App() {
     message: string;
   } | null>(null);
 
+  // Quick UX feedback toast (meals, water, steps, weigh-in)
+  const [actionToast, setActionToast] = useState<string | null>(null);
+  const triggerToast = (msg: string) => {
+    setActionToast(msg);
+    setTimeout(() => {
+      setActionToast((prev) => (prev === msg ? null : prev));
+    }, 2600);
+  };
+
+  const handleSelectTab = (tab: TabType) => {
+    setActiveTab(tab);
+    if (typeof window !== 'undefined') {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   // User Profile
   const [user, setUser] = useState<UserProfile>(() => {
     const saved = localStorage.getItem('nutricoach_user');
@@ -72,12 +93,22 @@ export default function App() {
         const parsed = JSON.parse(saved);
         if (parsed.isLoggedIn && parsed.name && parsed.name !== 'Invité') {
           if (!parsed.trialStartDate) {
-            parsed.trialStartDate = new Date().toISOString();
+            if (typeof parsed.trialDaysRemaining === 'number' && parsed.trialDaysRemaining <= 0) {
+              const expiredStart = new Date();
+              expiredStart.setDate(expiredStart.getDate() - 30);
+              parsed.trialStartDate = expiredStart.toISOString();
+            } else {
+              parsed.trialStartDate = new Date().toISOString();
+            }
           }
           const startMs = new Date(parsed.trialStartDate).getTime();
           if (!isNaN(startMs)) {
             const daysPassed = Math.floor((Date.now() - startMs) / (1000 * 60 * 60 * 24));
-            parsed.trialDaysRemaining = Math.max(0, 30 - daysPassed);
+            const computedRemaining = Math.max(0, 30 - daysPassed);
+            parsed.trialDaysRemaining =
+              typeof parsed.trialDaysRemaining === 'number'
+                ? Math.min(parsed.trialDaysRemaining, computedRemaining)
+                : computedRemaining;
           }
           return parsed;
         }
@@ -446,9 +477,12 @@ export default function App() {
     });
   };
 
+  // Trial expiration lock state
+  const isTrialExpired = Boolean(user.isLoggedIn && !user.isPremium && user.trialDaysRemaining <= 0);
+
   // Automatic Coach Voice Greeting on First User Touch or Click (browser autoplay compliant)
   useEffect(() => {
-    if (user.autoVoiceGreeting === false) {
+    if (user.autoVoiceGreeting === false || isTrialExpired) {
       return;
     }
 
@@ -516,6 +550,7 @@ export default function App() {
       id: `meal_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
     };
     setMeals((prev) => [mealWithId, ...prev]);
+    triggerToast(`✅ ${newMeal.foodName} (+${newMeal.calories} kcal) ajouté`);
   };
 
   const handleDeleteMeal = (mealId: string) => {
@@ -525,6 +560,7 @@ export default function App() {
   const handleResetTodayMeals = () => {
     const todayStr = new Date().toISOString().split('T')[0];
     setMeals((prev) => prev.filter((m) => !m.timestamp?.startsWith(todayStr)));
+    triggerToast('Journal du jour réinitialisé');
   };
 
   const handleAddWeightEntry = (entry: Omit<WeightEntry, 'id'>) => {
@@ -534,6 +570,7 @@ export default function App() {
     };
     setWeightHistory((prev) => [...prev, newEntry]);
     setUser((prev) => ({ ...prev, currentWeightKg: entry.weightKg }));
+    triggerToast(`⚖️ Pesée enregistrée (${entry.weightKg} kg)`);
   };
 
   const handleAddWater = (amountMl: number) => {
@@ -546,6 +583,9 @@ export default function App() {
         glassesCount: nextGlasses,
       };
     });
+    if (amountMl > 0) {
+      triggerToast(`💧 +${amountMl} ml d'eau enregistrés`);
+    }
   };
 
   const handleAddActivity = (newAct: Omit<ActivityEntry, 'id'>) => {
@@ -553,6 +593,9 @@ export default function App() {
       ...newAct,
       id: `act_${Date.now()}`,
     };
+    if (newAct.stepsCount > 0) {
+      triggerToast(`👟 +${newAct.stepsCount.toLocaleString()} pas ajoutés`);
+    }
 
     const isWatchSync =
       newAct.title.includes('Montre') ||
@@ -849,7 +892,7 @@ export default function App() {
       {/* Top Navigation */}
       <Navigation
         activeTab={activeTab}
-        setActiveTab={setActiveTab}
+        setActiveTab={handleSelectTab}
         user={user}
         onOpenPremium={() => setIsPremiumModalOpen(true)}
         isDarkMode={isDarkMode}
@@ -858,45 +901,43 @@ export default function App() {
         onOpenShare={() => setIsShareModalOpen(true)}
       />
 
-      {/* Welcome Voice Greeting Prompt Banner */}
-      {user.autoVoiceGreeting !== false && showVoiceGreetingNotice && !isVoiceSpeakingGreeting && (
+      {/* Welcome Voice Greeting Prompt Banner (compact single-row bar) */}
+      {!isTrialExpired && user.autoVoiceGreeting !== false && showVoiceGreetingNotice && !isVoiceSpeakingGreeting && (
         <div
           id="top-coach-voice-welcome-card"
-          className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white px-4 py-2.5 shadow-md flex items-center justify-between gap-3 text-xs"
+          className="bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 text-white px-3 py-1.5 shadow-sm"
         >
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center shrink-0 animate-bounce">
-              <Volume2 className="w-4 h-4 text-white" />
+          <div className="max-w-7xl mx-auto flex items-center justify-between gap-2 text-xs">
+            <div className="flex items-center gap-2 min-w-0 flex-1">
+              <div className="w-6 h-6 rounded-full bg-white/20 flex items-center justify-center shrink-0">
+                <Volume2 className="w-3.5 h-3.5 text-white" />
+              </div>
+              <p className="font-bold truncate text-xs leading-tight">
+                🎙️ {getDashboardUi(language).coachTitle} :{' '}
+                <span className="font-normal opacity-95">{getDashboardUi(language).topBannerTap}</span>
+              </p>
             </div>
-            <div>
-              <span className="font-extrabold block text-sm">
-                🎙️ Votre Coach NutriCoach vous salue !
-              </span>
-              <span className="opacity-95 text-[11px]">
-                « Bonjour {user.name || ''} ! Que vas-tu manger aujourd'hui ? »
-              </span>
-            </div>
-          </div>
 
-          <div className="flex items-center gap-2 shrink-0">
-            <button
-              type="button"
-              id="btn-play-welcome-voice-top"
-              onClick={handleTriggerWelcomeVoice}
-              className="px-3.5 py-1.5 rounded-xl bg-white text-emerald-800 hover:bg-emerald-50 font-black text-xs transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
-            >
-              <Volume2 className="w-3.5 h-3.5 text-emerald-600" />
-              <span>🔊 Écouter le Coach</span>
-            </button>
-            <button
-              type="button"
-              id="btn-close-welcome-voice-banner"
-              onClick={() => setShowVoiceGreetingNotice(false)}
-              className="p-1 rounded-lg text-white/70 hover:text-white cursor-pointer"
-              aria-label="Fermer"
-            >
-              <X className="w-4 h-4" />
-            </button>
+            <div className="flex items-center gap-1.5 shrink-0">
+              <button
+                type="button"
+                id="btn-play-welcome-voice-top"
+                onClick={handleTriggerWelcomeVoice}
+                className="px-2.5 py-1 rounded-lg bg-white text-emerald-800 hover:bg-emerald-50 font-extrabold text-[11px] transition-all shadow-xs cursor-pointer flex items-center gap-1"
+              >
+                <Volume2 className="w-3 h-3 text-emerald-600" />
+                <span>{getDashboardUi(language).coachGreetsYou.replace('🎙️ ', '')}</span>
+              </button>
+              <button
+                type="button"
+                id="btn-close-welcome-voice-banner"
+                onClick={() => setShowVoiceGreetingNotice(false)}
+                className="p-1 rounded-lg text-white/80 hover:text-white cursor-pointer"
+                aria-label={getDashboardUi(language).topBannerAria}
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -931,106 +972,123 @@ export default function App() {
       )}
 
       {/* Main Content Area */}
-      <main id="main-content" className="max-w-7xl mx-auto px-4 sm:px-6 pt-5 pb-24 lg:pb-12">
-        {activeTab === 'dashboard' && (
-          !user.isLoggedIn ? (
-            <RegistrationView
-              onRegister={handleRegisterUser}
-              onLoadDemo={handleLoadDemo}
-              onOpenLogin={() => setIsAuthModalOpen(true)}
-              isDarkMode={isDarkMode}
-            />
-          ) : (
-            <DashboardView
-              user={user}
-              metrics={metrics}
-              meals={meals}
-              water={water}
-              activities={activities}
-              onNavigate={setActiveTab}
-              onOpenAddMeal={() => setActiveTab('journal')}
-              onAddWater={handleAddWater}
-              onAddActivity={handleAddActivity}
-              onOpenWeighIn={() => setActiveTab('progress')}
-              isDarkMode={isDarkMode}
-            />
-          )
-        )}
-
-        {activeTab === 'journal' && (
-          <JournalView
-            user={user}
-            meals={meals}
-            onAddMeal={handleAddMeal}
-            onDeleteMeal={handleDeleteMeal}
-            onResetTodayMeals={handleResetTodayMeals}
-            onOpenBarcodeScanner={() => setIsBarcodeModalOpen(true)}
-            onOpenAiScan={() => {
-              setCoachSubTab('photo');
-              setCoachSubTabTrigger((c) => c + 1);
-              setActiveTab('aicoach');
-            }}
+      <main id="main-content" className="max-w-7xl mx-auto px-4 sm:px-6 pt-5 main-app-padding">
+        {isTrialExpired && activeTab !== 'profile' ? (
+          <TrialExpiredPaywall
             isDarkMode={isDarkMode}
-          />
-        )}
-
-        {activeTab === 'aicoach' && (
-          <AiCoachView
-            user={user}
-            metrics={metrics}
-            messages={messages}
-            initialSubTab={coachSubTab}
-            subTabTrigger={coachSubTabTrigger}
-            onSendMessage={handleSendMessage}
-            onAnalyzeMealPhoto={handleAnalyzeMealPhoto}
-            onGenerateMenu={handleGenerateMenu}
-            onAddMealFromAi={handleAddMealFromAi}
-            isDarkMode={isDarkMode}
-          />
-        )}
-
-        {activeTab === 'progress' && (
-          <ProgressView
-            user={user}
-            weightHistory={weightHistory}
-            onAddWeightEntry={handleAddWeightEntry}
-            isDarkMode={isDarkMode}
-          />
-        )}
-
-        {activeTab === 'hydration' && (
-          <HydrationView
-            user={user}
-            water={water}
-            activities={activities}
-            onAddWater={handleAddWater}
-            onAddActivity={handleAddActivity}
-            onDeleteActivity={handleDeleteActivity}
-            onUpdateUser={handleUpdateUser}
-            onResetTodaySteps={handleResetTodaySteps}
-            isDarkMode={isDarkMode}
-          />
-        )}
-
-        {activeTab === 'recipes' && (
-          <RecipesView
-            recipes={recipes}
-            user={user}
-            onAddMealFromRecipe={handleAddMealFromRecipe}
-            onAddNewWeeklyRecipes={handleAddNewWeeklyRecipes}
-            isDarkMode={isDarkMode}
-          />
-        )}
-
-        {activeTab === 'badges' && (
-          <BadgesView
-            badges={badges}
-            reminders={reminders}
-            onToggleReminder={handleToggleReminder}
-            streakDays={streakDays}
+            userEmail={user.email}
             userName={user.name}
-            isDarkMode={isDarkMode}
+            onGoToProfile={() => setActiveTab('profile')}
           />
+        ) : (
+          <>
+            {activeTab === 'dashboard' && (
+              !user.isLoggedIn ? (
+                <RegistrationView
+                  onRegister={handleRegisterUser}
+                  onLoadDemo={handleLoadDemo}
+                  onOpenLogin={() => setIsAuthModalOpen(true)}
+                  isDarkMode={isDarkMode}
+                />
+              ) : (
+                <DashboardView
+                  user={user}
+                  metrics={metrics}
+                  meals={meals}
+                  water={water}
+                  activities={activities}
+                  onNavigate={handleSelectTab}
+                  onOpenAddMeal={() => handleSelectTab('journal')}
+                  onOpenAiScan={() => {
+                    setCoachSubTab('photo');
+                    setCoachSubTabTrigger((c) => c + 1);
+                    handleSelectTab('aicoach');
+                  }}
+                  onOpenBarcodeScanner={() => setIsBarcodeModalOpen(true)}
+                  onAddWater={handleAddWater}
+                  onAddActivity={handleAddActivity}
+                  onOpenWeighIn={() => handleSelectTab('progress')}
+                  isDarkMode={isDarkMode}
+                />
+              )
+            )}
+
+            {activeTab === 'journal' && (
+              <JournalView
+                user={user}
+                meals={meals}
+                onAddMeal={handleAddMeal}
+                onDeleteMeal={handleDeleteMeal}
+                onResetTodayMeals={handleResetTodayMeals}
+                onOpenBarcodeScanner={() => setIsBarcodeModalOpen(true)}
+                onOpenAiScan={() => {
+                  setCoachSubTab('photo');
+                  setCoachSubTabTrigger((c) => c + 1);
+                  setActiveTab('aicoach');
+                }}
+                isDarkMode={isDarkMode}
+              />
+            )}
+
+            {activeTab === 'aicoach' && (
+              <AiCoachView
+                user={user}
+                metrics={metrics}
+                messages={messages}
+                initialSubTab={coachSubTab}
+                subTabTrigger={coachSubTabTrigger}
+                onSendMessage={handleSendMessage}
+                onAnalyzeMealPhoto={handleAnalyzeMealPhoto}
+                onGenerateMenu={handleGenerateMenu}
+                onAddMealFromAi={handleAddMealFromAi}
+                isDarkMode={isDarkMode}
+              />
+            )}
+
+            {activeTab === 'progress' && (
+              <ProgressView
+                user={user}
+                weightHistory={weightHistory}
+                onAddWeightEntry={handleAddWeightEntry}
+                isDarkMode={isDarkMode}
+              />
+            )}
+
+            {activeTab === 'hydration' && (
+              <HydrationView
+                user={user}
+                water={water}
+                activities={activities}
+                onAddWater={handleAddWater}
+                onAddActivity={handleAddActivity}
+                onDeleteActivity={handleDeleteActivity}
+                onUpdateUser={handleUpdateUser}
+                onResetTodaySteps={handleResetTodaySteps}
+                isDarkMode={isDarkMode}
+              />
+            )}
+
+            {activeTab === 'recipes' && (
+              <RecipesView
+                recipes={recipes}
+                user={user}
+                onAddMealFromRecipe={handleAddMealFromRecipe}
+                onAddNewWeeklyRecipes={handleAddNewWeeklyRecipes}
+                isDarkMode={isDarkMode}
+              />
+            )}
+
+            {activeTab === 'badges' && (
+              <BadgesView
+                badges={badges}
+                reminders={reminders}
+                onToggleReminder={handleToggleReminder}
+                streakDays={streakDays}
+                userName={user.name}
+                isDarkMode={isDarkMode}
+              />
+            )}
+          </>
         )}
 
         {activeTab === 'profile' && (
@@ -1045,16 +1103,21 @@ export default function App() {
             onLogout={handleLogout}
             isDarkMode={isDarkMode}
             onOpenShare={() => setIsShareModalOpen(true)}
+            onOpenBadges={() => handleSelectTab('badges')}
           />
         )}
       </main>
 
-      {/* App Footer: Une création de L'ESCAPADE DE JOS */}
-      <Footer
-        isDarkMode={isDarkMode}
-        onOpenPremium={() => setIsPremiumModalOpen(true)}
-        onNavigateTab={(tab) => setActiveTab(tab)}
-      />
+      {/* Website Footer: hidden on mobile & standalone/TWA app mode for true native feel */}
+      {!isStandaloneApp && (
+        <div className="hidden lg:block">
+          <Footer
+            isDarkMode={isDarkMode}
+            onOpenPremium={() => setIsPremiumModalOpen(true)}
+            onNavigateTab={(tab) => setActiveTab(tab)}
+          />
+        </div>
+      )}
 
       {/* Global Modals */}
       <BarcodeScannerModal
@@ -1093,7 +1156,20 @@ export default function App() {
         isDarkMode={isDarkMode}
       />
 
+      <PWAInstallBanner />
       <OfflineIndicator />
+
+      {/* Quick Action Toast Feedback */}
+      {actionToast && (
+        <div
+          id="ux-action-toast"
+          role="status"
+          aria-live="polite"
+          className="fixed bottom-20 lg:bottom-6 left-1/2 -translate-x-1/2 z-50 bg-[#163321] dark:bg-emerald-900 text-white px-4 py-2.5 rounded-2xl shadow-xl border border-emerald-400/30 text-xs font-extrabold whitespace-nowrap max-w-[92vw] truncate animate-in fade-in slide-in-from-bottom-3"
+        >
+          {actionToast}
+        </div>
+      )}
 
       {/* Floating Voice Greeting Bar */}
       {isVoiceSpeakingGreeting && (

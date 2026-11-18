@@ -1,5 +1,10 @@
 import { GoogleGenAI, Type, ThinkingLevel } from "@google/genai";
 import { estimateMealFromText } from "../src/utils/mealEstimator.ts";
+import {
+  getStaticRecipeTranslation,
+  getStaticThemeTranslation,
+  getDefaultAiRecipes,
+} from "../src/i18n/recipeCatalogTranslations.ts";
 
 let genAIClient: GoogleGenAI | null = null;
 
@@ -264,20 +269,7 @@ export async function analyzeMealPhoto(params: {
     throw new Error("Service d'analyse photo IA indisponible : clé GEMINI_API_KEY manquante.");
   }
 
-  const langName =
-    lang === "en"
-      ? "English"
-      : lang === "es"
-      ? "Español"
-      : lang === "de"
-      ? "Deutsch"
-      : lang === "no"
-      ? "Norsk"
-      : lang === "it"
-      ? "Italiano"
-      : lang === "pt"
-      ? "Português"
-      : "Français";
+  const langName = LANGUAGE_NAMES[lang] || "French";
 
   const prompt = `Tu es un nutritionniste et diététicien clinicien expert doté d'une précision analytique maximale.
 Observe attentivement la photo fournie${description ? ` et la description complémentaire ("${description}")` : ""}.
@@ -647,20 +639,7 @@ export async function generateMenuPlan(params: {
     return defaultMenu;
   }
 
-  const langName =
-    lang === "en"
-      ? "English"
-      : lang === "es"
-      ? "Español"
-      : lang === "de"
-      ? "Deutsch"
-      : lang === "no"
-      ? "Norsk"
-      : lang === "it"
-      ? "Italiano"
-      : lang === "pt"
-      ? "Português"
-      : "Français";
+  const langName = LANGUAGE_NAMES[lang] || "French";
 
   const glutenConstraint = isGlutenFree
     ? `\nEXIGENCE STRICTE SANS GLUTEN : Interdiction absolue de blé, froment, seigle, orge, épeautre ou kamut. Utilise UNIQUEMENT des céréales et féculents 100% naturellement sans gluten (quinoa, riz complet, sarrasin, millet, patates douces, maïs, légumineuses). Précise la mention "(Sans Gluten)" pour chaque repas.`
@@ -700,96 +679,41 @@ Structure JSON requise :
   }
 }
 
+const LANGUAGE_NAMES: Record<string, string> = {
+  fr: "French",
+  en: "English",
+  es: "Spanish",
+  de: "German",
+  it: "Italian",
+  pt: "Portuguese",
+  nl: "Dutch",
+  pl: "Polish",
+  no: "Norwegian",
+  sv: "Swedish",
+  da: "Danish",
+  fi: "Finnish",
+  ru: "Russian",
+  ja: "Japanese",
+  zh: "Simplified Chinese",
+  ar: "Arabic",
+  tr: "Turkish",
+  el: "Greek",
+  cs: "Czech",
+  ro: "Romanian",
+  uk: "Ukrainian",
+};
+
 export async function generateWeeklyRecipes(params: {
   dietaryPreference?: string;
   targetCalories?: number;
   weekTheme?: string;
+  language?: string;
 }) {
-  const { dietaryPreference, targetCalories, weekTheme } = params;
+  const { dietaryPreference, targetCalories, weekTheme, language = "fr" } = params;
   const ai = getGenAI();
+  const langName = LANGUAGE_NAMES[language] || language || "French";
 
-  const defaultRecipes = {
-    recipes: [
-      {
-        id: `ai_recipe_${Date.now()}_1`,
-        title: "Filet de Bar Rôti au Thym & Fondue de Poireaux",
-        description: "Un plat raffiné, digeste et riche en protéines nobles pour votre semaine.",
-        prepTimeMinutes: 20,
-        calories: 340,
-        protein: 38,
-        carbs: 14,
-        fat: 8,
-        category: "faibles_calories",
-        imageUrl: "https://images.unsplash.com/photo-1534939561126-855b8675edd7?auto=format&fit=crop&w=800&q=80",
-        ingredients: [
-          "150g de filet de bar frais",
-          "2 blancs de poireaux émincés",
-          "1 c.à.c d'huile d'olive",
-          "Jus d'un demi-citron & fleur de sel",
-        ],
-        instructions: [
-          "Faire fondre les poireaux à feu doux avec un fond d'eau pendant 12 min.",
-          "Poêler le poisson côté peau 3 min puis retourner 2 min.",
-          "Dresser sur le lit de poireaux avec le jus de citron.",
-        ],
-        tags: ["Nouveauté Semaine", "Riche en Protéines", "Sans Gluten"],
-        isNewThisWeek: true,
-        isWeeklyStar: true,
-      },
-      {
-        id: `ai_recipe_${Date.now()}_2`,
-        title: "Bowl Chaud Patate Douce, Pois Chiches Rôtis & Tahini",
-        description: "Plein d'énergie douce et de minéraux pour vos déjeuners actifs.",
-        prepTimeMinutes: 25,
-        calories: 410,
-        protein: 16,
-        carbs: 58,
-        fat: 12,
-        category: "vegetarienne",
-        imageUrl: "https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=800&q=80",
-        ingredients: [
-          "120g de patate douce rôtie",
-          "100g de pois chiches cuits assaisonnés au cumin",
-          "1 poignée de roquette fraîche",
-          "1 c.à.s de sauce tahini au citron",
-        ],
-        instructions: [
-          "Rôtir les dés de patate douce et les pois chiches au four à 200°C pendant 20 min.",
-          "Disposer dans un bol avec la roquette.",
-          "Arroser de sauce tahini légère.",
-        ],
-        tags: ["Nouveauté Semaine", "Végétarien", "Index Glycémique Modéré"],
-        isNewThisWeek: true,
-      },
-      {
-        id: `ai_recipe_${Date.now()}_3`,
-        title: "Tartine Rustique Seigle, Ricotta & Figues Fraîches",
-        description: "Une pause sucrée-salée riche en fibres et calcium naturel.",
-        prepTimeMinutes: 8,
-        calories: 270,
-        protein: 12,
-        carbs: 36,
-        fat: 7,
-        category: "express",
-        imageUrl: "https://images.unsplash.com/photo-1525351484163-7529414344d8?auto=format&fit=crop&w=800&q=80",
-        ingredients: [
-          "2 tranches de pain de seigle au levain",
-          "50g de ricotta fraîche",
-          "2 figues fraîches tranchées",
-          "1 filet de miel d'acacia",
-        ],
-        instructions: [
-          "Toaster le pain de seigle.",
-          "Tartiner la ricotta crémeuse.",
-          "Disposer les figues et le filet de miel.",
-        ],
-        tags: ["Nouveauté Semaine", "Express 8 min", "Gourmand & Sain"],
-        isNewThisWeek: true,
-      },
-    ],
-    success: true,
-    message: "Recettes hebdomadaires générées avec succès",
-  };
+  const defaultRecipes = getDefaultAiRecipes(language);
 
   if (!ai) {
     return defaultRecipes;
@@ -797,18 +721,19 @@ export async function generateWeeklyRecipes(params: {
 
   const prompt = `Tu es un chef nutritionniste d'élite pour l'application NutriCoach.
 Génère exactement 3 nouvelles recettes de saison inédites pour la semaine en cours.
+LANGUE OBLIGATOIRE pour tous les textes (title, description, ingredients, instructions, tags) : ${langName} (code: ${language}).
 Profil : Préférence alimentaire : ${dietaryPreference || "standard"}, Cible calorique : environ ${Math.round((targetCalories || 1600) / 3)} kcal par repas.
 Thème de la semaine : "${weekTheme || "Vitalité & Équilibre de Saison"}".
 
 Chaque recette doit être équilibrée, alléchante, simple à cuisiner avec des ingrédients faciles à trouver.
 Assure-toi d'inclure des légumes de saison et un bon apport nutritionnel.
-Retourne STRICTEMENT du JSON au format suivant :
+Retourne STRICTEMENT du JSON au format suivant (conserve les identifiants de category exacts: "riches_proteines", "faibles_calories", "vegetarienne", "express", "sans_gluten"):
 {
   "recipes": [
     {
       "id": "ai_rec_1",
-      "title": "Nom de la recette",
-      "description": "Courte description alléchante et bienfait nutritionnel (1-2 phrases)",
+      "title": "Nom de la recette en ${langName}",
+      "description": "Courte description en ${langName} (1-2 phrases)",
       "prepTimeMinutes": 15,
       "calories": 380,
       "protein": 34,
@@ -816,9 +741,9 @@ Retourne STRICTEMENT du JSON au format suivant :
       "fat": 11,
       "category": "riches_proteines",
       "imageUrl": "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?auto=format&fit=crop&w=800&q=80",
-      "ingredients": ["150g de blanc de poulet", "100g de brocolis"],
-      "instructions": ["Faire cuire...", "Dresser..."],
-      "tags": ["Nouveauté Semaine", "Riche en Protéines"],
+      "ingredients": ["..."],
+      "instructions": ["..."],
+      "tags": ["..."],
       "isNewThisWeek": true
     }
   ]
@@ -841,5 +766,120 @@ Retourne STRICTEMENT du JSON au format suivant :
   } catch (error) {
     console.warn("Generate weekly recipes error:", error);
     return defaultRecipes;
+  }
+}
+
+export async function translateRecipesBatch(params: {
+  recipes: Array<{
+    id: string;
+    title: string;
+    description: string;
+    ingredients: string[];
+    instructions: string[];
+    tags?: string[];
+  }>;
+  weekTheme?: string;
+  targetLanguage: string;
+}) {
+  const { recipes, weekTheme, targetLanguage } = params;
+  const ai = getGenAI();
+  const langName = LANGUAGE_NAMES[targetLanguage] || targetLanguage;
+
+  if (targetLanguage === "fr") {
+    return {
+      weekTheme: weekTheme || "",
+      translations: {},
+    };
+  }
+
+  const staticTheme = weekTheme ? getStaticThemeTranslation(weekTheme, targetLanguage) : null;
+  const map: Record<
+    string,
+    {
+      title: string;
+      description: string;
+      ingredients: string[];
+      instructions: string[];
+      tags?: string[];
+    }
+  > = {};
+
+  const remainingForAi: typeof recipes = [];
+  for (const r of recipes || []) {
+    const staticTr = getStaticRecipeTranslation(r.id, targetLanguage);
+    if (staticTr) {
+      map[r.id] = staticTr;
+    } else {
+      remainingForAi.push(r);
+    }
+  }
+
+  const needsAiForTheme = Boolean(weekTheme && !staticTheme);
+  if (!ai || (remainingForAi.length === 0 && !needsAiForTheme)) {
+    return {
+      weekTheme: staticTheme || weekTheme || "",
+      translations: map,
+    };
+  }
+
+  const prompt = `Translate the following culinary recipes and weekly theme accurately and naturally into ${langName} (language code: "${targetLanguage}").
+Keep exact quantities, units adapted naturally if appropriate (or keep g/ml), and keep the exact same number of ingredients and instruction steps per recipe.
+Return ONLY valid JSON with this exact schema:
+{
+  "weekTheme": "translated weekly theme string",
+  "recipes": [
+    {
+      "id": "same id as input",
+      "title": "translated title",
+      "description": "translated description",
+      "ingredients": ["translated ingredient 1", "..."],
+      "instructions": ["translated step 1", "..."],
+      "tags": ["translated tag 1", "..."]
+    }
+  ]
+}
+
+Input JSON:
+${JSON.stringify({ weekTheme: needsAiForTheme ? weekTheme : "", recipes: remainingForAi })}`;
+
+  try {
+    const response = await withTimeout(
+      ai.models.generateContent({
+        model: "gemini-4-hydrogen",
+        contents: [{ role: "user", parts: [{ text: prompt }] }],
+        config: {
+          responseMimeType: "application/json",
+          thinkingConfig: { thinkingLevel: ThinkingLevel.LOW },
+        },
+      }),
+      25000
+    );
+
+    const parsed = JSON.parse(response.text || "{}");
+
+    if (Array.isArray(parsed.recipes)) {
+      for (const item of parsed.recipes) {
+        if (item && item.id) {
+          map[item.id] = {
+            title: item.title,
+            description: item.description,
+            ingredients: Array.isArray(item.ingredients) ? item.ingredients : [],
+            instructions: Array.isArray(item.instructions) ? item.instructions : [],
+            tags: Array.isArray(item.tags) ? item.tags : undefined,
+          };
+        }
+      }
+    }
+
+    return {
+      weekTheme: staticTheme || (typeof parsed.weekTheme === "string" && parsed.weekTheme ? parsed.weekTheme : weekTheme || ""),
+      translations: map,
+    };
+  } catch (error) {
+    console.warn("Translate recipes batch error:", error);
+    return {
+      weekTheme: staticTheme || weekTheme || "",
+      translations: map,
+    };
   }
 }

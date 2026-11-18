@@ -1,4 +1,5 @@
 import express from "express";
+import fs from "fs";
 import path from "path";
 import { apiRouter } from "./routes.ts";
 
@@ -20,15 +21,24 @@ export function createExpressApp() {
   app.use(express.json({ limit: "25mb" }));
   app.use(express.urlencoded({ extended: true, limit: "25mb" }));
 
-  // Explicit service worker & manifest routes
+  // Explicit service worker & manifest routes (prefer built dist/ in production)
   app.get("/sw.js", (_req, res) => {
     res.setHeader("Content-Type", "application/javascript");
     res.setHeader("Service-Worker-Allowed", "/");
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+    const distSw = path.join(process.cwd(), "dist", "sw.js");
+    if (process.env.NODE_ENV === "production" && fs.existsSync(distSw)) {
+      return res.sendFile(distSw);
+    }
     res.sendFile(path.join(process.cwd(), "public", "sw.js"));
   });
 
   app.get("/manifest.json", (_req, res) => {
     res.setHeader("Content-Type", "application/manifest+json; charset=utf-8");
+    const distManifest = path.join(process.cwd(), "dist", "manifest.json");
+    if (process.env.NODE_ENV === "production" && fs.existsSync(distManifest)) {
+      return res.sendFile(distManifest);
+    }
     res.sendFile(path.join(process.cwd(), "public", "manifest.json"));
   });
 

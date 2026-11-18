@@ -115,6 +115,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
   const [isFullscreenModalOpen, setIsFullscreenModalOpen] = useState(false);
   const [isUploadingBefore, setIsUploadingBefore] = useState(false);
   const [isUploadingAfter, setIsUploadingAfter] = useState(false);
+  const [photoUploadError, setPhotoUploadError] = useState<string | null>(null);
 
   // Hidden file inputs
   const beforeInputRef = useRef<HTMLInputElement>(null);
@@ -143,6 +144,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setPhotoUploadError(null);
     if (type === 'before') setIsUploadingBefore(true);
     else setIsUploadingAfter(true);
 
@@ -165,7 +167,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
       }));
     } catch (err) {
       console.error('Erreur compression image:', err);
-      alert("Impossible de charger l'image. Veuillez essayer un autre fichier.");
+      setPhotoUploadError("Impossible de charger l'image. Essayez un autre format (JPG ou PNG).");
     } finally {
       if (type === 'before') setIsUploadingBefore(false);
       else setIsUploadingAfter(false);
@@ -1247,6 +1249,20 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
           <p className="text-xs text-slate-500 dark:text-slate-400">
             Comparez visuellement votre silhouette pour mesurer l'impact réel de vos efforts.
           </p>
+
+          {photoUploadError && (
+            <div className="p-3 rounded-xl bg-rose-50 dark:bg-rose-950/50 border border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-200 text-xs font-bold flex items-center justify-between gap-2">
+              <span>{photoUploadError}</span>
+              <button
+                type="button"
+                onClick={() => setPhotoUploadError(null)}
+                className="p-1 rounded-lg hover:bg-rose-100 dark:hover:bg-rose-900 cursor-pointer"
+                aria-label="Fermer"
+              >
+                <X className="w-3.5 h-3.5" />
+              </button>
+            </div>
+          )}
 
           {/* Interactive Split View Slider when toggled */}
           {comparisonMode === 'split' && hasBothPhotos && photos.before && photos.after ? (

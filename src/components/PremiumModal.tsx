@@ -40,6 +40,7 @@ export const PremiumModal: React.FC<PremiumModalProps> = ({
     setStatusIsError(false);
 
     try {
+      const isTrialEnded = trialDaysLeft <= 0 && !isPremium;
       const response = await fetch('/api/stripe/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -47,6 +48,8 @@ export const PremiumModal: React.FC<PremiumModalProps> = ({
           plan: billingCycle,
           userEmail: userEmail || '',
           userName: userName || '',
+          skipTrial: isTrialEnded,
+          trialDaysRemaining: trialDaysLeft,
         }),
       });
 
@@ -66,7 +69,16 @@ export const PremiumModal: React.FC<PremiumModalProps> = ({
         return;
       }
 
-      // If Stripe secret is not configured yet (mock/preview mode)
+      if (isTrialEnded) {
+        setStatusIsError(true);
+        setStatusNotice(
+          data.message ||
+            "Le paiement Stripe doit être configuré (STRIPE_SECRET_KEY) pour valider votre abonnement après la fin de l'essai."
+        );
+        return;
+      }
+
+      // If Stripe secret is not configured yet (preview mode during active trial)
       confetti({
         particleCount: 100,
         spread: 80,
@@ -142,13 +154,25 @@ export const PremiumModal: React.FC<PremiumModalProps> = ({
           <div className="w-16 h-16 rounded-3xl bg-gradient-to-tr from-amber-400 via-emerald-500 to-teal-500 mx-auto flex items-center justify-center text-white shadow-lg shadow-amber-500/20">
             <Crown className="w-9 h-9 fill-white" />
           </div>
-          <span className="bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider inline-block">
-            {isPremium ? 'Abonnement Actif' : `${trialDaysLeft} Jours d'essai gratuit restant`}
+          <span
+            className={`text-[10px] font-black px-3 py-1 rounded-full uppercase tracking-wider inline-block ${
+              !isPremium && trialDaysLeft <= 0
+                ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300'
+                : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
+            }`}
+          >
+            {isPremium
+              ? 'Abonnement Actif'
+              : trialDaysLeft <= 0
+              ? 'Essai gratuit terminé (0 jour restant)'
+              : `${trialDaysLeft} Jours d'essai gratuit restant`}
           </span>
           <h2 className="text-2xl font-black tracking-tight">NutriCoach Premium</h2>
           <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto">
             {isPremium
               ? 'Votre formule Premium est active sans engagement.'
+              : trialDaysLeft <= 0
+              ? 'Votre période d’essai de 30 jours est terminée. Activez votre abonnement pour continuer.'
               : 'Accélérez vos résultats grâce au suivi nutritionnel IA personnalisé.'}
           </p>
         </div>
@@ -253,7 +277,9 @@ export const PremiumModal: React.FC<PremiumModalProps> = ({
                 <div className="text-xl font-black text-slate-900 dark:text-white">
                   4,99 €<span className="text-xs font-normal text-slate-400">/mois</span>
                 </div>
-                <span className="text-[10px] text-slate-400 block mt-1">30 jours offerts puis 4,99 €</span>
+                <span className="text-[10px] text-slate-400 block mt-1">
+                  {trialDaysLeft <= 0 ? 'Facturation immédiate • Sans engagement' : '30 jours offerts puis 4,99 €'}
+                </span>
               </div>
 
               <div
@@ -316,7 +342,9 @@ export const PremiumModal: React.FC<PremiumModalProps> = ({
               ) : (
                 <>
                   <Sparkles className="w-5 h-5 text-amber-300" />
-                  Démarrer mon essai (Paiement sécurisé Stripe)
+                  {trialDaysLeft <= 0
+                    ? `Payer et continuer — ${billingCycle === 'monthly' ? '4,99 €/mois' : '39,99 €/an'} (Stripe)`
+                    : 'Démarrer mon essai (Paiement sécurisé Stripe)'}
                 </>
               )}
             </button>

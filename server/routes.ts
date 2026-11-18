@@ -9,6 +9,7 @@ import {
   calculateMealFromText,
   generateMenuPlan,
   generateWeeklyRecipes,
+  translateRecipesBatch,
 } from "./geminiService.ts";
 import {
   getStripe,
@@ -296,8 +297,8 @@ apiRouter.post("/api/ai/generate-menu", handleGenerateMenu);
 // AI Generate Weekly Recipes
 const handleGenerateWeeklyRecipes = async (req: Request, res: Response) => {
   try {
-    const { dietaryPreference, targetCalories, weekTheme } = req.body || {};
-    const recipes = await generateWeeklyRecipes({ dietaryPreference, targetCalories, weekTheme });
+    const { dietaryPreference, targetCalories, weekTheme, language } = req.body || {};
+    const recipes = await generateWeeklyRecipes({ dietaryPreference, targetCalories, weekTheme, language });
     res.json(recipes);
   } catch (error: any) {
     console.error("Generate weekly recipes error:", error);
@@ -306,6 +307,23 @@ const handleGenerateWeeklyRecipes = async (req: Request, res: Response) => {
 };
 apiRouter.post("/ai/generate-weekly-recipes", handleGenerateWeeklyRecipes);
 apiRouter.post("/api/ai/generate-weekly-recipes", handleGenerateWeeklyRecipes);
+
+// AI Translate Recipes Batch
+const handleTranslateRecipes = async (req: Request, res: Response) => {
+  try {
+    const { recipes, weekTheme, targetLanguage } = req.body || {};
+    if (!targetLanguage || !Array.isArray(recipes)) {
+      return res.status(400).json({ error: "recipes and targetLanguage are required" });
+    }
+    const result = await translateRecipesBatch({ recipes, weekTheme, targetLanguage });
+    res.json(result);
+  } catch (error: any) {
+    console.error("Translate recipes error:", error);
+    res.status(500).json({ error: "Failed to translate recipes" });
+  }
+};
+apiRouter.post("/ai/translate-recipes", handleTranslateRecipes);
+apiRouter.post("/api/ai/translate-recipes", handleTranslateRecipes);
 
 // Stripe Config
 const handleStripeConfig = (_req: Request, res: Response) => {
@@ -317,9 +335,16 @@ apiRouter.get("/api/stripe/config", handleStripeConfig);
 // Stripe Create Checkout Session
 const handleCreateCheckoutSession = async (req: Request, res: Response) => {
   try {
-    const { plan, userEmail, userName } = req.body || {};
+    const { plan, userEmail, userName, skipTrial, trialDaysRemaining } = req.body || {};
     const origin = req.headers.origin || process.env.APP_URL || `http://${req.headers.host || "localhost:3000"}`;
-    const result = await createCheckoutSession({ plan, userEmail, userName, origin });
+    const result = await createCheckoutSession({
+      plan,
+      userEmail,
+      userName,
+      origin,
+      skipTrial: Boolean(skipTrial),
+      trialDaysRemaining: typeof trialDaysRemaining === "number" ? trialDaysRemaining : undefined,
+    });
     res.json(result);
   } catch (error: any) {
     console.error("Stripe Checkout Session error:", error);

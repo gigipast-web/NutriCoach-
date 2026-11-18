@@ -23,6 +23,7 @@ import {
   HelpCircle,
   BarChart2,
   ChevronRight,
+  Award,
 } from 'lucide-react';
 import { UserProfile, UserMetrics, ActivityEntry } from '../types.ts';
 import { useLanguage } from '../i18n/LanguageContext.tsx';
@@ -45,6 +46,7 @@ interface ProfileViewProps {
   onLogout: () => void;
   isDarkMode: boolean;
   onOpenShare?: () => void;
+  onOpenBadges?: () => void;
 }
 
 export const ProfileView: React.FC<ProfileViewProps> = ({
@@ -58,9 +60,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onLogout,
   isDarkMode,
   onOpenShare,
+  onOpenBadges,
 }) => {
   const { t } = useLanguage();
   const [showCancelModal, setShowCancelModal] = useState(false);
+  const [showFaq, setShowFaq] = useState(false);
   const [isWatchModalOpen, setIsWatchModalOpen] = useState(false);
   const [isCancelling, setIsCancelling] = useState(false);
   const [cancelSuccessMessage, setCancelSuccessMessage] = useState<string | null>(null);
@@ -305,20 +309,54 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#1F6F43] transition-colors" />
         </div>
 
-        {/* FAQ & Aide */}
-        <div
-          onClick={() => {
-            alert('NutriCoach Minceur : application de suivi calorique, pesée et rééquilibrage alimentaire assisté par IA.');
-          }}
-          className="p-4 flex items-center justify-between hover:bg-[#F9FCF9] dark:hover:bg-slate-800 transition-colors cursor-pointer group"
-        >
-          <div className="flex items-center gap-3">
-            <HelpCircle className="w-5 h-5 text-[#1F6F43] dark:text-emerald-400" />
-            <span className="text-sm font-black text-black dark:text-white">
-              FAQ & Aide
-            </span>
+        {/* Badges & Rappels (accès rapide mobile) */}
+        {onOpenBadges && (
+          <div
+            onClick={onOpenBadges}
+            className="p-4 flex items-center justify-between hover:bg-[#F9FCF9] dark:hover:bg-slate-800 transition-colors cursor-pointer group"
+          >
+            <div className="flex items-center gap-3">
+              <Award className="w-5 h-5 text-[#1F6F43] dark:text-emerald-400" />
+              <span className="text-sm font-black text-black dark:text-white">
+                Badges, Défis & Rappels
+              </span>
+            </div>
+            <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#1F6F43] transition-colors" />
           </div>
-          <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#1F6F43] transition-colors" />
+        )}
+
+        {/* FAQ & Aide (Accordéon intégré sans alerte navigateur) */}
+        <div>
+          <button
+            type="button"
+            onClick={() => setShowFaq((prev) => !prev)}
+            className="w-full p-4 flex items-center justify-between hover:bg-[#F9FCF9] dark:hover:bg-slate-800 transition-colors cursor-pointer group text-left"
+          >
+            <div className="flex items-center gap-3">
+              <HelpCircle className="w-5 h-5 text-[#1F6F43] dark:text-emerald-400" />
+              <span className="text-sm font-black text-black dark:text-white">
+                FAQ & Aide
+              </span>
+            </div>
+            <ChevronRight
+              className={`w-4 h-4 text-slate-400 group-hover:text-[#1F6F43] transition-transform ${
+                showFaq ? 'rotate-90 text-[#1F6F43]' : ''
+              }`}
+            />
+          </button>
+          {showFaq && (
+            <div className="px-4 pb-4 pt-1 text-xs text-slate-600 dark:text-slate-300 space-y-2.5 bg-[#F9FCF9] dark:bg-slate-800/40">
+              <p>
+                <strong>📸 Scanner un repas ou code-barres :</strong> Utilisez les boutons rapides sur l'écran d'accueil ou dans le Journal alimentaire.
+              </p>
+              <p>
+                <strong>💳 Essai & abonnement :</strong> 30 jours d'essai gratuit, puis 4,99 €/mois ou 39,99 €/an sans engagement (résiliable ici en 1 clic).
+              </p>
+              <p>
+                <strong>📱 Ouvrir en plein écran :</strong> Appuyez sur « Mode Appli » dans la barre du haut pour installer NutriCoach sur votre écran d'accueil.
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -697,8 +735,20 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               Statut du Compte & Décompte Essai Gratuit
             </h3>
           </div>
-          <span className="text-xs font-black bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 px-3 py-1 rounded-full flex items-center gap-1.5 self-start sm:self-auto border border-amber-300 dark:border-amber-800">
-            <span>⏱️ {user.trialDaysRemaining} jours restants sur 30</span>
+          <span
+            className={`text-xs font-black px-3 py-1 rounded-full flex items-center gap-1.5 self-start sm:self-auto border ${
+              !user.isPremium && user.trialDaysRemaining <= 0
+                ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border-rose-300 dark:border-rose-800'
+                : 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 border-amber-300 dark:border-amber-800'
+            }`}
+          >
+            <span>
+              {user.isPremium
+                ? '👑 Abonnement Premium Actif'
+                : user.trialDaysRemaining <= 0
+                ? '🔒 Essai gratuit terminé (0 jour restant)'
+                : `⏱️ ${user.trialDaysRemaining} jours restants sur 30`}
+            </span>
           </span>
         </div>
 
@@ -708,24 +758,55 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <span className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
               <span>Compte à rebours de l'essai (30 jours) :</span>
             </span>
-            <strong className="text-amber-700 dark:text-amber-300 font-black">
-              Jour {Math.max(1, 31 - user.trialDaysRemaining)} / 30 ({user.trialDaysRemaining} jours restants)
+            <strong
+              className={`font-black ${
+                !user.isPremium && user.trialDaysRemaining <= 0
+                  ? 'text-rose-600 dark:text-rose-400'
+                  : 'text-amber-700 dark:text-amber-300'
+              }`}
+            >
+              {user.trialDaysRemaining <= 0
+                ? 'Terminé (0 jour restant)'
+                : `Jour ${Math.max(1, 31 - user.trialDaysRemaining)} / 30 (${user.trialDaysRemaining} jours restants)`}
             </strong>
           </div>
 
           {/* Progress bar */}
           <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-3 overflow-hidden shadow-inner">
             <div
-              className="bg-gradient-to-r from-amber-500 via-emerald-500 to-teal-500 h-3 rounded-full transition-all duration-500"
+              className={`h-3 rounded-full transition-all duration-500 ${
+                !user.isPremium && user.trialDaysRemaining <= 0
+                  ? 'bg-gradient-to-r from-rose-500 to-amber-500'
+                  : 'bg-gradient-to-r from-amber-500 via-emerald-500 to-teal-500'
+              }`}
               style={{
                 width: `${Math.min(100, Math.max(5, Math.round(((30 - user.trialDaysRemaining) / 30) * 100)))}%`,
               }}
             />
           </div>
 
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1 text-[11px] text-slate-500 dark:text-slate-400">
-            <span>✨ Inscription validée • Période d'évaluation offerte à 100%</span>
-            <span className="font-semibold text-emerald-600 dark:text-emerald-400">0 € facturé avant la fin des 30 jours</span>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+            {!user.isPremium && user.trialDaysRemaining <= 0 ? (
+              <>
+                <span className="font-bold text-rose-600 dark:text-rose-400">
+                  ⚠️ Période d'essai terminée — Passez à Premium pour continuer.
+                </span>
+                <button
+                  type="button"
+                  onClick={onOpenPremium}
+                  className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs cursor-pointer transition-colors"
+                >
+                  Payer pour continuer (4,99 €/mois)
+                </button>
+              </>
+            ) : (
+              <>
+                <span>✨ Inscription validée • Période d'évaluation offerte à 100%</span>
+                <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                  0 € facturé avant la fin des 30 jours
+                </span>
+              </>
+            )}
           </div>
         </div>
 
@@ -741,7 +822,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 <span className="text-[10px] bg-emerald-600 text-white font-bold px-2 py-0.5 rounded-full">Android</span>
               </div>
               <div className="text-xs text-slate-500 dark:text-slate-400 font-mono">
-                com.nutricoach.nutrition.app
+                com.nutricoach.nutrition.coach
               </div>
             </div>
           </div>

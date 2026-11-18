@@ -14,7 +14,31 @@ export function getIsoWeekNumber(d: Date = new Date()): number {
 /**
  * Returns user-friendly week label (e.g. "Semaine 41 • 6 au 12 Octobre")
  */
-export function getWeekDateRangeLabel(d: Date = new Date()): string {
+const WEEK_WORD: Record<string, string> = {
+  fr: 'Semaine',
+  en: 'Week',
+  es: 'Semana',
+  de: 'Woche',
+  it: 'Settimana',
+  pt: 'Semana',
+  nl: 'Week',
+  pl: 'Tydzień',
+  no: 'Uke',
+  sv: 'Vecka',
+  da: 'Uge',
+  fi: 'Viikko',
+  ru: 'Неделя',
+  ja: '第',
+  zh: '第',
+  ar: 'الأسبوع',
+  tr: 'Hafta',
+  el: 'Εβδομάδα',
+  cs: 'Týden',
+  ro: 'Săptămâna',
+  uk: 'Тиждень',
+};
+
+export function getWeekDateRangeLabel(d: Date = new Date(), lang: string = 'fr'): string {
   const weekNum = getIsoWeekNumber(d);
   const currentDayOfWeek = (d.getDay() + 6) % 7; // 0 = Lundi, 6 = Dimanche
   const monday = new Date(d);
@@ -22,10 +46,12 @@ export function getWeekDateRangeLabel(d: Date = new Date()): string {
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
 
-  const startStr = monday.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
-  const endStr = sunday.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+  const locale = lang === 'fr' ? 'fr-FR' : lang;
+  const startStr = monday.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
+  const endStr = sunday.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
+  const weekLabel = lang === 'ja' ? `第${weekNum}週` : lang === 'zh' ? `第${weekNum}周` : `${WEEK_WORD[lang] || 'Week'} ${weekNum}`;
 
-  return `Semaine ${weekNum} • ${startStr} au ${endStr}`;
+  return `${weekLabel} • ${startStr} – ${endStr}`;
 }
 
 /**

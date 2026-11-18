@@ -1,4 +1,4 @@
-const CACHE_NAME = 'nutricoach-cache-v2';
+const CACHE_NAME = 'nutricoach-cache-v3';
 const ASSETS_TO_CACHE = [
   '/',
   '/index.html',
@@ -11,7 +11,6 @@ const ASSETS_TO_CACHE = [
   '/screenshots/screenshot-mobile.png',
   '/screenshots/screenshot-desktop.png',
   '/privacy.html',
-  '/tester.html',
   '/delete-account.html'
 ];
 

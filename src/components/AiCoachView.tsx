@@ -643,41 +643,38 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
   };
 
   return (
-    <div id="ai-coach-view" className="space-y-6 pb-12">
-      {/* Multilingual universal coach banner with centered dropdown menu */}
-      <div className="relative z-30 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-emerald-950/40 border border-emerald-200/90 dark:border-emerald-800/70 p-3.5 sm:p-4 shadow-xs text-center">
-        <div className="flex flex-col items-center justify-center gap-2">
-          <div className="flex items-center justify-center gap-2 flex-wrap">
-            <div className="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0 shadow-2xs">
-              <Globe className="w-4 h-4 animate-[spin_24s_linear_infinite]" />
+    <div id="ai-coach-view" className="space-y-3 sm:space-y-4 pb-12">
+      {/* Multilingual universal coach banner (compact single bar) */}
+      <div className="relative z-30 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-emerald-950/40 border border-emerald-200/90 dark:border-emerald-800/70 px-3 py-2 sm:px-4 sm:py-2.5 shadow-xs">
+        <div className="flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-7 h-7 rounded-lg bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 flex items-center justify-center shrink-0">
+              <Globe className="w-3.5 h-3.5 animate-[spin_24s_linear_infinite]" />
             </div>
-            <div className="flex items-center gap-1.5 flex-wrap justify-center">
-              <span className="font-extrabold text-xs sm:text-sm text-emerald-950 dark:text-emerald-100">
-                Coach Polyglotte Universel :
+            <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+              <span className="font-extrabold text-xs text-emerald-950 dark:text-emerald-100 truncate">
+                Coach Polyglotte
               </span>
-              <span className="text-[10px] font-black uppercase px-2 py-0.5 rounded-full bg-emerald-200/80 dark:bg-emerald-900/80 text-emerald-800 dark:text-emerald-300">
+              <span className="text-[10px] font-black uppercase px-1.5 py-0.5 rounded-full bg-emerald-200/80 dark:bg-emerald-900/80 text-emerald-800 dark:text-emerald-300 shrink-0">
                 21+ langues
               </span>
             </div>
           </div>
-          <p className="text-[11px] sm:text-xs text-emerald-700/90 dark:text-emerald-300/90 text-center max-w-md">
-            Comprend, analyse et converse couramment dans toutes les langues
-          </p>
 
-          {/* Centered Dropdown Menu (Menu Déroulant) for Coach Language */}
-          <div className="relative flex justify-center mt-1" ref={coachLangDropdownRef}>
+          {/* Dropdown Menu for Coach Language */}
+          <div className="relative shrink-0" ref={coachLangDropdownRef}>
             <button
               type="button"
               id="coach-polyglot-dropdown-btn"
               onClick={() => setIsCoachLangOpen(!isCoachLangOpen)}
-              className="flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700 text-slate-800 dark:text-slate-100 hover:border-emerald-500 dark:hover:border-emerald-500 shadow-sm hover:shadow-md text-xs sm:text-sm font-bold transition-all cursor-pointer select-none ring-offset-2 focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
+              className="flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700 text-slate-800 dark:text-slate-100 hover:border-emerald-500 dark:hover:border-emerald-500 shadow-xs text-xs font-bold transition-all cursor-pointer select-none focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
               aria-expanded={isCoachLangOpen}
               aria-haspopup="listbox"
               title="Menu déroulant : choisir la langue du Coach polyglotte"
             >
-              <span className="text-base leading-none">{currentLanguageOption.flag}</span>
-              <span className="font-extrabold">{currentLanguageOption.native}</span>
-              <span className="text-[10px] uppercase font-mono px-1.5 py-0.5 rounded-md bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 font-black">
+              <span className="text-sm leading-none">{currentLanguageOption.flag}</span>
+              <span className="font-extrabold hidden sm:inline">{currentLanguageOption.native}</span>
+              <span className="text-[10px] uppercase font-mono px-1 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950/80 text-emerald-800 dark:text-emerald-300 font-black">
                 {currentLanguageOption.code}
               </span>
               <ChevronDown
@@ -687,11 +684,11 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
               />
             </button>
 
-            {/* Popover Dropdown Menu - Centered below button */}
+            {/* Popover Dropdown Menu - Right-aligned */}
             {isCoachLangOpen && (
               <div
                 id="coach-polyglot-menu"
-                className="absolute left-1/2 -translate-x-1/2 mt-2 w-72 sm:w-84 max-w-[calc(100vw-2rem)] rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150 text-left"
+                className="absolute right-0 mt-2 w-72 sm:w-84 max-w-[calc(100vw-2rem)] rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 shadow-2xl z-50 overflow-hidden animate-in fade-in zoom-in-95 duration-150 text-left"
               >
                 {/* Header */}
                 <div className="p-3 border-b border-slate-100 dark:border-slate-800 bg-emerald-50/60 dark:bg-emerald-950/30 flex items-center justify-between">
@@ -839,9 +836,9 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
 
       {/* View Header (Screen 4: Mon coach IA) */}
       <div
-        className={`p-4 sm:p-5 rounded-[28px] border ${
+        className={`p-3 sm:p-4 rounded-3xl border ${
           isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#E2ECE2]'
-        } shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-3`}
+        } shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-2.5`}
       >
         <div className="flex items-center justify-between w-full md:w-auto gap-3">
           <div className="flex items-center gap-3">

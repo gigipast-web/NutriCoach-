@@ -51,8 +51,10 @@ export async function createCheckoutSession(params: {
   userEmail?: string;
   userName?: string;
   origin: string;
+  skipTrial?: boolean;
+  trialDaysRemaining?: number;
 }) {
-  const { plan, userEmail, userName, origin } = params;
+  const { plan, userEmail, userName, origin, skipTrial, trialDaysRemaining } = params;
   const stripe = getStripe();
 
   if (!stripe) {
@@ -112,17 +114,30 @@ export async function createCheckoutSession(params: {
     ];
   }
 
+  const effectiveTrialDays =
+    skipTrial || (typeof trialDaysRemaining === "number" && trialDaysRemaining <= 0)
+      ? 0
+      : typeof trialDaysRemaining === "number" && trialDaysRemaining > 0
+      ? Math.min(30, Math.round(trialDaysRemaining))
+      : 30;
+
+  const subscriptionData: Stripe.Checkout.SessionCreateParams.SubscriptionData = {
+    metadata: {
+      plan: plan || "monthly",
+      userName: userName || "",
+      trialStatus: effectiveTrialDays > 0 ? "trial" : "expired_immediate_billing",
+    },
+  };
+
+  if (effectiveTrialDays > 0) {
+    subscriptionData.trial_period_days = effectiveTrialDays;
+  }
+
   const sessionParams: Stripe.Checkout.SessionCreateParams = {
     mode: "subscription",
     payment_method_types: ["card"],
     line_items: lineItems,
-    subscription_data: {
-      trial_period_days: 30,
-      metadata: {
-        plan: plan || "monthly",
-        userName: userName || "",
-      },
-    },
+    subscription_data: subscriptionData,
     metadata: {
       plan: plan || "monthly",
       userName: userName || "",
