@@ -21,20 +21,20 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
 
   const currentOption = LANGUAGES.find((l) => l.code === language) || LANGUAGES[0];
 
-  // Close on outside click
+  // Close on outside tap/click (without auto-focusing the search input so the mobile keyboard stays closed)
   useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
+    const handleClickOutside = (event: MouseEvent | TouchEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
     };
     if (isOpen) {
       document.addEventListener('mousedown', handleClickOutside);
-      // Auto-focus search input
-      setTimeout(() => searchInputRef.current?.focus(), 50);
+      document.addEventListener('touchstart', handleClickOutside, { passive: true });
     }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
     };
   }, [isOpen]);
 
@@ -60,6 +60,9 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   const popularLanguages = LANGUAGES.filter((l) => POPULAR_LANGUAGE_CODES.includes(l.code));
 
   const handleSelectLanguage = (code: Language) => {
+    if (document.activeElement instanceof HTMLElement) {
+      document.activeElement.blur();
+    }
     setLanguage(code);
     setIsOpen(false);
     setSearchQuery('');

@@ -1,6 +1,6 @@
-import { RECIPE_CATALOG_PART1, StaticTranslatedRecipe } from './recipeCatalogEu1.ts';
+import { RECIPE_CATALOG_PART1, type StaticTranslatedRecipe } from './recipeCatalogEu1.ts';
 import { RECIPE_CATALOG_PART2 } from './recipeCatalogEu2.ts';
-import { Recipe } from '../types.ts';
+import type { Recipe } from '../types.ts';
 
 export type { StaticTranslatedRecipe };
 

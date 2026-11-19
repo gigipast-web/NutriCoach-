@@ -1,4 +1,4 @@
-import { StaticTranslatedRecipe } from './recipeCatalogEu1.ts';
+import type { StaticTranslatedRecipe } from './recipeCatalogEu1.ts';
 
 export const RECIPE_CATALOG_PART2: Record<string, Record<string, StaticTranslatedRecipe>> = {
   pl: {
