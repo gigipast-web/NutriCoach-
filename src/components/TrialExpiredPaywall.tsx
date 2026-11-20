@@ -8,6 +8,9 @@ import {
   CreditCard,
   User,
   Sparkles,
+  LogOut,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { useLanguage } from '../i18n/LanguageContext.tsx';
 
@@ -15,14 +18,14 @@ interface TrialExpiredPaywallProps {
   isDarkMode: boolean;
   userEmail?: string;
   userName?: string;
-  onGoToProfile: () => void;
+  onLogout: () => void;
 }
 
 export const TrialExpiredPaywall: React.FC<TrialExpiredPaywallProps> = ({
   isDarkMode,
   userEmail,
   userName,
-  onGoToProfile,
+  onLogout,
 }) => {
   const { language } = useLanguage();
   const isEn = language === 'en';
@@ -30,6 +33,7 @@ export const TrialExpiredPaywall: React.FC<TrialExpiredPaywallProps> = ({
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
   const [isLoading, setIsLoading] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [showAccountDetails, setShowAccountDetails] = useState(false);
 
   const handlePayNow = async () => {
     setIsLoading(true);
@@ -57,8 +61,8 @@ export const TrialExpiredPaywall: React.FC<TrialExpiredPaywallProps> = ({
         data.error ||
           data.message ||
           (isEn
-            ? 'Unable to initiate Stripe payment right now. Please try again.'
-            : 'Impossible de lancer le paiement Stripe pour le moment. Veuillez réessayer.')
+            ? 'Stripe checkout must be configured (STRIPE_SECRET_KEY) to validate your paid subscription.'
+            : 'Le paiement par carte Stripe (STRIPE_SECRET_KEY) doit être configuré pour activer votre abonnement.')
       );
     } catch {
       setErrorMessage(
@@ -103,20 +107,20 @@ export const TrialExpiredPaywall: React.FC<TrialExpiredPaywallProps> = ({
           <span className="inline-flex items-center gap-1.5 bg-rose-100 text-rose-800 dark:bg-rose-950/70 dark:text-rose-300 border border-rose-300 dark:border-rose-800 text-[11px] font-black px-3.5 py-1 rounded-full uppercase tracking-wider">
             <Crown className="w-3.5 h-3.5 text-amber-500" />
             {isEn
-              ? 'Free trial ended • 0 days left'
-              : "Période d'essai terminée • 0 jour restant"}
+              ? '30-day trial ended • Payment required'
+              : "Essai de 30 jours terminé • Paiement requis"}
           </span>
 
           <h2 className="text-2xl sm:text-3xl font-black tracking-tight">
             {isEn
-              ? 'Subscribe to continue using NutriCoach'
-              : 'Abonnez-vous pour continuer NutriCoach'}
+              ? 'Pay & Subscribe to Continue'
+              : 'Payez pour continuer à utiliser NutriCoach'}
           </h2>
 
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 max-w-md mx-auto leading-relaxed">
             {isEn
-              ? 'Your 30-day free trial has ended. Activate NutriCoach Premium to unlock all your tracking tools and keep all your saved progress.'
-              : 'Vos 30 jours d’essai gratuit sont arrivés à échéance. Activez votre abonnement Premium pour continuer à utiliser vos outils minceur et retrouver toutes vos données.'}
+              ? 'Your 30-day free trial has ended. There is no free tier after the trial — choose a subscription below to unlock NutriCoach and keep all your saved progress.'
+              : 'Vos 30 jours d’essai gratuit sont terminés. Il n’y a pas de formule gratuite sans abonnement : réglez votre abonnement ci-dessous pour continuer à utiliser l’application et retrouver toutes vos données.'}
           </p>
         </div>
 
@@ -142,7 +146,7 @@ export const TrialExpiredPaywall: React.FC<TrialExpiredPaywallProps> = ({
               </span>
             </div>
             <span className="text-[11px] text-slate-500 dark:text-slate-400 block mt-1">
-              {isEn ? 'Cancel anytime' : 'Sans engagement'}
+              {isEn ? 'Cancel anytime' : 'Résiliable à tout moment'}
             </span>
           </button>
 
@@ -218,23 +222,79 @@ export const TrialExpiredPaywall: React.FC<TrialExpiredPaywallProps> = ({
           )}
         </button>
 
-        {/* Trust + Account footer */}
-        <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400">
-          <span className="flex items-center gap-1.5 font-semibold">
-            <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
-            {isEn
-              ? '100% secure Stripe payment • Cancel anytime'
-              : 'Paiement Stripe 100% sécurisé • Résiliation en 1 clic'}
-          </span>
-          <button
-            type="button"
-            id="btn-paywall-profile"
-            onClick={onGoToProfile}
-            className="inline-flex items-center gap-1 font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 underline cursor-pointer px-2 py-1"
-          >
-            <User className="w-3.5 h-3.5" />
-            <span>{isEn ? 'My Account / Log out' : 'Mon compte / Déconnexion'}</span>
-          </button>
+        {/* Trust + Account footer (kept inside paywall so no bypass to ProfileView) */}
+        <div className="pt-3 border-t border-slate-100 dark:border-slate-800 space-y-3">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-slate-500 dark:text-slate-400">
+            <span className="flex items-center gap-1.5 font-semibold">
+              <ShieldCheck className="w-4 h-4 text-emerald-500 shrink-0" />
+              {isEn
+                ? '100% secure Stripe payment • Cancel anytime'
+                : 'Paiement Stripe 100% sécurisé • Résiliation en 1 clic'}
+            </span>
+            <button
+              type="button"
+              id="btn-paywall-profile"
+              onClick={() => setShowAccountDetails((prev) => !prev)}
+              className="inline-flex items-center gap-1 font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 underline cursor-pointer px-2 py-1"
+            >
+              <User className="w-3.5 h-3.5" />
+              <span>{isEn ? 'My Account / Log out' : 'Mon compte / Déconnexion'}</span>
+              {showAccountDetails ? (
+                <ChevronUp className="w-3.5 h-3.5" />
+              ) : (
+                <ChevronDown className="w-3.5 h-3.5" />
+              )}
+            </button>
+          </div>
+
+          {showAccountDetails && (
+            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 text-xs space-y-3">
+              <div className="flex items-center justify-between gap-2">
+                <div>
+                  <div className="font-black text-slate-800 dark:text-white">
+                    {userName || 'Utilisateur'}
+                  </div>
+                  {userEmail && (
+                    <div className="text-[11px] text-slate-500 dark:text-slate-400">{userEmail}</div>
+                  )}
+                </div>
+                <span className="text-[10px] font-black px-2.5 py-1 rounded-full bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 uppercase">
+                  {isEn ? 'Trial ended' : 'Essai expiré'}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between gap-2 flex-wrap pt-2 border-t border-slate-200 dark:border-slate-700">
+                <div className="flex items-center gap-3 text-[11px]">
+                  <a
+                    href="/privacy.html"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline text-slate-600 dark:text-slate-300 hover:text-emerald-600"
+                  >
+                    {isEn ? 'Privacy Policy' : 'Confidentialité'}
+                  </a>
+                  <a
+                    href="/delete-account.html"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="underline text-rose-600 dark:text-rose-400"
+                  >
+                    {isEn ? 'Delete Account' : 'Supprimer mon compte'}
+                  </a>
+                </div>
+
+                <button
+                  type="button"
+                  id="btn-paywall-logout"
+                  onClick={onLogout}
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-800 dark:text-white font-bold cursor-pointer transition-colors"
+                >
+                  <LogOut className="w-3.5 h-3.5" />
+                  <span>{isEn ? 'Log out' : 'Se déconnecter'}</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

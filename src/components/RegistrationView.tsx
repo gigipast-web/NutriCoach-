@@ -193,7 +193,7 @@ export const RegistrationView: React.FC<RegistrationViewProps> = ({
                 </span>
               </span>
               <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed">
-                Le compte à rebours démarre automatiquement dès que vous validez cette fiche. Vous suivez vos jours restants en direct au sommet de l'application • <strong>0 € aujourd'hui</strong>.
+                Le compte à rebours démarre automatiquement dès votre entrée dans l'application. Vous suivez vos jours restants en direct • <strong>0 € pendant 30 jours, puis abonnement requis (4,99 €/mois ou 39,99 €/an) pour continuer</strong>.
               </p>
             </div>
           </div>

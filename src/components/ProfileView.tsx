@@ -90,7 +90,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       setIsCancelling(false);
       setShowCancelModal(false);
       setCancelSuccessMessage(
-        'Votre abonnement a été résilié avec succès. Vous ne serez plus débité et vous conservez la formule gratuite.'
+        'Votre abonnement a été résilié avec succès. Aucun prélèvement futur ne sera effectué.'
       );
       setTimeout(() => {
         setCancelSuccessMessage(null);
@@ -350,7 +350,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 <strong>📸 Scanner un repas ou code-barres :</strong> Utilisez les boutons rapides sur l'écran d'accueil ou dans le Journal alimentaire.
               </p>
               <p>
-                <strong>💳 Essai & abonnement :</strong> 30 jours d'essai gratuit, puis 4,99 €/mois ou 39,99 €/an sans engagement (résiliable ici en 1 clic).
+                <strong>💳 Essai & abonnement :</strong> 30 jours d'essai gratuit, puis abonnement requis (4,99 €/mois ou 39,99 €/an, résiliable à tout moment) pour continuer à utiliser l'application.
               </p>
               <p>
                 <strong>📱 Ouvrir en plein écran :</strong> Appuyez sur « Mode Appli » dans la barre du haut pour installer NutriCoach sur votre écran d'accueil.
@@ -624,10 +624,16 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             className={`text-xs font-black px-3 py-1 rounded-full self-start sm:self-auto uppercase tracking-wider ${
               user.isPremium
                 ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
-                : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                : user.trialDaysRemaining <= 0
+                ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-300 dark:border-rose-800'
+                : 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
             }`}
           >
-            {user.isPremium ? 'Premium Actif' : 'Formule Gratuite'}
+            {user.isPremium
+              ? 'Premium Actif'
+              : user.trialDaysRemaining <= 0
+              ? 'Paiement Requis'
+              : `Essai Gratuit (${user.trialDaysRemaining}j / 30)`}
           </span>
         </div>
 
@@ -703,10 +709,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div className="space-y-1">
               <div className="text-sm font-extrabold text-slate-800 dark:text-slate-100">
-                Vous n'avez aucun abonnement payant actif
+                {user.trialDaysRemaining <= 0
+                  ? 'Essai de 30 jours terminé — Abonnement requis'
+                  : `Période d'essai gratuit en cours (${user.trialDaysRemaining} jour${user.trialDaysRemaining > 1 ? 's' : ''} restant${user.trialDaysRemaining > 1 ? 's' : ''})`}
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Aucun prélèvement n'est effectué sur votre carte bancaire. Vous profitez des fonctionnalités gratuites de base.
+                {user.trialDaysRemaining <= 0
+                  ? 'Il n’y a pas de formule gratuite après la période d’essai. Activez votre abonnement (4,99 €/mois ou 39,99 €/an) pour continuer à utiliser NutriCoach.'
+                  : 'Aucun prélèvement pendant les 30 jours d’essai. Au bout des 30 jours, un abonnement (4,99 €/mois ou 39,99 €/an) vous sera demandé pour continuer à utiliser l’application.'}
               </p>
             </div>
 
@@ -716,7 +726,9 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               className="px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-amber-500 text-white font-black text-xs sm:text-sm flex items-center gap-2 shadow-md hover:opacity-95 cursor-pointer shrink-0 transition-transform active:scale-95"
             >
               <Crown className="w-4 h-4 text-amber-300 fill-amber-300" />
-              S'abonner à Premium (4,99 €/mois)
+              {user.trialDaysRemaining <= 0
+                ? 'Payer pour continuer (4,99 €/mois)'
+                : 'Activer Premium (4,99 €/mois)'}
             </button>
           </div>
         )}

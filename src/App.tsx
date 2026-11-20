@@ -85,8 +85,16 @@ export default function App() {
     }
   };
 
-  // User Profile
+  // User Profile (with device-level 30-day trial start enforcement)
   const [user, setUser] = useState<UserProfile>(() => {
+    const storedDeviceTrialStart = localStorage.getItem('nutricoach_trial_started_at');
+    const computeRemaining = (startIso: string) => {
+      const ms = new Date(startIso).getTime();
+      if (isNaN(ms)) return 30;
+      const daysPassed = Math.floor((Date.now() - ms) / (1000 * 60 * 60 * 24));
+      return Math.max(0, 30 - daysPassed);
+    };
+
     const saved = localStorage.getItem('nutricoach_user');
     if (saved) {
       try {
@@ -98,25 +106,37 @@ export default function App() {
               expiredStart.setDate(expiredStart.getDate() - 30);
               parsed.trialStartDate = expiredStart.toISOString();
             } else {
-              parsed.trialStartDate = new Date().toISOString();
+              parsed.trialStartDate = storedDeviceTrialStart || new Date().toISOString();
             }
           }
-          const startMs = new Date(parsed.trialStartDate).getTime();
-          if (!isNaN(startMs)) {
-            const daysPassed = Math.floor((Date.now() - startMs) / (1000 * 60 * 60 * 24));
-            const computedRemaining = Math.max(0, 30 - daysPassed);
-            parsed.trialDaysRemaining =
-              typeof parsed.trialDaysRemaining === 'number'
-                ? Math.min(parsed.trialDaysRemaining, computedRemaining)
-                : computedRemaining;
+          if (storedDeviceTrialStart) {
+            const deviceMs = new Date(storedDeviceTrialStart).getTime();
+            const parsedMs = new Date(parsed.trialStartDate).getTime();
+            if (!isNaN(deviceMs) && (isNaN(parsedMs) || deviceMs < parsedMs)) {
+              parsed.trialStartDate = storedDeviceTrialStart;
+            }
           }
+          localStorage.setItem('nutricoach_trial_started_at', parsed.trialStartDate);
+
+          const computedRemaining = computeRemaining(parsed.trialStartDate);
+          parsed.trialDaysRemaining =
+            typeof parsed.trialDaysRemaining === 'number'
+              ? Math.min(parsed.trialDaysRemaining, computedRemaining)
+              : computedRemaining;
           return parsed;
         }
       } catch (e) {
         // fallback
       }
     }
-    return initialUser;
+
+    const startDate = storedDeviceTrialStart || initialUser.trialStartDate || new Date().toISOString();
+    localStorage.setItem('nutricoach_trial_started_at', startDate);
+    return {
+      ...initialUser,
+      trialStartDate: startDate,
+      trialDaysRemaining: computeRemaining(startDate),
+    };
   });
 
   // Meals
@@ -374,11 +394,10 @@ export default function App() {
         fetch(verifyEndpoint)
           .then((res) => res.json())
           .then((data) => {
-            if (data.isPremium || data.verified) {
+            if (data.isPremium && data.verified && !data.mock) {
               setUser((prev) => ({
                 ...prev,
                 isPremium: true,
-                trialDaysRemaining: 30,
                 email: data.customerEmail || prev.email,
               }));
 
@@ -393,12 +412,21 @@ export default function App() {
                 message:
                   'Paiement Stripe validé avec succès ! Votre accès NutriCoach Premium est désormais activé.',
               });
+            } else {
+              setPaymentNotice({
+                type: 'cancelled',
+                message:
+                  data.message ||
+                  'Paiement Stripe non confirmé. Un abonnement actif est requis pour débloquer NutriCoach.',
+              });
             }
           })
           .catch((err) => {
             console.error('Erreur vérification session Stripe:', err);
-            // Graceful unlock
-            setUser((prev) => ({ ...prev, isPremium: true }));
+            setPaymentNotice({
+              type: 'cancelled',
+              message: 'Impossible de vérifier le paiement Stripe. Veuillez réessayer.',
+            });
           })
           .finally(() => {
             // Clean URL query parameters
@@ -476,6 +504,38 @@ export default function App() {
       onError: () => setIsVoiceSpeakingGreeting(false),
     });
   };
+
+  // Keep trial countdown synchronized live (especially when PWA resumes from background)
+  useEffect(() => {
+    const syncTrialClock = () => {
+      const startIso = user.trialStartDate || localStorage.getItem('nutricoach_trial_started_at');
+      if (!startIso) return;
+      const startMs = new Date(startIso).getTime();
+      if (isNaN(startMs)) return;
+      const daysPassed = Math.floor((Date.now() - startMs) / (1000 * 60 * 60 * 24));
+      const computedRemaining = Math.max(0, 30 - daysPassed);
+      if (computedRemaining < user.trialDaysRemaining) {
+        setUser((prev) =>
+          computedRemaining < prev.trialDaysRemaining
+            ? { ...prev, trialDaysRemaining: computedRemaining, trialStartDate: startIso }
+            : prev
+        );
+      }
+    };
+
+    syncTrialClock();
+    const interval = setInterval(syncTrialClock, 60_000);
+    const onResume = () => {
+      if (document.visibilityState === 'visible') syncTrialClock();
+    };
+    window.addEventListener('focus', syncTrialClock);
+    document.addEventListener('visibilitychange', onResume);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', syncTrialClock);
+      document.removeEventListener('visibilitychange', onResume);
+    };
+  }, [user.trialStartDate, user.trialDaysRemaining]);
 
   // Trial expiration lock state
   const isTrialExpired = Boolean(user.isLoggedIn && !user.isPremium && user.trialDaysRemaining <= 0);
@@ -820,10 +880,19 @@ export default function App() {
   };
 
   const handleRegisterUser = (newUserUpdates: Partial<UserProfile>) => {
+    const existingStart = localStorage.getItem('nutricoach_trial_started_at') || newUserUpdates.trialStartDate || new Date().toISOString();
+    localStorage.setItem('nutricoach_trial_started_at', existingStart);
+    const startMs = new Date(existingStart).getTime();
+    const computedRemaining = !isNaN(startMs)
+      ? Math.max(0, 30 - Math.floor((Date.now() - startMs) / (1000 * 60 * 60 * 24)))
+      : 30;
+
     const updatedUser: UserProfile = {
       ...user,
       ...newUserUpdates,
       isLoggedIn: true,
+      trialStartDate: existingStart,
+      trialDaysRemaining: computedRemaining,
     };
     setUser(updatedUser);
 
@@ -857,7 +926,18 @@ export default function App() {
   };
 
   const handleLoadDemo = () => {
-    setUser(demoUser);
+    const existingStart = localStorage.getItem('nutricoach_trial_started_at') || demoUser.trialStartDate || new Date().toISOString();
+    localStorage.setItem('nutricoach_trial_started_at', existingStart);
+    const startMs = new Date(existingStart).getTime();
+    const computedRemaining = !isNaN(startMs)
+      ? Math.max(0, 30 - Math.floor((Date.now() - startMs) / (1000 * 60 * 60 * 24)))
+      : 30;
+
+    setUser({
+      ...demoUser,
+      trialStartDate: existingStart,
+      trialDaysRemaining: computedRemaining,
+    });
     setMeals(initialMeals);
     setWeightHistory(initialWeightHistory);
     confetti({
@@ -868,8 +948,24 @@ export default function App() {
   };
 
   const handleLogout = () => {
-    setUser(initialUser);
+    const preservedStart =
+      user.trialStartDate || localStorage.getItem('nutricoach_trial_started_at') || new Date().toISOString();
+    localStorage.setItem('nutricoach_trial_started_at', preservedStart);
+    const startMs = new Date(preservedStart).getTime();
+    const computedRemaining = !isNaN(startMs)
+      ? Math.max(0, 30 - Math.floor((Date.now() - startMs) / (1000 * 60 * 60 * 24)))
+      : user.trialDaysRemaining;
+
     localStorage.removeItem('nutricoach_user');
+    setUser({
+      ...initialUser,
+      isLoggedIn: false,
+      name: '',
+      email: '',
+      isPremium: false,
+      trialStartDate: preservedStart,
+      trialDaysRemaining: computedRemaining,
+    });
     setActiveTab('dashboard');
   };
 
@@ -973,12 +1069,12 @@ export default function App() {
 
       {/* Main Content Area */}
       <main id="main-content" className="max-w-7xl mx-auto px-4 sm:px-6 pt-5 main-app-padding">
-        {isTrialExpired && activeTab !== 'profile' ? (
+        {isTrialExpired ? (
           <TrialExpiredPaywall
             isDarkMode={isDarkMode}
             userEmail={user.email}
             userName={user.name}
-            onGoToProfile={() => setActiveTab('profile')}
+            onLogout={handleLogout}
           />
         ) : (
           <>
@@ -1088,23 +1184,22 @@ export default function App() {
                 isDarkMode={isDarkMode}
               />
             )}
+            {activeTab === 'profile' && (
+              <ProfileView
+                user={user}
+                metrics={metrics}
+                onUpdateUser={handleUpdateUser}
+                onAddActivity={handleAddActivity}
+                onCancelSubscription={handleCancelSubscription}
+                onOpenPremium={() => setIsPremiumModalOpen(true)}
+                onOpenAuth={() => setIsAuthModalOpen(true)}
+                onLogout={handleLogout}
+                isDarkMode={isDarkMode}
+                onOpenShare={() => setIsShareModalOpen(true)}
+                onOpenBadges={() => handleSelectTab('badges')}
+              />
+            )}
           </>
-        )}
-
-        {activeTab === 'profile' && (
-          <ProfileView
-            user={user}
-            metrics={metrics}
-            onUpdateUser={handleUpdateUser}
-            onAddActivity={handleAddActivity}
-            onCancelSubscription={handleCancelSubscription}
-            onOpenPremium={() => setIsPremiumModalOpen(true)}
-            onOpenAuth={() => setIsAuthModalOpen(true)}
-            onLogout={handleLogout}
-            isDarkMode={isDarkMode}
-            onOpenShare={() => setIsShareModalOpen(true)}
-            onOpenBadges={() => handleSelectTab('badges')}
-          />
         )}
       </main>
 
@@ -1131,7 +1226,7 @@ export default function App() {
         isOpen={isPremiumModalOpen}
         onClose={() => setIsPremiumModalOpen(false)}
         onUpgrade={() => {
-          setUser((prev) => ({ ...prev, isPremium: true, trialDaysRemaining: 30 }));
+          setUser((prev) => ({ ...prev, isPremium: true }));
         }}
         onCancelSubscription={handleCancelSubscription}
         isDarkMode={isDarkMode}
@@ -1145,7 +1240,22 @@ export default function App() {
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         onSuccess={(updates) => {
-          setUser((prev) => ({ ...prev, ...updates }));
+          const existingStart =
+            localStorage.getItem('nutricoach_trial_started_at') ||
+            updates.trialStartDate ||
+            user.trialStartDate ||
+            new Date().toISOString();
+          localStorage.setItem('nutricoach_trial_started_at', existingStart);
+          const startMs = new Date(existingStart).getTime();
+          const computedRemaining = !isNaN(startMs)
+            ? Math.max(0, 30 - Math.floor((Date.now() - startMs) / (1000 * 60 * 60 * 24)))
+            : 30;
+          setUser((prev) => ({
+            ...prev,
+            ...updates,
+            trialStartDate: existingStart,
+            trialDaysRemaining: computedRemaining,
+          }));
         }}
         isDarkMode={isDarkMode}
       />

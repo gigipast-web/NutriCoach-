@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { Crown, Check, Sparkles, X, ShieldCheck, CreditCard, Lock, Loader2, AlertTriangle, ArrowRight } from 'lucide-react';
-import confetti from 'canvas-confetti';
+import { Crown, Check, Sparkles, X, ShieldCheck, Lock, Loader2, AlertTriangle } from 'lucide-react';
 
 interface PremiumModalProps {
   isOpen: boolean;
@@ -78,20 +77,12 @@ export const PremiumModal: React.FC<PremiumModalProps> = ({
         return;
       }
 
-      // If Stripe secret is not configured yet (preview mode during active trial)
-      confetti({
-        particleCount: 100,
-        spread: 80,
-        origin: { y: 0.5 },
-      });
-      onUpgrade();
+      // Never grant permanent Premium without a real Stripe checkout redirect
+      setStatusIsError(true);
       setStatusNotice(
-        "Essai débloqué ! Pour connecter votre compte Stripe réel, ajoutez simplement STRIPE_SECRET_KEY dans vos Secrets."
+        data.message ||
+          "La configuration Stripe (STRIPE_SECRET_KEY) est requise pour activer l'abonnement payant."
       );
-      setTimeout(() => {
-        setIsLoading(false);
-        onClose();
-      }, 1600);
     } catch (err: any) {
       console.error('Erreur Stripe Checkout:', err);
       setStatusIsError(true);
@@ -216,7 +207,7 @@ export const PremiumModal: React.FC<PremiumModalProps> = ({
                   <div>
                     <h4 className="font-bold text-xs">Confirmer la résiliation</h4>
                     <p className="text-[11px] text-rose-600 dark:text-rose-300 mt-0.5">
-                      Êtes-vous sûr(e) de vouloir vous désabonner ? Vous repasserez sur la formule gratuite sans aucun prélèvement futur.
+                      Êtes-vous sûr(e) de vouloir vous désabonner ? Aucun prélèvement futur ne sera effectué. Sans abonnement actif à la fin des 30 jours d'essai, l'application nécessitera un paiement pour continuer.
                     </p>
                   </div>
                 </div>
@@ -278,7 +269,7 @@ export const PremiumModal: React.FC<PremiumModalProps> = ({
                   4,99 €<span className="text-xs font-normal text-slate-400">/mois</span>
                 </div>
                 <span className="text-[10px] text-slate-400 block mt-1">
-                  {trialDaysLeft <= 0 ? 'Facturation immédiate • Sans engagement' : '30 jours offerts puis 4,99 €'}
+                  {trialDaysLeft <= 0 ? 'Paiement requis pour continuer' : '30 jours offerts puis 4,99 €/mois'}
                 </span>
               </div>
 
