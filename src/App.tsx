@@ -567,9 +567,9 @@ export default function App() {
       window.removeEventListener('pointerdown', handleFirstInteraction);
     };
 
-    window.addEventListener('click', handleFirstInteraction, { once: true });
-    window.addEventListener('touchstart', handleFirstInteraction, { once: true });
-    window.addEventListener('pointerdown', handleFirstInteraction, { once: true });
+    window.addEventListener('click', handleFirstInteraction, { once: true, passive: true });
+    window.addEventListener('touchstart', handleFirstInteraction, { once: true, passive: true });
+    window.addEventListener('pointerdown', handleFirstInteraction, { once: true, passive: true });
 
     return () => {
       window.removeEventListener('click', handleFirstInteraction);
@@ -981,7 +981,6 @@ export default function App() {
           : 'linear-gradient(rgba(253, 252, 250, 0.50), rgba(253, 252, 250, 0.60)), url("/assets/floral_light_wallpaper.jpg")',
         backgroundRepeat: 'repeat',
         backgroundSize: '380px auto',
-        backgroundAttachment: 'fixed',
         backgroundPosition: 'center top',
       }}
     >
