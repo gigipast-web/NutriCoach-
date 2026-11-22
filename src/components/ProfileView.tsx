@@ -275,6 +275,39 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#E2ECE2]'
         } shadow-xs overflow-hidden`}
       >
+        {/* Abonnement & Désabonnement (accès direct en haut du profil) */}
+        <div
+          id="btn-profile-menu-subscription"
+          onClick={() => {
+            if (user.isPremium) {
+              setShowCancelModal(true);
+            } else {
+              const el = document.getElementById('section-subscription-management');
+              el?.scrollIntoView({ behavior: 'smooth' });
+            }
+          }}
+          className="p-4 flex items-center justify-between gap-3 hover:bg-[#F9FCF9] dark:hover:bg-slate-800 transition-colors cursor-pointer group"
+        >
+          <div className="flex items-center gap-3 min-w-0">
+            <CreditCard className="w-5 h-5 text-[#1F6F43] dark:text-emerald-400 shrink-0" />
+            <span className="text-sm font-black text-black dark:text-white truncate">
+              {user.isPremium ? 'Mon abonnement • Se désabonner' : 'Abonnement & Essai 30 jours'}
+            </span>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            {user.isPremium ? (
+              <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                Se désabonner
+              </span>
+            ) : (
+              <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+                {user.trialDaysRemaining <= 0 ? 'Paiement requis' : `${user.trialDaysRemaining}j / 30`}
+              </span>
+            )}
+            <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#1F6F43] transition-colors" />
+          </div>
+        </div>
+
         {/* Mes statistiques */}
         <div
           onClick={() => {
@@ -360,6 +393,142 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         </div>
       </div>
 
+      {/* Dedicated Subscription & Billing Management Card (positioned near top for easy mobile access) */}
+      <div
+        id="section-subscription-management"
+        className={`p-5 sm:p-6 rounded-3xl border ${
+          isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
+        } shadow-sm space-y-4`}
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
+          <div className="flex items-center gap-2.5">
+            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500/20 via-emerald-500/20 to-teal-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
+              <CreditCard className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="font-extrabold text-base text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                Abonnement & Facturation
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Gestion en toute transparence • Résiliation libre sans frais
+              </p>
+            </div>
+          </div>
+
+          <span
+            className={`text-xs font-black px-3 py-1 rounded-full self-start sm:self-auto uppercase tracking-wider ${
+              user.isPremium
+                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
+                : user.trialDaysRemaining <= 0
+                ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-300 dark:border-rose-800'
+                : 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
+            }`}
+          >
+            {user.isPremium
+              ? 'Premium Actif'
+              : user.trialDaysRemaining <= 0
+              ? 'Paiement Requis'
+              : `Essai Gratuit (${user.trialDaysRemaining}j / 30)`}
+          </span>
+        </div>
+
+        {portalNotice && (
+          <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-xs">
+            {portalNotice}
+          </div>
+        )}
+
+        {user.isPremium ? (
+          <div className="space-y-4">
+            {/* Action buttons placed prominently at top of card */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <button
+                id="btn-profile-unsubscribe"
+                onClick={() => setShowCancelModal(true)}
+                className="px-5 py-3 rounded-2xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-950/70 text-rose-700 dark:text-rose-300 border-2 border-rose-300 dark:border-rose-800 font-black text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer transition-all shadow-xs"
+              >
+                <XCircle className="w-4 h-4 text-rose-500" />
+                Se désabonner de NutriCoach
+              </button>
+
+              <button
+                id="btn-profile-stripe-portal"
+                onClick={handleOpenStripePortal}
+                disabled={portalLoading}
+                className="px-4 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors"
+              >
+                {portalLoading ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : (
+                  <ExternalLink className="w-4 h-4 text-slate-400" />
+                )}
+                Gérer mes factures & cartes (Stripe)
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 space-y-1">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Formule souscrite
+                </span>
+                <div className="text-sm font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                  <Crown className="w-4 h-4 text-amber-500 fill-amber-500" />
+                  NutriCoach Premium
+                </div>
+                <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold block">
+                  4,99 € / mois (Sans engagement)
+                </span>
+              </div>
+
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 space-y-1">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
+                  Statut des prélèvements
+                </span>
+                <div className="text-sm font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
+                  <ShieldCheck className="w-4 h-4 text-emerald-500" />
+                  Paiement sécurisé Stripe
+                </div>
+                <span className="text-xs text-slate-500 dark:text-slate-400 block">
+                  Résiliable à tout instant en 1 clic
+                </span>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40 text-xs text-slate-700 dark:text-slate-300">
+              <p>
+                <strong>Vos droits :</strong> Vous pouvez résilier votre abonnement à tout moment sans aucun préavis ni frais. Votre accès reste actif pour la période déjà payée et aucun nouveau prélèvement ne sera effectué.
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="text-sm font-extrabold text-slate-800 dark:text-slate-100">
+                {user.trialDaysRemaining <= 0
+                  ? 'Essai de 30 jours terminé — Abonnement requis'
+                  : `Période d'essai gratuit en cours (${user.trialDaysRemaining} jour${user.trialDaysRemaining > 1 ? 's' : ''} restant${user.trialDaysRemaining > 1 ? 's' : ''})`}
+              </div>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                {user.trialDaysRemaining <= 0
+                  ? 'Il n’y a pas de formule gratuite après la période d’essai. Activez votre abonnement (4,99 €/mois ou 39,99 €/an) pour continuer à utiliser NutriCoach.'
+                  : 'Aucun prélèvement pendant les 30 jours d’essai. Au bout des 30 jours, un abonnement (4,99 €/mois ou 39,99 €/an) vous sera demandé pour continuer à utiliser l’application.'}
+              </p>
+            </div>
+
+            <button
+              id="btn-subscribe-cta-profile"
+              onClick={onOpenPremium}
+              className="px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-amber-500 text-white font-black text-xs sm:text-sm flex items-center gap-2 shadow-md hover:opacity-95 cursor-pointer shrink-0 transition-transform active:scale-95"
+            >
+              <Crown className="w-4 h-4 text-amber-300 fill-amber-300" />
+              {user.trialDaysRemaining <= 0
+                ? 'Payer pour continuer (4,99 €/mois)'
+                : 'Activer Premium (4,99 €/mois)'}
+            </button>
+          </div>
+        )}
+      </div>
+
       {/* Metabolism & Targets Hero Card */}
       <div
         id="metabolism-calculation-card"
@@ -416,6 +585,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
       {/* Editable Personal Form Card */}
       <div
+        id="account-edit-form"
         className={`p-6 rounded-3xl border ${
           isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
         } shadow-sm space-y-6`}
@@ -596,142 +766,6 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </span>
           </div>
         </div>
-      </div>
-
-      {/* Dedicated Subscription & Billing Management Card */}
-      <div
-        id="section-subscription-management"
-        className={`p-6 rounded-3xl border ${
-          isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
-        } shadow-sm space-y-4`}
-      >
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800">
-          <div className="flex items-center gap-2.5">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-amber-500/20 via-emerald-500/20 to-teal-500/20 flex items-center justify-center text-emerald-600 dark:text-emerald-400">
-              <CreditCard className="w-5 h-5" />
-            </div>
-            <div>
-              <h3 className="font-extrabold text-base text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                Abonnement & Facturation
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Gestion en toute transparence • Résiliation libre sans frais
-              </p>
-            </div>
-          </div>
-
-          <span
-            className={`text-xs font-black px-3 py-1 rounded-full self-start sm:self-auto uppercase tracking-wider ${
-              user.isPremium
-                ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800'
-                : user.trialDaysRemaining <= 0
-                ? 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300 border border-rose-300 dark:border-rose-800'
-                : 'bg-amber-100 text-amber-900 dark:bg-amber-950 dark:text-amber-300 border border-amber-300 dark:border-amber-800'
-            }`}
-          >
-            {user.isPremium
-              ? 'Premium Actif'
-              : user.trialDaysRemaining <= 0
-              ? 'Paiement Requis'
-              : `Essai Gratuit (${user.trialDaysRemaining}j / 30)`}
-          </span>
-        </div>
-
-        {portalNotice && (
-          <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-200 text-xs">
-            {portalNotice}
-          </div>
-        )}
-
-        {user.isPremium ? (
-          <div className="space-y-4">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 space-y-1">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Formule souscrite
-                </span>
-                <div className="text-sm font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-                  <Crown className="w-4 h-4 text-amber-500 fill-amber-500" />
-                  NutriCoach Premium
-                </div>
-                <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold block">
-                  4,99 € / mois (Sans engagement)
-                </span>
-              </div>
-
-              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 space-y-1">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Statut des prélèvements
-                </span>
-                <div className="text-sm font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
-                  <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                  Paiement sécurisé Stripe
-                </div>
-                <span className="text-xs text-slate-500 dark:text-slate-400 block">
-                  Résiliable à tout instant en 1 clic
-                </span>
-              </div>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40 text-xs text-slate-700 dark:text-slate-300">
-              <p>
-                <strong>Vos droits :</strong> Vous pouvez résilier votre abonnement à tout moment sans aucun préavis ni frais. Votre accès reste actif pour la période déjà payée et aucun nouveau prélèvement ne sera effectué.
-              </p>
-            </div>
-
-            {/* Action buttons */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 pt-2">
-              <button
-                id="btn-profile-unsubscribe"
-                onClick={() => setShowCancelModal(true)}
-                className="px-5 py-3 rounded-2xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-950/70 text-rose-700 dark:text-rose-300 border-2 border-rose-300 dark:border-rose-800 font-black text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer transition-all shadow-xs"
-              >
-                <XCircle className="w-4 h-4 text-rose-500" />
-                Se désabonner de NutriCoach
-              </button>
-
-              <button
-                id="btn-profile-stripe-portal"
-                onClick={handleOpenStripePortal}
-                disabled={portalLoading}
-                className="px-4 py-3 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-colors"
-              >
-                {portalLoading ? (
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                ) : (
-                  <ExternalLink className="w-4 h-4 text-slate-400" />
-                )}
-                Gérer mes factures & cartes (Stripe)
-              </button>
-            </div>
-          </div>
-        ) : (
-          <div className="p-5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div className="space-y-1">
-              <div className="text-sm font-extrabold text-slate-800 dark:text-slate-100">
-                {user.trialDaysRemaining <= 0
-                  ? 'Essai de 30 jours terminé — Abonnement requis'
-                  : `Période d'essai gratuit en cours (${user.trialDaysRemaining} jour${user.trialDaysRemaining > 1 ? 's' : ''} restant${user.trialDaysRemaining > 1 ? 's' : ''})`}
-              </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                {user.trialDaysRemaining <= 0
-                  ? 'Il n’y a pas de formule gratuite après la période d’essai. Activez votre abonnement (4,99 €/mois ou 39,99 €/an) pour continuer à utiliser NutriCoach.'
-                  : 'Aucun prélèvement pendant les 30 jours d’essai. Au bout des 30 jours, un abonnement (4,99 €/mois ou 39,99 €/an) vous sera demandé pour continuer à utiliser l’application.'}
-              </p>
-            </div>
-
-            <button
-              id="btn-subscribe-cta-profile"
-              onClick={onOpenPremium}
-              className="px-5 py-3 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-amber-500 text-white font-black text-xs sm:text-sm flex items-center gap-2 shadow-md hover:opacity-95 cursor-pointer shrink-0 transition-transform active:scale-95"
-            >
-              <Crown className="w-4 h-4 text-amber-300 fill-amber-300" />
-              {user.trialDaysRemaining <= 0
-                ? 'Payer pour continuer (4,99 €/mois)'
-                : 'Activer Premium (4,99 €/mois)'}
-            </button>
-          </div>
-        )}
       </div>
 
       {/* Account Status Card */}
@@ -1012,10 +1046,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       {showCancelModal && (
         <div
           id="modal-unsubscribe-confirm"
-          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in"
+          className="fixed inset-0 z-50 bg-black/70 backdrop-blur-xs flex items-center justify-center p-3 sm:p-4 overflow-y-auto animate-in fade-in"
         >
           <div
-            className={`w-full max-w-md p-6 rounded-3xl border shadow-2xl relative space-y-5 ${
+            className={`w-full max-w-md max-h-[90dvh] overflow-y-auto overscroll-contain p-5 sm:p-6 rounded-3xl border shadow-2xl relative space-y-5 my-auto ${
               isDarkMode ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'
             }`}
           >
