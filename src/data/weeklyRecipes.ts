@@ -1,4 +1,5 @@
 import { Recipe } from '../types.ts';
+import { getLocaleForLanguage } from '../i18n/LanguageContext.tsx';
 
 /**
  * Calculates current ISO Week number (1 - 52)
@@ -46,7 +47,7 @@ export function getWeekDateRangeLabel(d: Date = new Date(), lang: string = 'fr')
   const sunday = new Date(monday);
   sunday.setDate(monday.getDate() + 6);
 
-  const locale = lang === 'fr' ? 'fr-FR' : lang;
+  const locale = getLocaleForLanguage(lang as any);
   const startStr = monday.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
   const endStr = sunday.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
   const weekLabel = lang === 'ja' ? `第${weekNum}週` : lang === 'zh' ? `第${weekNum}周` : `${WEEK_WORD[lang] || 'Week'} ${weekNum}`;

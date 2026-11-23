@@ -25,8 +25,10 @@ import {
 } from 'lucide-react';
 import { UserProfile, UserMetrics, ChatMessage, MealEntry, MealType } from '../types.ts';
 import { useLanguage } from '../i18n/LanguageContext.tsx';
+import { getUiWellness } from '../i18n/uiWellnessI18n.ts';
+import { getMealTypeLabelLocal } from '../i18n/uiTrackingI18n.ts';
 import { LANGUAGES, POPULAR_LANGUAGE_CODES, Language } from '../i18n/translations.ts';
-import { playMealVoiceReminder, speakText, stopSpeaking } from '../utils/voiceCoach.ts';
+import { playMealVoiceReminder, speakText, stopSpeaking, getSpeechLocale } from '../utils/voiceCoach.ts';
 import { compressImageFileToDataUrl, captureVideoFrameToDataUrl } from '../utils/imageCompressor.ts';
 import { RobotCoachMascot } from './RobotCoachMascot.tsx';
 import {
@@ -65,7 +67,8 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
   onAddMealFromAi,
   isDarkMode,
 }) => {
-  const { language, setLanguage, triggerGoogleTranslate } = useLanguage();
+  const { language, locale, setLanguage, triggerGoogleTranslate } = useLanguage();
+  const w = getUiWellness(language);
   const [inputText, setInputText] = useState('');
   const [isSending, setIsSending] = useState(false);
   const [subTab, setSubTab] = useState<'chat' | 'photo' | 'generator'>(initialSubTab || 'chat');
@@ -80,9 +83,8 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
   const [isCoachLangOpen, setIsCoachLangOpen] = useState(false);
   const [coachLangSearch, setCoachLangSearch] = useState('');
   const coachLangDropdownRef = useRef<HTMLDivElement>(null);
-  const coachLangSearchInputRef = useRef<HTMLInputElement>(null);
 
-  // Close Coach dropdown on outside click
+  // Close Coach dropdown on outside click (do NOT auto-focus search input so mobile virtual keyboard stays closed)
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
       if (
@@ -94,7 +96,6 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
     };
     if (isCoachLangOpen) {
       document.addEventListener('mousedown', handleClickOutside);
-      setTimeout(() => coachLangSearchInputRef.current?.focus(), 50);
     }
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
@@ -144,7 +145,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
 
     setSpeakingMessageId(msgId);
     speakText(text, {
-      language: language === 'en' ? 'en-US' : language === 'es' ? 'es-ES' : language === 'de' ? 'de-DE' : language === 'it' ? 'it-IT' : 'fr-FR',
+      language: getSpeechLocale(language),
       onEnd: () => setSpeakingMessageId(null),
       onError: () => setSpeakingMessageId(null),
     });
@@ -248,7 +249,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
         }
       }, 60);
     } catch {
-      setPhotoCameraError("Caméra en direct bloquée. Ouverture du sélecteur photo...");
+      setPhotoCameraError(w.coachCameraBlocked);
       cameraFileInputRef.current?.click();
     }
   };
@@ -263,7 +264,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
       setPhotoError(null);
       stopPhotoCamera();
     } else {
-      setPhotoCameraError("Impossible de capturer l'image. Réessayez.");
+      setPhotoCameraError(w.coachCameraCaptureErr);
     }
   };
 
@@ -294,7 +295,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
       const compressed = await compressImageFileToDataUrl(file, 1024, 0.85);
       setSelectedImage(compressed);
     } catch (err: any) {
-      setPhotoError(err?.message || "Impossible de charger cette image.");
+      setPhotoError(err?.message || w.coachPhotoLoadErr);
     }
   };
 
@@ -306,22 +307,20 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
     try {
       const res = await onAnalyzeMealPhoto(selectedImage || '', photoDescription);
       setPhotoAnalysisResult({
-        foodName: res.foodName || 'Repas analysé',
+        foodName: res.foodName || w.coachPhotoDefaultFood,
         estimatedCalories: Number(res.calories) ?? 0,
         protein: Number(res.protein) ?? 0,
         carbs: Number(res.carbs) ?? 0,
         fat: Number(res.fat) ?? 0,
         portionGrams: Number(res.portionGrams) || 250,
-        portionDescription: res.portionGrams ? `${res.portionGrams}g` : 'Portion standard',
+        portionDescription: res.portionGrams ? `${res.portionGrams}g` : w.coachPhotoStdPortion,
         detectedItems: Array.isArray(res.detectedItems) ? res.detectedItems : [],
-        feedback: res.analysis || res.advice || 'Repas analysé avec succès.',
+        feedback: res.analysis || res.advice || w.coachPhotoSuccessMsg,
         advice: res.advice || '',
       });
     } catch (err: any) {
       console.error(err);
-      setPhotoError(
-        err?.message || "Impossible d'analyser cette photo pour le moment. Vérifiez votre image ou réessayez."
-      );
+      setPhotoError(err?.message || w.coachPhotoAnalyzeErr);
     } finally {
       setIsAnalyzingPhoto(false);
     }
@@ -334,30 +333,30 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
       if (res && res.dayPlan) {
         setGeneratedMenu({
           totalCalories: generatorCalories,
-          coachTip: res.tips || 'Privilégiez une bonne mastication et une hydratation continue.',
+          coachTip: res.tips || w.coachMenuDefaultTip,
           meals: [
             {
-              mealType: 'Petit-déjeuner',
-              title: res.dayPlan.breakfast?.foodName || "Porridge d'avoine aux fruits",
-              description: 'Riche en fibres pour un réveil énergisant sans pic glycémique',
+              mealType: getMealTypeLabelLocal(language, 'petit-dejeuner'),
+              title: res.dayPlan.breakfast?.foodName || w.coachMenuFallbackBreakfast,
+              description: w.coachMenuFallbackBreakfastDesc,
               calories: res.dayPlan.breakfast?.calories || 340,
             },
             {
-              mealType: 'Déjeuner',
-              title: res.dayPlan.lunch?.foodName || 'Poulet grillé, quinoa & brocolis',
-              description: 'Équilibre parfait protéines et glucides lents pour éviter le coup de fatigue',
+              mealType: getMealTypeLabelLocal(language, 'dejeuner'),
+              title: res.dayPlan.lunch?.foodName || w.coachMenuFallbackLunch,
+              description: w.coachMenuFallbackLunchDesc,
               calories: res.dayPlan.lunch?.calories || 520,
             },
             {
-              mealType: 'Collation',
-              title: res.dayPlan.snack?.foodName || 'Pomme & amandes brutes',
-              description: 'Collation saine régulant la satiété jusqu’au dîner',
+              mealType: getMealTypeLabelLocal(language, 'collation'),
+              title: res.dayPlan.snack?.foodName || w.coachMenuFallbackSnack,
+              description: w.coachMenuFallbackSnackDesc,
               calories: res.dayPlan.snack?.calories || 160,
             },
             {
-              mealType: 'Dîner',
-              title: res.dayPlan.dinner?.foodName || 'Poisson blanc & légumes vapeur',
-              description: 'Repas léger favorisant un sommeil réparateur et la combustion nocturne',
+              mealType: getMealTypeLabelLocal(language, 'diner'),
+              title: res.dayPlan.dinner?.foodName || w.coachMenuFallbackDinner,
+              description: w.coachMenuFallbackDinnerDesc,
               calories: res.dayPlan.dinner?.calories || 380,
             },
           ],
@@ -653,10 +652,10 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
             </div>
             <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
               <span className="font-extrabold text-xs text-emerald-950 dark:text-emerald-100 truncate">
-                Coach Polyglotte
+                {w.coachBannerTitle}
               </span>
               <span className="text-[10px] font-black uppercase px-1.5 py-0.5 rounded-full bg-emerald-200/80 dark:bg-emerald-900/80 text-emerald-800 dark:text-emerald-300 shrink-0">
-                21+ langues
+                {w.coachBannerBadge}
               </span>
             </div>
           </div>
@@ -670,7 +669,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
               className="flex items-center justify-center gap-1.5 px-2.5 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700 text-slate-800 dark:text-slate-100 hover:border-emerald-500 dark:hover:border-emerald-500 shadow-xs text-xs font-bold transition-all cursor-pointer select-none focus:outline-hidden focus:ring-2 focus:ring-emerald-500"
               aria-expanded={isCoachLangOpen}
               aria-haspopup="listbox"
-              title="Menu déroulant : choisir la langue du Coach polyglotte"
+              title={w.coachDropdownTitle}
             >
               <span className="text-sm leading-none">{currentLanguageOption.flag}</span>
               <span className="font-extrabold hidden sm:inline">{currentLanguageOption.native}</span>
@@ -696,10 +695,10 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                     <Globe className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                     <div>
                       <span className="text-xs font-extrabold text-slate-800 dark:text-white block leading-tight">
-                        Langue du Coach IA
+                        {w.coachModalHeader}
                       </span>
                       <span className="text-[10px] text-slate-500 dark:text-slate-400">
-                        {LANGUAGES.length} langues disponibles
+                        {LANGUAGES.length} {w.coachLangsAvailable}
                       </span>
                     </div>
                   </div>
@@ -707,7 +706,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                     type="button"
                     onClick={() => setIsCoachLangOpen(false)}
                     className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
-                    aria-label="Fermer"
+                    aria-label={w.progressClose}
                   >
                     <X className="w-3.5 h-3.5" />
                   </button>
@@ -718,11 +717,10 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                   <div className="relative">
                     <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <input
-                      ref={coachLangSearchInputRef}
                       type="text"
                       value={coachLangSearch}
                       onChange={(e) => setCoachLangSearch(e.target.value)}
-                      placeholder="Rechercher une langue..."
+                      placeholder={w.coachSearchPlaceholder}
                       className="w-full pl-9 pr-7 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-xs text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-hidden focus:ring-2 focus:ring-emerald-500 font-medium"
                     />
                     {coachLangSearch && (
@@ -741,7 +739,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                 {!coachLangSearch && (
                   <div className="px-3 pt-2.5 pb-2 border-b border-slate-100 dark:border-slate-800">
                     <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-1.5">
-                      Accès rapide :
+                      {w.coachQuickPick}
                     </div>
                     <div className="flex flex-wrap gap-1">
                       {POPULAR_LANGUAGE_CODES.slice(0, 8).map((pCode) => {
@@ -772,7 +770,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                 <div className="p-2 overflow-y-auto max-h-56 space-y-1 scrollbar-thin">
                   {filteredCoachLanguages.length === 0 ? (
                     <div className="text-center py-6 text-xs text-slate-400">
-                      Aucune langue trouvée pour "{coachLangSearch}"
+                      {w.coachNoLangFound} "{coachLangSearch}"
                     </div>
                   ) : (
                     filteredCoachLanguages.map((opt) => {
@@ -822,10 +820,10 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                     className="w-full flex items-center justify-center gap-2 px-3 py-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
                   >
                     <Sparkles className="w-3.5 h-3.5 text-amber-300" />
-                    <span>Traduction Universelle (130+ langues)</span>
+                    <span>{w.coachUniversalBtn}</span>
                   </button>
                   <p className="mt-1.5 text-[10px] text-center text-slate-500 dark:text-slate-400">
-                    💡 Le coach IA répondra immédiatement dans cette langue.
+                    {w.coachPolyglotHint}
                   </p>
                 </div>
               </div>
@@ -834,7 +832,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
         </div>
       </div>
 
-      {/* View Header (Screen 4: Mon coach IA) */}
+      {/* View Header */}
       <div
         className={`p-3 sm:p-4 rounded-3xl border ${
           isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#E2ECE2]'
@@ -848,11 +846,11 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
             <div className="flex items-center gap-2">
               <div>
                 <h1 className="text-xl sm:text-2xl font-black text-[#163321] dark:text-white tracking-tight flex items-center gap-2">
-                  <span>Mon coach IA</span>
+                  <span>{w.coachHeaderTitle}</span>
                   <BlossomFlower size={20} palette="pink" />
                 </h1>
                 <span className="text-[11px] text-[#5A7363] dark:text-emerald-400 font-bold block">
-                  En ligne • Conseils personnalisés
+                  {w.coachOnlineStatus}
                 </span>
               </div>
             </div>
@@ -861,7 +859,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
           <button
             type="button"
             className="w-9 h-9 rounded-full bg-[#F4F7F4] dark:bg-slate-800 flex items-center justify-center text-[#5A7363] hover:text-[#163321] cursor-pointer"
-            title="Options supplémentaires"
+            title={w.coachMoreOptionsTitle}
           >
             <MoreHorizontal className="w-5 h-5" />
           </button>
@@ -882,7 +880,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
             }`}
           >
-            💬 Chat
+            {w.coachTabChat}
           </button>
           <button
             id="subtab-photo"
@@ -893,7 +891,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
             }`}
           >
-            📸 Scan
+            {w.coachTabScan}
           </button>
           <button
             id="subtab-generator"
@@ -904,7 +902,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                 : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
             }`}
           >
-            🥗 Menu
+            {w.coachTabMenu}
           </button>
         </div>
       </div>
@@ -933,10 +931,10 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                   ? 'bg-emerald-600 hover:bg-emerald-700 text-white ring-2 ring-emerald-400/40'
                   : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
               }`}
-              title="Activer ou désactiver le formatage en texte gras"
+              title={w.coachBoldTooltip}
             >
               <Bold className="w-3.5 h-3.5" />
-              <span>Texte en gras : {isBoldMode ? 'ACTIVÉ' : 'DÉSACTIVÉ'}</span>
+              <span>{w.coachBoldLabel} {isBoldMode ? w.coachBoldOn : w.coachBoldOff}</span>
             </button>
 
             {/* Coach Voice Prompt Button */}
@@ -949,17 +947,17 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                   ? 'bg-amber-500 text-white animate-pulse'
                   : 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:opacity-95'
               }`}
-              title="Le Coach vous demande de vive voix ce que vous allez manger"
+              title={w.coachVoiceAskTooltip}
             >
               {speakingMessageId === 'coach-meal-question' ? (
                 <>
                   <VolumeX className="w-3.5 h-3.5" />
-                  <span>Arrêter la voix</span>
+                  <span>{w.badgesStopVoice}</span>
                 </>
               ) : (
                 <>
                   <Volume2 className="w-3.5 h-3.5" />
-                  <span>🎙️ Que vas-tu manger ? (Vocal)</span>
+                  <span>{w.coachVoiceAskBtn}</span>
                 </>
               )}
             </button>
@@ -967,7 +965,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
             {/* Suggestions */}
             <div className="flex-1 min-w-0 overflow-x-auto flex items-center gap-2 text-xs scrollbar-none">
               <span className="font-bold text-slate-400 shrink-0 text-[11px] uppercase tracking-wider">
-                Suggestions :
+                {w.coachSuggestionsLabel}
               </span>
               {suggestions.map((suggestion, idx) => (
                 <button
@@ -989,6 +987,21 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
           <div className="flex-1 p-4 overflow-y-auto space-y-4">
             {messages.map((msg) => {
               const isUser = msg.sender === 'user';
+              const displayText =
+                msg.id === 'msg_1'
+                  ? `${w.coachStarterMsg1Prefix} ${user.name || 'Clara'} !\n${w.coachStarterMsg1Body}`
+                  : msg.id === 'msg_2'
+                  ? w.coachStarterMsg2
+                  : msg.id === 'msg_3'
+                  ? w.coachStarterMsg3
+                  : msg.text;
+              const showYogurtCard =
+                !isUser &&
+                (msg.id === 'msg_3' ||
+                  /yaourt|yogurt|yogur|joghurt|iogurte|jogurt|йогурт|ヨーグルト|酸奶|زبادي|yoğurt|γιαούρτι|iaurt|fringale|gourmande/i.test(
+                    displayText
+                  ));
+
               return (
                 <div
                   key={msg.id}
@@ -1014,25 +1027,25 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                         : 'bg-white border border-[#E2ECE2] text-[#163321] rounded-tl-xs'
                     }`}
                   >
-                    {renderFormattedMessageText(msg.text, isUser, isBoldMode)}
+                    {renderFormattedMessageText(displayText, isUser, isBoldMode)}
 
                     {/* Smart Food Suggestion Card if bot advises a snack/yogurt */}
-                    {!isUser && (msg.text.toLowerCase().includes('yaourt') || msg.text.toLowerCase().includes('fringale') || msg.text.toLowerCase().includes('gourmande')) && (
+                    {showYogurtCard && (
                       <div className="mt-3 rounded-2xl overflow-hidden border border-[#E2ECE2] dark:border-slate-700 bg-[#F9FAF9] dark:bg-slate-800 shadow-2xs">
                         <img
                           src="https://images.unsplash.com/photo-1488477181946-6428a0291777?auto=format&fit=crop&w=400&q=80"
-                          alt="Yaourt aux fruits et amandes"
+                          alt={w.coachYogurtAlt}
                           className="w-full h-32 object-cover"
                           loading="lazy"
                         />
                         <div className="p-2.5 flex items-center justify-between">
                           <span className="text-[11px] font-black text-[#163321] dark:text-white">
-                            Yaourt nature, fruits & amandes (~160 kcal)
+                            {w.coachYogurtTitle}
                           </span>
                           <button
                             type="button"
                             onClick={() => onAddMealFromAi({
-                              foodName: 'Yaourt nature, fruits frais & amandes',
+                              foodName: w.coachYogurtFoodName,
                               calories: 160,
                               protein: 10,
                               carbs: 18,
@@ -1040,7 +1053,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                             })}
                             className="text-[10px] font-black text-white bg-[#1F6F43] hover:bg-[#175834] px-2.5 py-1 rounded-full cursor-pointer"
                           >
-                            + Noter
+                            {w.coachAddBtn}
                           </button>
                         </div>
                       </div>
@@ -1050,23 +1063,23 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                       {!isUser && (
                         <button
                           type="button"
-                          onClick={() => handleSpeakMessage(msg.id, msg.text)}
+                          onClick={() => handleSpeakMessage(msg.id, displayText)}
                           className={`text-[11px] font-bold px-2 py-0.5 rounded-lg flex items-center gap-1 transition-colors cursor-pointer ${
                             speakingMessageId === msg.id
                               ? 'bg-amber-500 text-white animate-pulse'
                               : 'text-emerald-600 dark:text-emerald-400 hover:bg-emerald-100/70 dark:hover:bg-slate-700'
                           }`}
-                          title="Écouter ce conseil de vive voix"
+                          title={w.coachListenVoiceTitle}
                         >
                           {speakingMessageId === msg.id ? (
                             <>
                               <VolumeX className="w-3 h-3" />
-                              <span>Arrêter</span>
+                              <span>{w.badgesStop}</span>
                             </>
                           ) : (
                             <>
                               <Volume2 className="w-3 h-3" />
-                              <span>Écouter la voix</span>
+                              <span>{w.coachListenVoice}</span>
                             </>
                           )}
                         </button>
@@ -1076,7 +1089,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                           isUser ? 'text-[#1F6F43] dark:text-emerald-300 text-right w-full font-bold' : 'text-slate-400'
                         }`}
                       >
-                        {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        {new Date(msg.timestamp).toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' })}
                       </span>
                     </div>
                   </div>
@@ -1095,7 +1108,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                 >
                   <div className="flex items-center gap-2">
                     <Loader2 className="w-3.5 h-3.5 animate-spin text-emerald-500" />
-                    <span>NutriCoach réfléchit...</span>
+                    <span>{w.coachThinking}</span>
                   </div>
                 </div>
               </div>
@@ -1103,7 +1116,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Input footer pill matching Screen 4 */}
+          {/* Input footer pill */}
           <div
             className={`p-3.5 border-t ${
               isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#E2ECE2]'
@@ -1118,7 +1131,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                   ? 'bg-[#1F6F43] text-white border-[#1F6F43] shadow-xs'
                   : 'bg-[#F4F7F4] dark:bg-slate-800 text-slate-500 dark:text-slate-400 border-[#DCE8DC] dark:border-slate-700 hover:text-[#1F6F43]'
               }`}
-              title={isBoldMode ? 'Texte en gras activé' : 'Activer le texte en gras'}
+              title={isBoldMode ? w.coachBoldEnabledTitle : w.coachBoldDisabledTitle}
             >
               <Bold className="w-3.5 h-3.5" />
             </button>
@@ -1126,7 +1139,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
               <input
                 id="input-coach-chat-message"
                 type="text"
-                placeholder="Posez-moi une question..."
+                placeholder={currentPlaceholder}
                 value={inputText}
                 onChange={(e) => setInputText(e.target.value)}
                 onKeyDown={(e) => {
@@ -1145,7 +1158,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                 onClick={handleSend}
                 disabled={!inputText.trim() || isSending}
                 className="absolute right-1.5 w-9 h-9 rounded-full bg-[#1F6F43] hover:bg-[#175834] disabled:opacity-40 text-white flex items-center justify-center transition-all cursor-pointer shadow-xs active:scale-95"
-                title="Envoyer la question"
+                title={w.coachSendTitle}
               >
                 <Send className="w-4 h-4 ml-0.5" />
               </button>
@@ -1165,10 +1178,10 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
           <div>
             <h2 className="text-lg font-black text-black dark:text-white flex items-center gap-2">
               <Camera className="w-5 h-5 text-emerald-600" />
-              Scanner Photo IA
+              {w.coachPhotoTitle}
             </h2>
             <p className="text-xs text-black/75 dark:text-slate-300">
-              Prenez une photo de votre assiette ou importez une image pour estimer automatiquement les calories et macronutriments.
+              {w.coachPhotoSubtitle}
             </p>
           </div>
 
@@ -1201,7 +1214,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                   className="px-3 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white font-black text-xs flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
                 >
                   <Camera className="w-4 h-4" />
-                  <span>Prendre une photo</span>
+                  <span>{w.coachTakePhoto}</span>
                 </button>
                 <button
                   type="button"
@@ -1214,7 +1227,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                   }`}
                 >
                   <Upload className="w-4 h-4 text-emerald-600" />
-                  <span>Galerie / Fichier</span>
+                  <span>{w.coachGalleryFile}</span>
                 </button>
               </div>
 
@@ -1233,7 +1246,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                       onClick={stopPhotoCamera}
                       className="px-3 py-2 rounded-xl bg-slate-700 text-white text-xs font-bold cursor-pointer"
                     >
-                      Annuler
+                      {w.progressCancel}
                     </button>
                     <button
                       type="button"
@@ -1242,7 +1255,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                       className="flex-1 px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 text-white text-xs font-black flex items-center justify-center gap-1.5 cursor-pointer"
                     >
                       <Camera className="w-4 h-4" />
-                      <span>Capturer mon assiette</span>
+                      <span>{w.coachCapturePlate}</span>
                     </button>
                   </div>
                 </div>
@@ -1262,11 +1275,11 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                     <div className="space-y-2.5">
                       <img
                         src={selectedImage}
-                        alt="Repas"
+                        alt={w.coachPhotoDefaultFood}
                         className="max-h-48 rounded-xl mx-auto object-cover shadow-sm"
                       />
                       <p className="text-xs font-bold text-emerald-700 dark:text-emerald-400">
-                        Photo prête ! Cliquez pour changer ou lancez l'analyse ci-dessous.
+                        {w.coachPhotoReady}
                       </p>
                     </div>
                   ) : (
@@ -1275,10 +1288,10 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                         <ImageIcon className="w-6 h-6" />
                       </div>
                       <span className="font-bold text-xs text-black dark:text-slate-200 block">
-                        Appuyez ici pour choisir une photo de votre repas
+                        {w.coachPhotoDropzoneTitle}
                       </span>
                       <span className="text-[11px] text-black/60 dark:text-slate-400 block">
-                        JPG, PNG, WebP • Compression automatique
+                        {w.coachPhotoDropzoneFormats}
                       </span>
                     </div>
                   )}
@@ -1293,12 +1306,12 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
 
               <div>
                 <label className="text-xs font-bold text-black dark:text-slate-300 block mb-1">
-                  Précision complémentaire (facultatif)
+                  {w.coachExtraNoteLabel}
                 </label>
                 <input
                   id="input-photo-meal-description"
                   type="text"
-                  placeholder="ex: Pavé de saumon grillé, riz basmati et légumes"
+                  placeholder={w.coachExtraNotePlaceholder}
                   value={photoDescription}
                   onChange={(e) => setPhotoDescription(e.target.value)}
                   className={`w-full p-3 rounded-xl border text-sm font-medium outline-none ${
@@ -1325,11 +1338,11 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
               >
                 {isAnalyzingPhoto ? (
                   <>
-                    <Loader2 className="w-4 h-4 animate-spin" /> Analyse diététique par l'IA en cours...
+                    <Loader2 className="w-4 h-4 animate-spin" /> {w.coachAnalyzing}
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-4 h-4 text-amber-300" /> Analyser mon repas
+                    <Sparkles className="w-4 h-4 text-amber-300" /> {w.coachAnalyzeBtn}
                   </>
                 )}
               </button>
@@ -1343,7 +1356,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
             >
               <h3 className="font-extrabold text-sm text-black dark:text-slate-200 mb-3 flex items-center gap-2">
                 <CheckCircle className="w-4 h-4 text-emerald-600" />
-                Résultat d'analyse nutritionnelle
+                {w.coachResultTitle}
               </h3>
 
               {photoAnalysisResult ? (
@@ -1354,7 +1367,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                         {photoAnalysisResult.foodName}
                       </h4>
                       <p className="text-xs text-black/70 dark:text-slate-400">
-                        Portion estimée : {photoAnalysisResult.portionDescription || 'Portion standard'}
+                        {w.coachEstimatedPortion} {photoAnalysisResult.portionDescription || w.coachPhotoStdPortion}
                       </p>
                     </div>
                     <div className="text-right shrink-0">
@@ -1379,15 +1392,15 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
 
                   <div className="grid grid-cols-3 gap-2 text-center">
                     <div className="p-2.5 rounded-xl bg-rose-500/10 text-rose-700 dark:text-rose-400 font-bold">
-                      <span className="text-[10px] block text-black/65 dark:text-slate-400 uppercase">Protéines</span>
+                      <span className="text-[10px] block text-black/65 dark:text-slate-400 uppercase">{w.coachMacroP}</span>
                       <span className="text-sm font-black">{photoAnalysisResult.protein}g</span>
                     </div>
                     <div className="p-2.5 rounded-xl bg-amber-500/10 text-amber-700 dark:text-amber-400 font-bold">
-                      <span className="text-[10px] block text-black/65 dark:text-slate-400 uppercase">Glucides</span>
+                      <span className="text-[10px] block text-black/65 dark:text-slate-400 uppercase">{w.coachMacroC}</span>
                       <span className="text-sm font-black">{photoAnalysisResult.carbs}g</span>
                     </div>
                     <div className="p-2.5 rounded-xl bg-sky-500/10 text-sky-700 dark:text-sky-400 font-bold">
-                      <span className="text-[10px] block text-black/65 dark:text-slate-400 uppercase">Lipides</span>
+                      <span className="text-[10px] block text-black/65 dark:text-slate-400 uppercase">{w.coachMacroF}</span>
                       <span className="text-sm font-black">{photoAnalysisResult.fat}g</span>
                     </div>
                   </div>
@@ -1399,30 +1412,23 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                   {/* Meal category selector */}
                   <div className="space-y-1.5">
                     <span className="text-[11px] font-extrabold text-black dark:text-slate-300 block">
-                      Enregistrer dans :
+                      {w.coachSaveInto}
                     </span>
                     <div className="grid grid-cols-4 gap-1.5">
-                      {(
-                        [
-                          { type: 'petit_dejeuner', label: 'Petit-déj.' },
-                          { type: 'dejeuner', label: 'Déjeuner' },
-                          { type: 'collation', label: 'Collation' },
-                          { type: 'diner', label: 'Dîner' },
-                        ] as Array<{ type: MealType; label: string }>
-                      ).map((opt) => (
+                      {(['petit_dejeuner', 'dejeuner', 'collation', 'diner'] as MealType[]).map((optType) => (
                         <button
-                          key={opt.type}
+                          key={optType}
                           type="button"
-                          onClick={() => setPhotoMealType(opt.type)}
+                          onClick={() => setPhotoMealType(optType)}
                           className={`py-1.5 px-1 rounded-xl text-[10px] font-black cursor-pointer transition-all truncate ${
-                            photoMealType === opt.type
+                            photoMealType === optType
                               ? 'bg-emerald-600 text-white shadow-xs'
                               : isDarkMode
                               ? 'bg-slate-900 text-slate-300 border border-slate-700'
                               : 'bg-white text-black border border-slate-200'
                           }`}
                         >
-                          {opt.label}
+                          {getMealTypeLabelLocal(language, optType === 'petit_dejeuner' ? 'petit-dejeuner' : optType, true)}
                         </button>
                       ))}
                     </div>
@@ -1447,18 +1453,18 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                   >
                     {photoAddedSuccess ? (
                       <>
-                        <Check className="w-4 h-4" /> Ajouté avec succès au journal !
+                        <Check className="w-4 h-4" /> {w.coachAddedSuccess}
                       </>
                     ) : (
                       <>
-                        <Plus className="w-4 h-4" /> Ajouter ce repas à mon journal
+                        <Plus className="w-4 h-4" /> {w.coachAddToJournal}
                       </>
                     )}
                   </button>
                 </div>
               ) : (
                 <div className="py-12 text-center text-black/65 dark:text-slate-400 text-xs">
-                  Prenez ou importez une photo de votre assiette puis cliquez sur « Analyser mon repas ».
+                  {w.coachResultEmpty}
                 </div>
               )}
             </div>
@@ -1477,17 +1483,16 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
           <div>
             <h2 className="text-lg font-black text-slate-800 dark:text-white flex items-center gap-2">
               <BookOpen className="w-5 h-5 text-emerald-600" />
-              Générateur de Menus Sur-Mesure
+              {w.coachMenuTitle}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              Générez un menu équilibré complet (Petit-déjeuner, Déjeuner, Collation, Dîner) adapté exactement à vos
-              calories cibles.
+              {w.coachMenuSubtitle}
             </p>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <div>
-              <label className="text-xs font-bold text-slate-500 block mb-1">Cible Calorique (kcal)</label>
+              <label className="text-xs font-bold text-slate-500 block mb-1">{w.coachMenuCalTarget}</label>
               <input
                 id="input-generator-calories"
                 type="number"
@@ -1500,7 +1505,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
             </div>
 
             <div>
-              <label className="text-xs font-bold text-slate-500 block mb-1">Préférence Alimentaire</label>
+              <label className="text-xs font-bold text-slate-500 block mb-1">{w.coachMenuDietPref}</label>
               <select
                 id="select-generator-preference"
                 value={generatorPreference}
@@ -1509,10 +1514,10 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                   isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'
                 }`}
               >
-                <option value="standard">Standard Équilibré</option>
-                <option value="vegetarien">Végétarien</option>
-                <option value="sans_gluten">Sans Gluten</option>
-                <option value="keto">Low Carb / Proteiné</option>
+                <option value="standard">{w.coachMenuPrefStandard}</option>
+                <option value="vegetarien">{w.coachMenuPrefVeg}</option>
+                <option value="sans_gluten">{w.coachMenuPrefGlutenFree}</option>
+                <option value="keto">{w.coachMenuPrefKeto}</option>
               </select>
             </div>
 
@@ -1528,7 +1533,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                 ) : (
                   <Sparkles className="w-4 h-4 text-amber-300" />
                 )}
-                Générer mon Menu
+                {w.coachMenuGenerateBtn}
               </button>
             </div>
           </div>
@@ -1537,10 +1542,10 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
             <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
               <div className="flex items-center justify-between">
                 <h3 className="font-extrabold text-base text-slate-900 dark:text-white">
-                  Menu suggéré (~{generatedMenu.totalCalories} kcal)
+                  {w.coachMenuSuggestedPrefix}{generatedMenu.totalCalories} kcal)
                 </h3>
                 <span className="text-xs text-emerald-600 font-bold bg-emerald-50 dark:bg-emerald-950 px-2.5 py-1 rounded-full">
-                  Conseil IA : {generatedMenu.coachTip}
+                  {w.coachMenuAiTipPrefix} {generatedMenu.coachTip}
                 </span>
               </div>
 

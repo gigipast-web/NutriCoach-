@@ -1,8 +1,12 @@
 import React from 'react';
 import { useOnlineStatus } from '../hooks/useOnlineStatus.ts';
+import { useLanguage } from '../i18n/LanguageContext.tsx';
+import { getUiCore } from '../i18n/uiCoreI18n.ts';
 
 export const OfflineIndicator: React.FC = () => {
   const isOnline = useOnlineStatus();
+  const { language } = useLanguage();
+  const ui = getUiCore(language);
 
   if (isOnline) return null;
 
@@ -16,7 +20,7 @@ export const OfflineIndicator: React.FC = () => {
           <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
           <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-white"></span>
         </span>
-        <span>Mode hors-ligne — Vos données locales restent consultables.</span>
+        <span>{ui.offlineMsg}</span>
       </div>
     </div>
   );

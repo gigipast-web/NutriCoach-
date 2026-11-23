@@ -19,6 +19,7 @@ import { PWAInstallButton } from './PWAInstallButton.tsx';
 import { LanguageSelector } from './LanguageSelector.tsx';
 import { RobotCoachMascot } from './RobotCoachMascot.tsx';
 import { useLanguage } from '../i18n/LanguageContext.tsx';
+import { getUiCore } from '../i18n/uiCoreI18n.ts';
 
 interface NavigationProps {
   activeTab: TabType;
@@ -42,6 +43,7 @@ export const Navigation: React.FC<NavigationProps> = ({
   onOpenShare,
 }) => {
   const { t, language } = useLanguage();
+  const ui = getUiCore(language);
   const [showBellNotice, setShowBellNotice] = useState(false);
   const bellRef = useRef<HTMLDivElement>(null);
 
@@ -105,22 +107,22 @@ export const Navigation: React.FC<NavigationProps> = ({
                 <span className="bg-white/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider text-[10px] flex items-center gap-1 shrink-0">
                   <Timer className="w-3 h-3" />
                   {user.isPremium
-                    ? 'Premium Actif'
+                    ? ui.premiumActive
                     : isTrialExpired
-                    ? 'Essai terminé'
+                    ? ui.trialEnded
                     : t('freeTrialBanner')}
                 </span>
                 {user.isPremium ? (
                   <span className="truncate font-semibold">
-                    Accès complet illimité activé
+                    {ui.unlimitedAccess}
                   </span>
                 ) : isTrialExpired ? (
                   <>
                     <span className="hidden sm:inline font-bold">
-                      Période d'essai terminée (0 jour restant) — Abonnez-vous pour continuer
+                      {ui.trialEndedBannerFull}
                     </span>
                     <span className="sm:hidden font-bold truncate">
-                      🔒 0j restant • Paiement requis
+                      {ui.trialEndedBannerShort}
                     </span>
                   </>
                 ) : (
@@ -129,8 +131,8 @@ export const Navigation: React.FC<NavigationProps> = ({
                       {t('freeTrialNotice', { days: user.trialDaysRemaining })}
                     </span>
                     <span className="sm:hidden font-bold flex items-center gap-1">
-                      <span>⏳ {user.trialDaysRemaining}j restants</span>
-                      <span className="opacity-80 text-[10px]">• 0 € aujourd'hui</span>
+                      <span>{ui.daysLeftShort(user.trialDaysRemaining)}</span>
+                      <span className="opacity-80 text-[10px]">{ui.todayFreeShort}</span>
                     </span>
                   </>
                 )}
@@ -143,7 +145,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                 } px-3 py-0.5 rounded-full font-black transition-all text-xs shadow-xs cursor-pointer shrink-0`}
               >
                 <Crown className="w-3.5 h-3.5 text-[#F59E0B] fill-[#F59E0B]" />
-                {isTrialExpired ? 'Payer 4,99 €/mois' : user.isPremium ? 'Gérer' : t('btnPremium')}
+                {isTrialExpired ? ui.payMonthlyCta : user.isPremium ? ui.manage : t('btnPremium')}
               </button>
             </div>
           );
@@ -170,7 +172,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                 className="hidden md:flex items-center gap-1.5 bg-amber-500/10 border border-amber-500/20 px-2.5 py-1 rounded-full text-[#F59E0B] font-extrabold text-xs ml-2"
               >
                 <Flame className="w-3.5 h-3.5 fill-[#F59E0B] text-[#F59E0B] animate-pulse" />
-                <span>{streakDays} j</span>
+                <span>{ui.streakShort(streakDays)}</span>
               </div>
             </div>
 
@@ -235,7 +237,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                   id="btn-nav-notification-bell"
                   onClick={() => setShowBellNotice((prev) => !prev)}
                   className="w-9 h-9 rounded-full bg-[#F4F7F4] dark:bg-slate-800 border border-[#DCE8DC] dark:border-slate-700 flex items-center justify-center text-[#163321] dark:text-emerald-300 hover:bg-[#EAF3EA] transition-all cursor-pointer shadow-xs relative"
-                  title={language === 'en' ? 'Daily tip' : 'Conseil du jour'}
+                  title={ui.dailyTipTitle}
                   aria-expanded={showBellNotice}
                 >
                   <Bell className="w-4 h-4" />
@@ -245,20 +247,18 @@ export const Navigation: React.FC<NavigationProps> = ({
                   <div className="absolute right-0 mt-2 w-72 p-4 rounded-2xl bg-white dark:bg-slate-900 border border-[#E2ECE2] dark:border-slate-800 shadow-xl z-50 text-xs space-y-2 animate-in fade-in slide-in-from-top-2">
                     <div className="flex items-center justify-between pb-2 border-b border-[#EDF3ED] dark:border-slate-800">
                       <span className="font-black text-[#163321] dark:text-white">
-                        {language === 'en' ? 'Daily tip' : 'Conseil du jour'}
+                        {ui.dailyTipTitle}
                       </span>
                       <button
                         type="button"
                         onClick={() => setShowBellNotice(false)}
                         className="text-[11px] text-[#1F6F43] dark:text-emerald-400 font-bold hover:underline cursor-pointer"
                       >
-                        {language === 'en' ? 'Close' : 'Fermer'}
+                        {ui.close}
                       </button>
                     </div>
                     <p className="text-[#5A7363] dark:text-slate-300 font-semibold leading-relaxed">
-                      {language === 'en'
-                        ? '💧 Drink a glass of water 15 minutes before lunch to aid digestion and satiety.'
-                        : '💧 Buvez un verre d’eau 15 min avant le déjeuner pour faciliter la digestion et la satiété.'}
+                      {ui.dailyTipBody}
                     </p>
                   </div>
                 )}
@@ -276,7 +276,7 @@ export const Navigation: React.FC<NavigationProps> = ({
                     ? 'bg-slate-800 text-amber-400 hover:bg-slate-700'
                     : 'bg-[#F4F7F4] text-slate-600 hover:bg-slate-200'
                 }`}
-                title={isDarkMode ? 'Mode clair' : 'Mode sombre'}
+                title={isDarkMode ? ui.lightMode : ui.darkMode}
               >
                 {isDarkMode ? <Sun className="w-4 h-4" /> : <Moon className="w-4 h-4" />}
               </button>

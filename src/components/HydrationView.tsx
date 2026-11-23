@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { UserProfile, WaterData, ActivityEntry } from '../types.ts';
 import { SmartwatchSyncModal } from './SmartwatchSyncModal.tsx';
+import { useLanguage } from '../i18n/LanguageContext.tsx';
+import { getUiTracking } from '../i18n/uiTrackingI18n.ts';
 
 interface HydrationViewProps {
   user: UserProfile;
@@ -39,6 +41,8 @@ export const HydrationView: React.FC<HydrationViewProps> = ({
   onResetTodaySteps,
   isDarkMode,
 }) => {
+  const { language, locale } = useLanguage();
+  const trk = getUiTracking(language);
   const [isActivityModalOpen, setIsActivityModalOpen] = useState(false);
   const [isEditStepTargetOpen, setIsEditStepTargetOpen] = useState(false);
   const [isWatchModalOpen, setIsWatchModalOpen] = useState(false);
@@ -47,8 +51,6 @@ export const HydrationView: React.FC<HydrationViewProps> = ({
   const [activityDuration, setActivityDuration] = useState('30');
   const [activityCalories, setActivityCalories] = useState('150');
   const [activitySteps, setActivitySteps] = useState('2500');
-  const [isSyncing, setIsSyncing] = useState(false);
-  const [syncFeedback, setSyncFeedback] = useState<string | null>(null);
 
   const todayStr = new Date().toISOString().split('T')[0];
   const todayActivities = activities.filter((a) => !a.timestamp || a.timestamp.startsWith(todayStr));
@@ -56,13 +58,11 @@ export const HydrationView: React.FC<HydrationViewProps> = ({
   const totalCaloriesBurned = todayActivities.reduce((acc, a) => acc + a.caloriesBurned, 0);
   const targetGlasses = Math.round(user.waterTargetMl / 250);
 
-  const handleSyncHealth = () => {
-    setIsSyncing(true);
-    setTimeout(() => {
-      setIsSyncing(false);
-      setSyncFeedback('Synchronisation Santé réussie ! Vos données podomètre et hydratation sont à jour.');
-      setTimeout(() => setSyncFeedback(null), 4000);
-    }, 1000);
+  const formatWatchSyncLabel = (raw?: string) => {
+    if (!raw) return '';
+    const match = raw.match(/^(?:Aujourd'hui à|Today at)\s+(.+)$/i);
+    if (match) return trk.todayAtTime(match[1]);
+    return raw;
   };
 
   const handleQuickAddSteps = (steps: number, durationMin: number, cal: number, label: string) => {
@@ -113,19 +113,19 @@ export const HydrationView: React.FC<HydrationViewProps> = ({
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300 px-3 py-1 rounded-full text-xs font-bold">
-              Bien-Être & Mouvement
+              {trk.wellbeingBadge}
             </span>
-            <span className="text-xs text-slate-400">Suivi Quotidien</span>
+            <span className="text-xs text-slate-400">{trk.dailyTracking}</span>
           </div>
-          <h1 className="text-2xl font-black text-slate-800 dark:text-white">Hydratation & Activités</h1>
+          <h1 className="text-2xl font-black text-slate-800 dark:text-white">{trk.hydrationTitle}</h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Eau :{' '}
+            {trk.waterShort} :{' '}
             <strong className="text-sky-600 font-bold">
               {(water.amountMl / 1000).toFixed(1)}L / {(user.waterTargetMl / 1000).toFixed(1)}L
             </strong>{' '}
-            • Pas :{' '}
+            • {trk.stepsShort} :{' '}
             <strong className="text-violet-600 font-bold">
-              {totalSteps.toLocaleString('fr-FR')} / {user.stepTarget.toLocaleString('fr-FR')}
+              {totalSteps.toLocaleString(locale)} / {user.stepTarget.toLocaleString(locale)}
             </strong>
           </p>
         </div>
@@ -143,7 +143,7 @@ export const HydrationView: React.FC<HydrationViewProps> = ({
             className="bg-gradient-to-r from-sky-600 via-teal-600 to-emerald-600 hover:opacity-90 text-white font-bold px-4 py-2.5 rounded-2xl text-xs sm:text-sm flex items-center gap-2 shadow-md transition-all cursor-pointer"
           >
             <Watch className="w-4 h-4" />
-            <span>{user.connectedWatch?.connected ? 'Synchro Montre' : 'Synchroniser ma Montre'}</span>
+            <span>{user.connectedWatch?.connected ? trk.syncWatchShort : trk.syncMyWatch}</span>
             <RefreshCw className="w-3.5 h-3.5 opacity-80" />
           </button>
         </div>
@@ -161,10 +161,10 @@ export const HydrationView: React.FC<HydrationViewProps> = ({
           <div className="flex items-center justify-between">
             <h3 className="font-extrabold text-base text-slate-800 dark:text-slate-100 flex items-center gap-2">
               <Droplets className="w-5 h-5 text-sky-500" />
-              Journal d'Hydratation
+              {trk.hydrationJournal}
             </h3>
             <span className="text-xs font-bold text-sky-600 bg-sky-50 dark:bg-sky-950 px-2.5 py-1 rounded-full">
-              Objectif {user.waterTargetMl} ml
+              {trk.goalMl(user.waterTargetMl)}
             </span>
           </div>
 
@@ -173,10 +173,10 @@ export const HydrationView: React.FC<HydrationViewProps> = ({
               {water.glassesCount}
             </span>
             <span className="text-xs font-bold text-slate-500 block">
-              sur {targetGlasses} verres d'eau bus
+              {trk.outOfGlasses(targetGlasses)}
             </span>
             <span className="text-xs text-sky-600 font-semibold block">
-              {(water.amountMl / 1000).toFixed(2)} Litres au total
+              {trk.litersTotal((water.amountMl / 1000).toFixed(2))}
             </span>
           </div>
 
@@ -187,7 +187,7 @@ export const HydrationView: React.FC<HydrationViewProps> = ({
               className="p-3 rounded-2xl border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 text-sky-700 dark:text-sky-300 font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all cursor-pointer"
             >
               <Droplets className="w-5 h-5 text-sky-500" />
-              +250 ml (Verre)
+              {trk.addGlass250}
             </button>
 
             <button
@@ -196,7 +196,7 @@ export const HydrationView: React.FC<HydrationViewProps> = ({
               className="p-3 rounded-2xl border border-sky-200 dark:border-sky-800 bg-sky-50 dark:bg-sky-950/40 hover:bg-sky-100 text-sky-700 dark:text-sky-300 font-bold text-xs flex flex-col items-center justify-center gap-1 transition-all cursor-pointer"
             >
               <Droplets className="w-5 h-5 text-sky-600" />
-              +500 ml (Gourde)
+              {trk.addBottle500}
             </button>
 
             <button
@@ -218,30 +218,17 @@ export const HydrationView: React.FC<HydrationViewProps> = ({
             isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
           } shadow-sm space-y-5`}
         >
-          {syncFeedback && (
-            <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-200 dark:border-emerald-800 text-xs text-emerald-800 dark:text-emerald-200 font-bold flex items-center justify-between">
-              <span>{syncFeedback}</span>
-              <button
-                type="button"
-                onClick={() => setSyncFeedback(null)}
-                className="p-1 text-emerald-600 hover:text-emerald-800 cursor-pointer"
-              >
-                <X className="w-3.5 h-3.5" />
-              </button>
-            </div>
-          )}
-
           <div className="flex items-center justify-between">
             <h3 className="font-extrabold text-base text-slate-800 dark:text-slate-100 flex items-center gap-2">
               <Footprints className="w-5 h-5 text-violet-500" />
-              Activités Physiques & Pas
+              {trk.activitiesStepsTitle}
             </h3>
             <button
               id="btn-open-activity-modal"
               onClick={() => setIsActivityModalOpen(true)}
               className="bg-violet-50 hover:bg-violet-100 text-violet-700 dark:bg-violet-950 dark:text-violet-300 px-3 py-1.5 rounded-lg text-xs font-bold transition-colors flex items-center gap-1 cursor-pointer"
             >
-              <Plus className="w-3.5 h-3.5" /> Enregistrer Sport
+              <Plus className="w-3.5 h-3.5" /> {trk.logSportBtn}
             </button>
           </div>
 
@@ -252,22 +239,22 @@ export const HydrationView: React.FC<HydrationViewProps> = ({
               } text-center space-y-1.5`}
             >
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold text-slate-400 uppercase">Pas d'aujourd'hui</span>
+                <span className="text-[10px] font-bold text-slate-400 uppercase">{trk.todaysSteps}</span>
                 {totalSteps > 0 && onResetTodaySteps && (
                   <button
                     type="button"
                     id="btn-reset-steps-morning"
                     onClick={onResetTodaySteps}
                     className="text-[10px] text-slate-400 hover:text-rose-500 font-semibold underline cursor-pointer flex items-center gap-0.5"
-                    title="Remettre le compteur du jour à 0 pour laisser la montre synchroniser"
+                    title={trk.resetStepsTitle}
                   >
                     <RotateCcw className="w-2.5 h-2.5" />
-                    <span>Remettre à 0</span>
+                    <span>{trk.resetToZero}</span>
                   </button>
                 )}
               </div>
               <span className="text-2xl font-black text-violet-600 dark:text-violet-400 block">
-                {totalSteps.toLocaleString('fr-FR')}
+                {totalSteps.toLocaleString(locale)}
               </span>
 
               {/* Progress bar towards daily goal */}
@@ -279,12 +266,12 @@ export const HydrationView: React.FC<HydrationViewProps> = ({
               </div>
 
               <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
-                ☀️ 0 pas au réveil • Votre montre indique vos pas au fil de la journée
+                {trk.stepsMorningNote}
               </div>
 
               <div className="flex items-center justify-center gap-1.5 pt-0.5">
                 <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-                  Objectif : {user.stepTarget.toLocaleString('fr-FR')} pas
+                  {trk.stepGoalPrefix(user.stepTarget.toLocaleString(locale))}
                 </span>
                 <button
                   type="button"
@@ -294,7 +281,7 @@ export const HydrationView: React.FC<HydrationViewProps> = ({
                     setIsEditStepTargetOpen(true);
                   }}
                   className="p-1 rounded-md text-violet-600 dark:text-violet-400 hover:bg-violet-100 dark:hover:bg-violet-950/60 cursor-pointer transition-colors"
-                  title="Modifier votre objectif quotidien de pas"
+                  title={trk.editStepGoalTitle}
                 >
                   <Pencil className="w-3 h-3" />
                 </button>
@@ -306,11 +293,11 @@ export const HydrationView: React.FC<HydrationViewProps> = ({
                 isDarkMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'
               } text-center space-y-1 flex flex-col justify-center`}
             >
-              <span className="text-[10px] font-bold text-slate-400 uppercase">Calories Brûlées</span>
+              <span className="text-[10px] font-bold text-slate-400 uppercase">{trk.caloriesBurned}</span>
               <span className="text-2xl font-black text-orange-600 dark:text-orange-400 block">
-                +{totalCaloriesBurned} kcal
+                +{totalCaloriesBurned} {trk.kcal}
               </span>
-              <span className="text-[10px] text-slate-400">Dépense active</span>
+              <span className="text-[10px] text-slate-400">{trk.activeBurn}</span>
             </div>
           </div>
 
@@ -328,13 +315,13 @@ export const HydrationView: React.FC<HydrationViewProps> = ({
               <div className="min-w-0">
                 <span className="text-xs font-black text-slate-800 dark:text-white flex items-center gap-1.5 truncate">
                   {user.connectedWatch?.connected
-                    ? `Montre : ${user.connectedWatch.brand}`
-                    : 'Montre connectée (Apple, Garmin, Galaxy...)'}
+                    ? trk.watchPrefix(user.connectedWatch.brand)
+                    : trk.watchGenericTitle}
                 </span>
                 <span className="text-[11px] text-slate-500 dark:text-slate-400 block truncate">
                   {user.connectedWatch?.lastSync
-                    ? `Synchro : ${user.connectedWatch.lastSync}`
-                    : 'Synchronisez les pas et calories de votre poignet'}
+                    ? trk.lastSyncPrefix(formatWatchSyncLabel(user.connectedWatch.lastSync))
+                    : trk.watchSyncSub}
                 </span>
               </div>
             </div>
@@ -346,68 +333,68 @@ export const HydrationView: React.FC<HydrationViewProps> = ({
               className="text-xs font-bold px-3 py-1.5 rounded-xl bg-sky-600 hover:bg-sky-700 text-white transition-colors cursor-pointer shadow-xs flex items-center gap-1.5 shrink-0"
             >
               <RefreshCw className="w-3 h-3" />
-              <span>{user.connectedWatch?.connected ? 'Synchroniser' : 'Connecter'}</span>
+              <span>{user.connectedWatch?.connected ? trk.syncActionBtn : trk.connectActionBtn}</span>
             </button>
           </div>
 
           {/* Quick Step Buttons */}
           <div>
             <div className="text-[11px] font-bold text-slate-500 dark:text-slate-400 mb-2 flex items-center justify-between">
-              <span>Ajout rapide de pas :</span>
-              <span className="text-[10px] font-normal text-slate-400">Cliquez pour ajouter directement</span>
+              <span>{trk.quickAddSteps}</span>
+              <span className="text-[10px] font-normal text-slate-400">{trk.clickDirectAdd}</span>
             </div>
             <div className="grid grid-cols-3 gap-2">
               <button
                 type="button"
                 id="btn-quick-add-1000-steps"
-                onClick={() => handleQuickAddSteps(1000, 12, 45, 'Petite marche (+1 000 pas)')}
+                onClick={() => handleQuickAddSteps(1000, 12, 45, trk.presetSmallWalk)}
                 className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer font-bold text-xs hover:border-violet-400 hover:shadow-xs active:scale-[0.98] ${
                   isDarkMode
                     ? 'bg-slate-800 border-slate-700 text-violet-300'
                     : 'bg-violet-50/70 border-violet-200 text-violet-900'
                 }`}
               >
-                <div className="text-sm font-black">+1 000</div>
-                <div className="text-[10px] font-medium opacity-75">~12 min • 45 kcal</div>
+                <div className="text-sm font-black">+{(1000).toLocaleString(locale)}</div>
+                <div className="text-[10px] font-medium opacity-75">~12 min • 45 {trk.kcal}</div>
               </button>
 
               <button
                 type="button"
                 id="btn-quick-add-2500-steps"
-                onClick={() => handleQuickAddSteps(2500, 25, 110, 'Balade active (+2 500 pas)')}
+                onClick={() => handleQuickAddSteps(2500, 25, 110, trk.presetActiveWalk)}
                 className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer font-bold text-xs hover:border-violet-400 hover:shadow-xs active:scale-[0.98] ${
                   isDarkMode
                     ? 'bg-slate-800 border-slate-700 text-violet-300'
                     : 'bg-violet-50/70 border-violet-200 text-violet-900'
                 }`}
               >
-                <div className="text-sm font-black">+2 500</div>
-                <div className="text-[10px] font-medium opacity-75">~25 min • 110 kcal</div>
+                <div className="text-sm font-black">+{(2500).toLocaleString(locale)}</div>
+                <div className="text-[10px] font-medium opacity-75">~25 min • 110 {trk.kcal}</div>
               </button>
 
               <button
                 type="button"
                 id="btn-quick-add-5000-steps"
-                onClick={() => handleQuickAddSteps(5000, 50, 220, 'Grande marche (+5 000 pas)')}
+                onClick={() => handleQuickAddSteps(5000, 50, 220, trk.presetLongWalk)}
                 className={`p-2.5 rounded-xl border text-center transition-all cursor-pointer font-bold text-xs hover:border-violet-400 hover:shadow-xs active:scale-[0.98] ${
                   isDarkMode
                     ? 'bg-slate-800 border-slate-700 text-violet-300'
                     : 'bg-violet-50/70 border-violet-200 text-violet-900'
                 }`}
               >
-                <div className="text-sm font-black">+5 000</div>
-                <div className="text-[10px] font-medium opacity-75">~50 min • 220 kcal</div>
+                <div className="text-sm font-black">+{(5000).toLocaleString(locale)}</div>
+                <div className="text-[10px] font-medium opacity-75">~50 min • 220 {trk.kcal}</div>
               </button>
             </div>
           </div>
 
           <div className="space-y-2">
             <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">
-              Activités enregistrées ({activities.length})
+              {trk.loggedActivitiesCount(activities.length)}
             </h4>
             {activities.length === 0 ? (
               <p className="text-xs text-slate-400 text-center py-4">
-                Aucune activité physique enregistrée aujourd'hui.
+                {trk.noActivitiesToday}
               </p>
             ) : (
               activities.map((act) => (
@@ -426,20 +413,20 @@ export const HydrationView: React.FC<HydrationViewProps> = ({
                         {act.title}
                       </span>
                       <span className="text-[11px] text-slate-400">
-                        {act.durationMinutes} min • {act.stepsCount > 0 ? `${act.stepsCount} pas` : 'Séance sportive'}
+                        {act.durationMinutes} min • {act.stepsCount > 0 ? `${act.stepsCount.toLocaleString(locale)} ${trk.stepsUnit}` : trk.sportSession}
                       </span>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">
                     <span className="font-bold text-xs sm:text-sm text-emerald-600 dark:text-emerald-400">
-                      +{act.caloriesBurned} kcal
+                      +{act.caloriesBurned} {trk.kcal}
                     </span>
                     {onDeleteActivity && (
                       <button
                         type="button"
                         onClick={() => onDeleteActivity(act.id)}
                         className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/40 cursor-pointer transition-colors"
-                        title="Supprimer cette activité"
+                        title={trk.deleteActivityTitle}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -460,19 +447,19 @@ export const HydrationView: React.FC<HydrationViewProps> = ({
               isDarkMode ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'
             }`}
           >
-            <h3 className="font-black text-lg mb-1">Ajouter une Activité Physique</h3>
+            <h3 className="font-black text-lg mb-1">{trk.addActivityModalTitle}</h3>
             <p className="text-xs text-slate-400 mb-4">
-              Enregistrez vos séances de sport ou marches pour ajouter des calories brûlées.
+              {trk.addActivityModalSub}
             </p>
 
             <form onSubmit={handleSaveActivity} className="space-y-3">
               <div>
-                <label className="text-xs font-bold text-slate-500 block mb-1">Nom de l'activité *</label>
+                <label className="text-xs font-bold text-slate-500 block mb-1">{trk.activityNameLabel}</label>
                 <input
                   id="input-activity-title"
                   type="text"
                   required
-                  placeholder="ex: Marche rapide, Séance Fitness, Natation"
+                  placeholder={trk.activityNamePlaceholder}
                   value={activityTitle}
                   onChange={(e) => setActivityTitle(e.target.value)}
                   className={`w-full p-2.5 rounded-xl border text-sm font-medium outline-none ${
@@ -483,7 +470,7 @@ export const HydrationView: React.FC<HydrationViewProps> = ({
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="text-xs font-bold text-slate-500 block mb-1">Durée (minutes)</label>
+                  <label className="text-xs font-bold text-slate-500 block mb-1">{trk.durationMinLabel}</label>
                   <input
                     id="input-activity-duration"
                     type="number"
@@ -495,7 +482,7 @@ export const HydrationView: React.FC<HydrationViewProps> = ({
                   />
                 </div>
                 <div>
-                  <label className="text-xs font-bold text-slate-500 block mb-1">Calories Brûlées (kcal)</label>
+                  <label className="text-xs font-bold text-slate-500 block mb-1">{trk.caloriesBurnedLabel}</label>
                   <input
                     id="input-activity-calories"
                     type="number"
@@ -509,7 +496,7 @@ export const HydrationView: React.FC<HydrationViewProps> = ({
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-500 block mb-1">Nombre de pas (optionnel)</label>
+                <label className="text-xs font-bold text-slate-500 block mb-1">{trk.stepsOptionalLabel}</label>
                 <input
                   id="input-activity-steps"
                   type="number"
@@ -527,14 +514,14 @@ export const HydrationView: React.FC<HydrationViewProps> = ({
                   onClick={() => setIsActivityModalOpen(false)}
                   className="px-4 py-2 rounded-xl border text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
                 >
-                  Annuler
+                  {trk.cancel}
                 </button>
                 <button
                   id="btn-save-activity-entry"
                   type="submit"
                   className="px-5 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs shadow-md cursor-pointer"
                 >
-                  Enregistrer
+                  {trk.save}
                 </button>
               </div>
             </form>
@@ -553,24 +540,25 @@ export const HydrationView: React.FC<HydrationViewProps> = ({
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-black text-lg flex items-center gap-2">
                 <Footprints className="w-5 h-5 text-violet-500" />
-                Modifier l'objectif de pas
+                {trk.editStepModalTitle}
               </h3>
               <button
                 type="button"
                 onClick={() => setIsEditStepTargetOpen(false)}
                 className="p-1 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+                aria-label={trk.close}
               >
                 <X className="w-4 h-4" />
               </button>
             </div>
             <p className="text-xs text-slate-400 mb-4">
-              Définissez votre cible quotidienne de marche. L'OMS recommande 8 000 à 10 000 pas par jour pour une santé optimale.
+              {trk.editStepModalSub}
             </p>
 
             <form onSubmit={handleSaveStepTarget} className="space-y-4">
               <div>
                 <label className="text-xs font-bold text-slate-500 block mb-1">
-                  Objectif quotidien (pas)
+                  {trk.dailyStepTargetLabel}
                 </label>
                 <input
                   id="input-modal-step-target"
@@ -590,7 +578,7 @@ export const HydrationView: React.FC<HydrationViewProps> = ({
               {/* Fast presets */}
               <div>
                 <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block mb-1.5">
-                  Objectifs recommandés :
+                  {trk.recommendedTargets}
                 </span>
                 <div className="flex flex-wrap gap-1.5">
                   {[6000, 8000, 10000, 12000, 15000].map((preset) => (
@@ -604,7 +592,7 @@ export const HydrationView: React.FC<HydrationViewProps> = ({
                           : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-violet-50 dark:hover:bg-slate-700'
                       }`}
                     >
-                      {preset.toLocaleString('fr-FR')} pas
+                      {preset.toLocaleString(locale)} {trk.stepsUnit}
                     </button>
                   ))}
                 </div>
@@ -616,7 +604,7 @@ export const HydrationView: React.FC<HydrationViewProps> = ({
                   onClick={() => setIsEditStepTargetOpen(false)}
                   className="px-4 py-2 rounded-xl border text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
                 >
-                  Annuler
+                  {trk.cancel}
                 </button>
                 <button
                   id="btn-save-step-target-modal"
@@ -624,7 +612,7 @@ export const HydrationView: React.FC<HydrationViewProps> = ({
                   className="px-5 py-2 rounded-xl bg-violet-600 hover:bg-violet-700 text-white font-bold text-xs shadow-md cursor-pointer flex items-center gap-1.5"
                 >
                   <Check className="w-3.5 h-3.5" />
-                  Valider l'objectif
+                  {trk.validateGoalBtn}
                 </button>
               </div>
             </form>

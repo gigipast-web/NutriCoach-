@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   TabType,
   UserProfile,
@@ -44,12 +44,18 @@ import { Footer } from './components/Footer.tsx';
 import { usePWAInstall } from './hooks/usePWAInstall.ts';
 import { useLanguage } from './i18n/LanguageContext.tsx';
 import { getDashboardUi } from './i18n/dashboardI18n.ts';
+import { getUiCore } from './i18n/uiCoreI18n.ts';
 import confetti from 'canvas-confetti';
 import { CheckCircle2, AlertCircle, X, Volume2, VolumeX, Mic } from 'lucide-react';
 import { playWelcomeVoiceGreeting, stopSpeaking } from './utils/voiceCoach.ts';
 
 export default function App() {
-  const { language } = useLanguage();
+  const { language, locale } = useLanguage();
+  const core = getUiCore(language);
+  const languageRef = useRef(language);
+  useEffect(() => {
+    languageRef.current = language;
+  }, [language]);
   const { isInstalled: isStandaloneApp } = usePWAInstall();
 
   // Theme state
@@ -409,15 +415,12 @@ export default function App() {
 
               setPaymentNotice({
                 type: 'success',
-                message:
-                  'Paiement Stripe validé avec succès ! Votre accès NutriCoach Premium est désormais activé.',
+                message: getUiCore(languageRef.current).stripeSuccess,
               });
             } else {
               setPaymentNotice({
                 type: 'cancelled',
-                message:
-                  data.message ||
-                  'Paiement Stripe non confirmé. Un abonnement actif est requis pour débloquer NutriCoach.',
+                message: data.message || getUiCore(languageRef.current).stripeUnconfirmed,
               });
             }
           })
@@ -425,7 +428,7 @@ export default function App() {
             console.error('Erreur vérification session Stripe:', err);
             setPaymentNotice({
               type: 'cancelled',
-              message: 'Impossible de vérifier le paiement Stripe. Veuillez réessayer.',
+              message: getUiCore(languageRef.current).stripeVerifyError,
             });
           })
           .finally(() => {
@@ -435,7 +438,7 @@ export default function App() {
       } else if (paymentStatus === 'cancelled') {
         setPaymentNotice({
           type: 'cancelled',
-          message: 'Paiement Stripe annulé. Aucun débit n’a été effectué.',
+          message: getUiCore(languageRef.current).stripeCancelled,
         });
         window.history.replaceState({}, document.title, window.location.pathname);
       }
@@ -610,7 +613,7 @@ export default function App() {
       id: `meal_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
     };
     setMeals((prev) => [mealWithId, ...prev]);
-    triggerToast(`✅ ${newMeal.foodName} (+${newMeal.calories} kcal) ajouté`);
+    triggerToast(core.toastMealAdded(newMeal.foodName, newMeal.calories));
   };
 
   const handleDeleteMeal = (mealId: string) => {
@@ -620,7 +623,7 @@ export default function App() {
   const handleResetTodayMeals = () => {
     const todayStr = new Date().toISOString().split('T')[0];
     setMeals((prev) => prev.filter((m) => !m.timestamp?.startsWith(todayStr)));
-    triggerToast('Journal du jour réinitialisé');
+    triggerToast(core.toastJournalReset);
   };
 
   const handleAddWeightEntry = (entry: Omit<WeightEntry, 'id'>) => {
@@ -630,7 +633,7 @@ export default function App() {
     };
     setWeightHistory((prev) => [...prev, newEntry]);
     setUser((prev) => ({ ...prev, currentWeightKg: entry.weightKg }));
-    triggerToast(`⚖️ Pesée enregistrée (${entry.weightKg} kg)`);
+    triggerToast(core.toastWeightSaved(String(entry.weightKg)));
   };
 
   const handleAddWater = (amountMl: number) => {
@@ -644,7 +647,7 @@ export default function App() {
       };
     });
     if (amountMl > 0) {
-      triggerToast(`💧 +${amountMl} ml d'eau enregistrés`);
+      triggerToast(core.toastWaterAdded(amountMl));
     }
   };
 
@@ -654,34 +657,32 @@ export default function App() {
       id: `act_${Date.now()}`,
     };
     if (newAct.stepsCount > 0) {
-      triggerToast(`👟 +${newAct.stepsCount.toLocaleString()} pas ajoutés`);
+      triggerToast(core.toastStepsAdded(newAct.stepsCount.toLocaleString(locale)));
     }
 
-    const isWatchSync =
-      newAct.title.includes('Montre') ||
-      newAct.title.includes('Apple') ||
-      newAct.title.includes('Garmin') ||
-      newAct.title.includes('Samsung') ||
-      newAct.title.includes('Fitbit') ||
-      newAct.title.includes('Withings') ||
-      newAct.title.includes('Bluetooth');
+    const WATCH_KEYWORDS = [
+      'Montre',
+      'Watch',
+      'Apple',
+      'Garmin',
+      'Samsung',
+      'Fitbit',
+      'Withings',
+      'Polar',
+      'Suunto',
+      'Xiaomi',
+      'Amazfit',
+      'Bluetooth',
+    ];
+    const isWatchTitle = (title: string) => WATCH_KEYWORDS.some((kw) => title.includes(kw));
+    const isWatchSync = isWatchTitle(newAct.title);
 
     if (isWatchSync) {
       const todayStr = new Date().toISOString().split('T')[0];
       // Replace prior watch sync for today so the watch measurement is accurate and not duplicated
       setActivities((prev) => {
         const withoutPriorWatchToday = prev.filter(
-          (a) =>
-            !(
-              a.timestamp?.startsWith(todayStr) &&
-              (a.title.includes('Montre') ||
-                a.title.includes('Apple') ||
-                a.title.includes('Garmin') ||
-                a.title.includes('Samsung') ||
-                a.title.includes('Fitbit') ||
-                a.title.includes('Withings') ||
-                a.title.includes('Bluetooth'))
-            )
+          (a) => !(a.timestamp?.startsWith(todayStr) && isWatchTitle(a.title))
         );
         return [actWithId, ...withoutPriorWatchToday];
       });
@@ -856,7 +857,7 @@ export default function App() {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      throw new Error(data?.error || "Erreur lors de l'analyse de la photo.");
+      throw new Error(data?.error || core.photoAnalyzeError);
     }
     return data;
   };
@@ -868,7 +869,7 @@ export default function App() {
       body: JSON.stringify({ targetCalories, preference, user, language }),
     });
     if (!res.ok) {
-      throw new Error('Erreur lors de la génération');
+      throw new Error(core.menuGenError);
     }
     return res.json();
   };
@@ -913,7 +914,7 @@ export default function App() {
       {
         id: `msg_welcome_${Date.now()}`,
         sender: 'assistant',
-        text: `Bonjour ${updatedUser.name} ! 🎉 Félicitations pour votre inscription. Votre profil a été configuré avec succès : métabolisme de base (BMR) et calories cibles calculés. Je suis votre Coach IA, prêt à vous accompagner au quotidien pour atteindre vos objectifs de santé et de silhouette !`,
+        text: core.registerWelcome(updatedUser.name || ''),
         timestamp: new Date().toISOString(),
       },
     ]);
@@ -1058,7 +1059,7 @@ export default function App() {
             <button
               onClick={() => setPaymentNotice(null)}
               className="p-1 rounded-lg hover:bg-black/5 dark:hover:bg-white/10 cursor-pointer"
-              aria-label="Fermer la notification"
+              aria-label={core.closeNoticeAria}
             >
               <X className="w-4 h-4" />
             </button>
@@ -1074,6 +1075,22 @@ export default function App() {
             userEmail={user.email}
             userName={user.name}
             onLogout={handleLogout}
+            onPaymentSuccess={(customerEmail) => {
+              setUser((prev) => ({
+                ...prev,
+                isPremium: true,
+                email: customerEmail || prev.email,
+              }));
+              confetti({
+                particleCount: 120,
+                spread: 90,
+                origin: { y: 0.4 },
+              });
+              setPaymentNotice({
+                type: 'success',
+                message: core.stripeSuccess,
+              });
+            }}
           />
         ) : (
           <>
@@ -1290,8 +1307,8 @@ export default function App() {
             <Volume2 className="w-5 h-5 text-white" />
           </div>
           <div className="text-xs">
-            <strong className="block font-black text-sm">Le Coach vous accueille de vive voix...</strong>
-            <span className="opacity-95 text-[11px]">« Que vas-tu manger aujourd'hui ? »</span>
+            <strong className="block font-black text-sm">{core.voiceGreetingActiveTitle}</strong>
+            <span className="opacity-95 text-[11px]">{core.voiceGreetingActiveSub}</span>
           </div>
           <button
             type="button"
@@ -1302,7 +1319,7 @@ export default function App() {
             }}
             className="ml-3 px-3 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 text-xs font-bold cursor-pointer transition-colors shrink-0"
           >
-            Couper
+            {core.cutVoice}
           </button>
         </div>
       )}

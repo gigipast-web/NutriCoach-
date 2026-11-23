@@ -27,6 +27,7 @@ import {
 } from 'lucide-react';
 import { UserProfile, UserMetrics, ActivityEntry } from '../types.ts';
 import { useLanguage } from '../i18n/LanguageContext.tsx';
+import { getUiWellness } from '../i18n/uiWellnessI18n.ts';
 import { LanguageSelector } from './LanguageSelector.tsx';
 import { SmartwatchSyncModal } from './SmartwatchSyncModal.tsx';
 import {
@@ -62,7 +63,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   onOpenShare,
   onOpenBadges,
 }) => {
-  const { t } = useLanguage();
+  const { t, language, locale } = useLanguage();
+  const w = getUiWellness(language);
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [showFaq, setShowFaq] = useState(false);
   const [isWatchModalOpen, setIsWatchModalOpen] = useState(false);
@@ -70,6 +72,16 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
   const [cancelSuccessMessage, setCancelSuccessMessage] = useState<string | null>(null);
   const [portalLoading, setPortalLoading] = useState(false);
   const [portalNotice, setPortalNotice] = useState<string | null>(null);
+  const [portalExternalUrl, setPortalExternalUrl] = useState<string | null>(null);
+
+  const bmiCategoryLabel =
+    metrics.bmi < 18.5
+      ? w.profileBmiCategories.underweight
+      : metrics.bmi < 25
+      ? w.profileBmiCategories.normal
+      : metrics.bmi < 30
+      ? w.profileBmiCategories.overweight
+      : w.profileBmiCategories.obese;
 
   const handleConfirmUnsubscribe = async () => {
     setIsCancelling(true);
@@ -89,9 +101,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       }
       setIsCancelling(false);
       setShowCancelModal(false);
-      setCancelSuccessMessage(
-        'Votre abonnement a été résilié avec succès. Aucun prélèvement futur ne sera effectué.'
-      );
+      setCancelSuccessMessage(w.profileCancelSuccess);
       setTimeout(() => {
         setCancelSuccessMessage(null);
       }, 5000);
@@ -100,12 +110,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
   const handleOpenStripePortal = async () => {
     if (!user.email) {
-      setPortalNotice("Veuillez renseigner une adresse email pour accéder au portail Stripe.");
+      setPortalNotice(w.profilePortalMissingEmail);
       setTimeout(() => setPortalNotice(null), 3500);
       return;
     }
     setPortalLoading(true);
     setPortalNotice(null);
+    setPortalExternalUrl(null);
     try {
       const res = await fetch('/api/stripe/create-portal-session', {
         method: 'POST',
@@ -114,15 +125,27 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       });
       const data = await res.json();
       if (data.url) {
-        window.location.href = data.url;
+        let isInIframe = false;
+        try {
+          isInIframe = window.self !== window.top;
+        } catch {
+          isInIframe = true;
+        }
+        const isStandalone =
+          window.matchMedia?.('(display-mode: standalone)').matches ||
+          document.referrer.startsWith('android-app://');
+
+        if (isInIframe || isStandalone) {
+          setPortalExternalUrl(data.url);
+        } else {
+          window.location.assign(data.url);
+        }
       } else {
-        setPortalNotice(
-          "Portail Stripe non disponible en mode local ou configuration Stripe incomplète. Vous pouvez résilier directement ci-dessous en un clic."
-        );
+        setPortalNotice(w.profilePortalUnavailable);
         setTimeout(() => setPortalNotice(null), 4000);
       }
     } catch (e) {
-      setPortalNotice("Erreur de connexion avec le portail Stripe. Utilisez le bouton direct de désabonnement.");
+      setPortalNotice(w.profilePortalConnError);
       setTimeout(() => setPortalNotice(null), 4000);
     } finally {
       setPortalLoading(false);
@@ -145,7 +168,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             onClick={() => setCancelSuccessMessage(null)}
             className="text-white/80 hover:text-white text-xs underline cursor-pointer ml-3"
           >
-            Fermer
+            {w.progressClose}
           </button>
         </div>
       )}
@@ -164,7 +187,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               <BlossomFlower size={20} palette="pink" />
             </div>
             <span className="text-xs font-bold text-black dark:text-slate-300 block mt-0.5">
-              Membre depuis 12 semaines 🌸
+              {w.profileMemberSince}
             </span>
           </div>
         </div>
@@ -176,13 +199,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             el?.scrollIntoView({ behavior: 'smooth' });
           }}
           className="w-10 h-10 rounded-full bg-white dark:bg-slate-800 border border-[#DCE8DC] dark:border-slate-700 flex items-center justify-center text-black hover:text-[#1F6F43] transition-all cursor-pointer shadow-xs"
-          title="Paramètres du profil"
+          title={w.profileSettingsTitle}
         >
           <Settings className="w-5 h-5" />
         </button>
       </div>
 
-      {/* 2. Target Card: Archery Bullseye (Screen 6) with Coral Sunset Gradient & Flowers */}
+      {/* 2. Target Card */}
       <div
         id="target-goal-progress-card"
         className={`p-6 rounded-[28px] border relative overflow-hidden ${
@@ -200,10 +223,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </div>
             <div>
               <span className="text-xs font-black text-black dark:text-slate-300 block">
-                Mon objectif
+                {w.profileMyGoal}
               </span>
               <h2 className="text-lg font-black text-black dark:text-white leading-tight flex items-center gap-1.5">
-                <span>Perdre 5 kg</span>
+                <span>{w.profileGoalLose5}</span>
                 <BlossomFlower size={16} palette="orchid" />
               </h2>
             </div>
@@ -216,7 +239,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               el?.scrollIntoView({ behavior: 'smooth' });
             }}
             className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer"
-            title="Modifier l'objectif"
+            title={w.profileEditGoalTitle}
           >
             ✏️
           </button>
@@ -232,17 +255,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
 
         <div className="text-right">
           <span className="text-xs font-extrabold text-[#78350F] dark:text-slate-300">
-            Il vous reste <strong className="text-rose-600 dark:text-rose-400 font-black">2,5 kg</strong> ! 🌸🎉
+            {w.profileRemainingPrefix} <strong className="text-rose-600 dark:text-rose-400 font-black">{(2.5).toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kg</strong> ! 🌸🎉
           </span>
         </div>
       </div>
 
-      {/* 3. Mes conseils du jour (Screen 6) */}
+      {/* 3. Daily tips */}
       <div className="space-y-2">
         <div className="flex items-center gap-1.5">
           <span className="text-amber-500 text-sm">💡</span>
           <h3 className="text-sm font-black text-[#163321] dark:text-white">
-            Mes conseils du jour
+            {w.profileDailyTipsTitle}
           </h3>
         </div>
 
@@ -256,26 +279,26 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <div className="w-16 h-16 rounded-2xl overflow-hidden shrink-0 shadow-xs border border-[#E5EFE5]">
               <img
                 src="https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=260&q=80"
-                alt="Légumes frais"
+                alt={w.profileDailyTipAlt}
                 className="w-full h-full object-cover group-hover:scale-105 transition-transform"
                 loading="lazy"
               />
             </div>
             <p className="text-xs font-bold text-black dark:text-slate-200 leading-snug">
-              Privilégiez les légumes à chaque repas : ils sont riches en nutriments et peu caloriques !
+              {w.profileDailyTipText}
             </p>
           </div>
           <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-[#1F6F43] transition-colors shrink-0" />
         </div>
       </div>
 
-      {/* 4. Menu Options List (Screen 6) */}
+      {/* 4. Menu Options List */}
       <div
         className={`divide-y divide-[#EDF3ED] dark:divide-slate-800 rounded-[26px] border ${
           isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-[#E2ECE2]'
         } shadow-xs overflow-hidden`}
       >
-        {/* Abonnement & Désabonnement (accès direct en haut du profil) */}
+        {/* Subscription & Unsubscribe */}
         <div
           id="btn-profile-menu-subscription"
           onClick={() => {
@@ -291,24 +314,24 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <div className="flex items-center gap-3 min-w-0">
             <CreditCard className="w-5 h-5 text-[#1F6F43] dark:text-emerald-400 shrink-0" />
             <span className="text-sm font-black text-black dark:text-white truncate">
-              {user.isPremium ? 'Mon abonnement • Se désabonner' : 'Abonnement & Essai 30 jours'}
+              {user.isPremium ? w.profileMenuUnsubscribe : w.profileMenuTrial}
             </span>
           </div>
           <div className="flex items-center gap-2 shrink-0">
             {user.isPremium ? (
               <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
-                Se désabonner
+                {w.profileUnsubscribeBtn}
               </span>
             ) : (
               <span className="text-[11px] font-black px-2.5 py-1 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
-                {user.trialDaysRemaining <= 0 ? 'Paiement requis' : `${user.trialDaysRemaining}j / 30`}
+                {user.trialDaysRemaining <= 0 ? w.profilePaymentRequiredBadge : `${user.trialDaysRemaining}${w.profileDaysShort}`}
               </span>
             )}
             <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#1F6F43] transition-colors" />
           </div>
         </div>
 
-        {/* Mes statistiques */}
+        {/* My stats */}
         <div
           onClick={() => {
             const el = document.getElementById('metabolism-calculation-card');
@@ -319,13 +342,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <div className="flex items-center gap-3">
             <BarChart2 className="w-5 h-5 text-[#1F6F43] dark:text-emerald-400" />
             <span className="text-sm font-black text-black dark:text-white">
-              Mes statistiques
+              {w.profileMyStats}
             </span>
           </div>
           <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#1F6F43] transition-colors" />
         </div>
 
-        {/* Mes paramètres */}
+        {/* My settings */}
         <div
           onClick={() => {
             const el = document.getElementById('account-edit-form');
@@ -336,13 +359,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <div className="flex items-center gap-3">
             <Settings className="w-5 h-5 text-[#1F6F43] dark:text-emerald-400" />
             <span className="text-sm font-black text-black dark:text-white">
-              Mes paramètres
+              {w.profileMySettings}
             </span>
           </div>
           <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#1F6F43] transition-colors" />
         </div>
 
-        {/* Badges & Rappels (accès rapide mobile) */}
+        {/* Badges & Reminders */}
         {onOpenBadges && (
           <div
             onClick={onOpenBadges}
@@ -351,14 +374,14 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <div className="flex items-center gap-3">
               <Award className="w-5 h-5 text-[#1F6F43] dark:text-emerald-400" />
               <span className="text-sm font-black text-black dark:text-white">
-                Badges, Défis & Rappels
+                {w.profileBadgesAndReminders}
               </span>
             </div>
             <ChevronRight className="w-4 h-4 text-slate-400 group-hover:text-[#1F6F43] transition-colors" />
           </div>
         )}
 
-        {/* FAQ & Aide (Accordéon intégré sans alerte navigateur) */}
+        {/* FAQ & Help */}
         <div>
           <button
             type="button"
@@ -368,7 +391,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <div className="flex items-center gap-3">
               <HelpCircle className="w-5 h-5 text-[#1F6F43] dark:text-emerald-400" />
               <span className="text-sm font-black text-black dark:text-white">
-                FAQ & Aide
+                {w.profileFaqHelp}
               </span>
             </div>
             <ChevronRight
@@ -380,20 +403,20 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           {showFaq && (
             <div className="px-4 pb-4 pt-1 text-xs text-slate-600 dark:text-slate-300 space-y-2.5 bg-[#F9FCF9] dark:bg-slate-800/40">
               <p>
-                <strong>📸 Scanner un repas ou code-barres :</strong> Utilisez les boutons rapides sur l'écran d'accueil ou dans le Journal alimentaire.
+                <strong>{w.profileFaq1Title}</strong> {w.profileFaq1Body}
               </p>
               <p>
-                <strong>💳 Essai & abonnement :</strong> 30 jours d'essai gratuit, puis abonnement requis (4,99 €/mois ou 39,99 €/an, résiliable à tout moment) pour continuer à utiliser l'application.
+                <strong>{w.profileFaq2Title}</strong> {w.profileFaq2Body}
               </p>
               <p>
-                <strong>📱 Ouvrir en plein écran :</strong> Appuyez sur « Mode Appli » dans la barre du haut pour installer NutriCoach sur votre écran d'accueil.
+                <strong>{w.profileFaq3Title}</strong> {w.profileFaq3Body}
               </p>
             </div>
           )}
         </div>
       </div>
 
-      {/* Dedicated Subscription & Billing Management Card (positioned near top for easy mobile access) */}
+      {/* Dedicated Subscription & Billing Management Card */}
       <div
         id="section-subscription-management"
         className={`p-5 sm:p-6 rounded-3xl border ${
@@ -407,10 +430,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </div>
             <div>
               <h3 className="font-extrabold text-base text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                Abonnement & Facturation
+                {w.profileSubTitle}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Gestion en toute transparence • Résiliation libre sans frais
+                {w.profileSubSubtitle}
               </p>
             </div>
           </div>
@@ -425,10 +448,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             }`}
           >
             {user.isPremium
-              ? 'Premium Actif'
+              ? w.profileStatusPremium
               : user.trialDaysRemaining <= 0
-              ? 'Paiement Requis'
-              : `Essai Gratuit (${user.trialDaysRemaining}j / 30)`}
+              ? w.profileStatusPaymentRequired
+              : `${w.profileStatusTrial} (${user.trialDaysRemaining}${w.profileDaysShort})`}
           </span>
         </div>
 
@@ -438,9 +461,26 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </div>
         )}
 
+        {portalExternalUrl && (
+          <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+            <span className="font-bold text-emerald-900 dark:text-emerald-200">
+              {w.profilePortalReady}
+            </span>
+            <a
+              id="link-open-stripe-portal"
+              href={portalExternalUrl}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-1.5 px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-black transition-colors"
+            >
+              <span>{w.profileOpenPortalBtn}</span>
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
+        )}
+
         {user.isPremium ? (
           <div className="space-y-4">
-            {/* Action buttons placed prominently at top of card */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
               <button
                 id="btn-profile-unsubscribe"
@@ -448,7 +488,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 className="px-5 py-3 rounded-2xl bg-rose-50 hover:bg-rose-100 dark:bg-rose-950/40 dark:hover:bg-rose-950/70 text-rose-700 dark:text-rose-300 border-2 border-rose-300 dark:border-rose-800 font-black text-xs sm:text-sm flex items-center justify-center gap-2 cursor-pointer transition-all shadow-xs"
               >
                 <XCircle className="w-4 h-4 text-rose-500" />
-                Se désabonner de NutriCoach
+                {w.profileUnsubscribeFullBtn}
               </button>
 
               <button
@@ -462,41 +502,41 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 ) : (
                   <ExternalLink className="w-4 h-4 text-slate-400" />
                 )}
-                Gérer mes factures & cartes (Stripe)
+                {w.profileManageInvoicesBtn}
               </button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 space-y-1">
                 <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Formule souscrite
+                  {w.profilePlanLabel}
                 </span>
                 <div className="text-sm font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
                   <Crown className="w-4 h-4 text-amber-500 fill-amber-500" />
-                  NutriCoach Premium
+                  {w.profilePlanName}
                 </div>
                 <span className="text-xs text-emerald-600 dark:text-emerald-400 font-semibold block">
-                  4,99 € / mois (Sans engagement)
+                  {w.profilePlanPrice}
                 </span>
               </div>
 
               <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 space-y-1">
                 <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Statut des prélèvements
+                  {w.profileBillingStatusLabel}
                 </span>
                 <div className="text-sm font-extrabold text-slate-800 dark:text-slate-100 flex items-center gap-1.5">
                   <ShieldCheck className="w-4 h-4 text-emerald-500" />
-                  Paiement sécurisé Stripe
+                  {w.profileStripeSecure}
                 </div>
                 <span className="text-xs text-slate-500 dark:text-slate-400 block">
-                  Résiliable à tout instant en 1 clic
+                  {w.profileCancelOneClick}
                 </span>
               </div>
             </div>
 
             <div className="p-4 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200/60 dark:border-emerald-800/40 text-xs text-slate-700 dark:text-slate-300">
               <p>
-                <strong>Vos droits :</strong> Vous pouvez résilier votre abonnement à tout moment sans aucun préavis ni frais. Votre accès reste actif pour la période déjà payée et aucun nouveau prélèvement ne sera effectué.
+                <strong>{w.profileYourRightsTitle}</strong> {w.profileYourRightsBody}
               </p>
             </div>
           </div>
@@ -505,13 +545,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             <div className="space-y-1">
               <div className="text-sm font-extrabold text-slate-800 dark:text-slate-100">
                 {user.trialDaysRemaining <= 0
-                  ? 'Essai de 30 jours terminé — Abonnement requis'
-                  : `Période d'essai gratuit en cours (${user.trialDaysRemaining} jour${user.trialDaysRemaining > 1 ? 's' : ''} restant${user.trialDaysRemaining > 1 ? 's' : ''})`}
+                  ? w.profileTrialEndedTitle
+                  : `${w.profileTrialOngoingPrefix} (${user.trialDaysRemaining} ${user.trialDaysRemaining > 1 ? w.profileDayPlural : w.profileDaySingular})`}
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 {user.trialDaysRemaining <= 0
-                  ? 'Il n’y a pas de formule gratuite après la période d’essai. Activez votre abonnement (4,99 €/mois ou 39,99 €/an) pour continuer à utiliser NutriCoach.'
-                  : 'Aucun prélèvement pendant les 30 jours d’essai. Au bout des 30 jours, un abonnement (4,99 €/mois ou 39,99 €/an) vous sera demandé pour continuer à utiliser l’application.'}
+                  ? w.profileTrialEndedDesc
+                  : w.profileTrialOngoingDesc}
               </p>
             </div>
 
@@ -522,8 +562,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             >
               <Crown className="w-4 h-4 text-amber-300 fill-amber-300" />
               {user.trialDaysRemaining <= 0
-                ? 'Payer pour continuer (4,99 €/mois)'
-                : 'Activer Premium (4,99 €/mois)'}
+                ? w.profilePayToContinueBtn
+                : w.profileActivatePremiumBtn}
             </button>
           </div>
         )}
@@ -541,44 +581,44 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         <div className="flex items-center justify-between">
           <h3 className="font-black text-lg flex items-center gap-2">
             <Calculator className="w-5 h-5" />
-            Calcul Automatique du Métabolisme & Calories
+            {w.profileMetabolismTitle}
           </h3>
           <span className="text-xs font-bold bg-white/20 px-3 py-1 rounded-full uppercase tracking-wider">
-            Formule Mifflin-St Jeor
+            {w.profileMifflinBadge}
           </span>
         </div>
 
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
           <div className="p-3 rounded-2xl bg-white/10 backdrop-blur-xs">
             <span className="text-[10px] font-bold uppercase tracking-wider block text-emerald-100">
-              Métabolisme de base (BMR)
+              {w.profileBmrLabel}
             </span>
             <span className="text-2xl font-black">{metrics.bmr} kcal</span>
-            <span className="text-[9px] block text-emerald-100">Besoins au repos total</span>
+            <span className="text-[9px] block text-emerald-100">{w.profileBmrSub}</span>
           </div>
 
           <div className="p-3 rounded-2xl bg-white/10 backdrop-blur-xs">
             <span className="text-[10px] font-bold uppercase tracking-wider block text-emerald-100">
-              Dépense Totale (TDEE)
+              {w.profileTdeeLabel}
             </span>
             <span className="text-2xl font-black">{metrics.tdee} kcal</span>
-            <span className="text-[9px] block text-emerald-100">Selon niveau d'activité</span>
+            <span className="text-[9px] block text-emerald-100">{w.profileTdeeSub}</span>
           </div>
 
           <div className="p-3 rounded-2xl bg-white/10 backdrop-blur-xs">
             <span className="text-[10px] font-bold uppercase tracking-wider block text-emerald-100">
-              Cible Déficit Calorique
+              {w.profileTargetDeficitLabel}
             </span>
             <span className="text-2xl font-black text-amber-300">{metrics.targetCalories} kcal</span>
-            <span className="text-[9px] block text-emerald-100">Pour perte de poids douce</span>
+            <span className="text-[9px] block text-emerald-100">{w.profileTargetDeficitSub}</span>
           </div>
 
           <div className="p-3 rounded-2xl bg-white/10 backdrop-blur-xs">
             <span className="text-[10px] font-bold uppercase tracking-wider block text-emerald-100">
-              Indice IMC
+              {w.profileBmiLabel}
             </span>
             <span className="text-2xl font-black">{metrics.bmi}</span>
-            <span className="text-[9px] block text-emerald-100">{metrics.bmiCategory}</span>
+            <span className="text-[9px] block text-emerald-100">{bmiCategoryLabel}</span>
           </div>
         </div>
       </div>
@@ -592,12 +632,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
       >
         <h3 className="font-extrabold text-base text-slate-800 dark:text-slate-100 flex items-center gap-2">
           <User className="w-5 h-5 text-emerald-600" />
-          Informations Personnelles
+          {w.profilePersonalInfoTitle}
         </h3>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           <div>
-            <label className="text-xs font-bold text-slate-500 block mb-1">Prénom</label>
+            <label className="text-xs font-bold text-slate-500 block mb-1">{w.profileFieldName}</label>
             <input
               id="profile-input-name"
               type="text"
@@ -610,7 +650,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </div>
 
           <div>
-            <label className="text-xs font-bold text-slate-500 block mb-1">Âge (ans)</label>
+            <label className="text-xs font-bold text-slate-500 block mb-1">{w.profileFieldAge}</label>
             <input
               id="profile-input-age"
               type="number"
@@ -623,7 +663,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </div>
 
           <div>
-            <label className="text-xs font-bold text-slate-500 block mb-1">Sexe</label>
+            <label className="text-xs font-bold text-slate-500 block mb-1">{w.profileFieldSex}</label>
             <select
               id="profile-select-sex"
               value={user.sex}
@@ -632,13 +672,13 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200'
               }`}
             >
-              <option value="femme">Femme</option>
-              <option value="homme">Homme</option>
+              <option value="femme">{w.profileSexFemale}</option>
+              <option value="homme">{w.profileSexMale}</option>
             </select>
           </div>
 
           <div>
-            <label className="text-xs font-bold text-slate-500 block mb-1">Taille (cm)</label>
+            <label className="text-xs font-bold text-slate-500 block mb-1">{w.profileFieldHeight}</label>
             <input
               id="profile-input-height"
               type="number"
@@ -651,7 +691,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </div>
 
           <div>
-            <label className="text-xs font-bold text-slate-500 block mb-1">Poids actuel (kg)</label>
+            <label className="text-xs font-bold text-slate-500 block mb-1">{w.profileFieldCurrentWeight}</label>
             <input
               id="profile-input-current-weight"
               type="number"
@@ -665,7 +705,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </div>
 
           <div>
-            <label className="text-xs font-bold text-slate-500 block mb-1">Poids objectif (kg)</label>
+            <label className="text-xs font-bold text-slate-500 block mb-1">{w.profileFieldTargetWeight}</label>
             <input
               id="profile-input-target-weight"
               type="number"
@@ -679,7 +719,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </div>
 
           <div>
-            <label className="text-xs font-bold text-slate-500 block mb-1">Niveau d'activité physique</label>
+            <label className="text-xs font-bold text-slate-500 block mb-1">{w.profileFieldActivity}</label>
             <select
               id="profile-select-activity"
               value={user.activityLevel}
@@ -688,16 +728,16 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200'
               }`}
             >
-              <option value="sedentaire">Sédentaire (Bureau, peu de marche)</option>
-              <option value="legerement_actif">Légèrement actif (Marche 1-3x/semaine)</option>
-              <option value="moderement_actif">Modérément actif (Sport 3-5x/semaine)</option>
-              <option value="tres_actif">Très actif (Sport intense quotidien)</option>
-              <option value="extremement_actif">Extrêmement actif (Athlète)</option>
+              <option value="sedentaire">{w.profileActSedentary}</option>
+              <option value="legerement_actif">{w.profileActLight}</option>
+              <option value="moderement_actif">{w.profileActModerate}</option>
+              <option value="tres_actif">{w.profileActVery}</option>
+              <option value="extremement_actif">{w.profileActExtreme}</option>
             </select>
           </div>
 
           <div>
-            <label className="text-xs font-bold text-slate-500 block mb-1">Objectif principal</label>
+            <label className="text-xs font-bold text-slate-500 block mb-1">{w.profileFieldGoal}</label>
             <select
               id="profile-select-goal"
               value={user.goal}
@@ -706,15 +746,15 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200'
               }`}
             >
-              <option value="perdre">Perdre du poids (-0,5 kg/semaine)</option>
-              <option value="maintenir">Maintenir mon poids actuel</option>
-              <option value="prendre">Prendre de la masse musculaire</option>
+              <option value="perdre">{w.profileGoalLose}</option>
+              <option value="maintenir">{w.profileGoalMaintain}</option>
+              <option value="prendre">{w.profileGoalGain}</option>
             </select>
           </div>
 
           <div>
             <label className="text-xs font-bold text-slate-500 block mb-1">
-              Régime & Préférence alimentaire
+              {w.profileFieldDiet}
             </label>
             <select
               id="profile-select-dietary-preference"
@@ -724,17 +764,17 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 isDarkMode ? 'bg-slate-800 border-slate-700 text-white' : 'bg-slate-50 border-slate-200'
               }`}
             >
-              <option value="standard">Standard / Tous aliments</option>
-              <option value="sans_gluten">🌾 Sans Gluten (Gluten-Free)</option>
-              <option value="vegetarien">🥗 Végétarien</option>
-              <option value="vegan">🌱 Végétalien / Végan</option>
-              <option value="pescetarien">🐟 Pescétarien (Poissons & Végétaux)</option>
-              <option value="keto">🥑 Low Carb / Cétogène</option>
+              <option value="standard">{w.profileDietStandard}</option>
+              <option value="sans_gluten">{w.profileDietGlutenFree}</option>
+              <option value="vegetarien">{w.profileDietVegetarian}</option>
+              <option value="vegan">{w.profileDietVegan}</option>
+              <option value="pescetarien">{w.profileDietPescatarian}</option>
+              <option value="keto">{w.profileDietKeto}</option>
             </select>
           </div>
 
           <div>
-            <label className="text-xs font-bold text-slate-500 block mb-1">Objectif Hydratation (ml)</label>
+            <label className="text-xs font-bold text-slate-500 block mb-1">{w.profileFieldWaterTarget}</label>
             <input
               id="profile-input-water-target"
               type="number"
@@ -748,7 +788,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           </div>
 
           <div>
-            <label className="text-xs font-bold text-slate-500 block mb-1">Objectif de pas par jour</label>
+            <label className="text-xs font-bold text-slate-500 block mb-1">{w.profileFieldStepTarget}</label>
             <input
               id="profile-input-step-target"
               type="number"
@@ -762,7 +802,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               }`}
             />
             <span className="text-[11px] text-slate-400 mt-1 block">
-              Recommandé : 8 000 à 10 000 pas / jour
+              {w.profileStepRecommended}
             </span>
           </div>
         </div>
@@ -778,7 +818,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           <div className="flex items-center gap-2">
             <User className="w-5 h-5 text-emerald-600" />
             <h3 className="font-extrabold text-base text-slate-800 dark:text-slate-100">
-              Statut du Compte & Décompte Essai Gratuit
+              {w.profileAccountStatusTitle}
             </h3>
           </div>
           <span
@@ -790,10 +830,10 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           >
             <span>
               {user.isPremium
-                ? '👑 Abonnement Premium Actif'
+                ? w.profileBadgePremiumActive
                 : user.trialDaysRemaining <= 0
-                ? '🔒 Essai gratuit terminé (0 jour restant)'
-                : `⏱️ ${user.trialDaysRemaining} jours restants sur 30`}
+                ? w.profileBadgeTrialExpired
+                : `⏱️ ${user.trialDaysRemaining} ${w.profileBadgeTrialDaysLeft}`}
             </span>
           </span>
         </div>
@@ -802,7 +842,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
         <div className="p-4 rounded-2xl bg-gradient-to-r from-amber-50 via-emerald-50 to-teal-50 dark:from-slate-800 dark:via-slate-850 dark:to-slate-800 border border-amber-200/80 dark:border-slate-700 space-y-2.5">
           <div className="flex items-center justify-between text-xs">
             <span className="font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5">
-              <span>Compte à rebours de l'essai (30 jours) :</span>
+              <span>{w.profileCountdownLabel}</span>
             </span>
             <strong
               className={`font-black ${
@@ -812,8 +852,8 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               }`}
             >
               {user.trialDaysRemaining <= 0
-                ? 'Terminé (0 jour restant)'
-                : `Jour ${Math.max(1, 31 - user.trialDaysRemaining)} / 30 (${user.trialDaysRemaining} jours restants)`}
+                ? w.profileCountdownExpired
+                : `${w.profileCountdownDayWord} ${Math.max(1, 31 - user.trialDaysRemaining)} / 30 (${user.trialDaysRemaining} ${user.trialDaysRemaining > 1 ? w.profileDayPlural : w.profileDaySingular})`}
             </strong>
           </div>
 
@@ -835,21 +875,21 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             {!user.isPremium && user.trialDaysRemaining <= 0 ? (
               <>
                 <span className="font-bold text-rose-600 dark:text-rose-400">
-                  ⚠️ Période d'essai terminée — Passez à Premium pour continuer.
+                  {w.profileTrialExpiredWarning}
                 </span>
                 <button
                   type="button"
                   onClick={onOpenPremium}
                   className="px-3 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-black text-xs cursor-pointer transition-colors"
                 >
-                  Payer pour continuer (4,99 €/mois)
+                  {w.profilePayToContinueBtn}
                 </button>
               </>
             ) : (
               <>
-                <span>✨ Inscription validée • Période d'évaluation offerte à 100%</span>
+                <span>{w.profileTrialVerified}</span>
                 <span className="font-semibold text-emerald-600 dark:text-emerald-400">
-                  0 € facturé avant la fin des 30 jours
+                  {w.profileZeroBilled}
                 </span>
               </>
             )}
@@ -864,7 +904,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </div>
             <div>
               <div className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                NutriCoach sur Google Play
+                {w.profileGooglePlayTitle}
                 <span className="text-[10px] bg-emerald-600 text-white font-bold px-2 py-0.5 rounded-full">Android</span>
               </div>
               <div className="text-xs text-slate-500 dark:text-slate-400 font-mono">
@@ -880,7 +920,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             rel="noreferrer"
             className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all flex items-center gap-2 shadow-xs shrink-0"
           >
-            <span>Fiche Google Play</span>
+            <span>{w.profileGooglePlayBtn}</span>
             <ExternalLink className="w-3.5 h-3.5" />
           </a>
         </div>
@@ -896,20 +936,20 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </div>
             <div>
               <div className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                <span>Montre Connectée & Capteurs</span>
+                <span>{w.profileWatchTitle}</span>
                 {user.connectedWatch?.connected ? (
                   <span className="text-[10px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-bold px-2 py-0.5 rounded-full">
                     {user.connectedWatch.brand}
                   </span>
                 ) : (
                   <span className="text-[10px] bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-semibold px-2 py-0.5 rounded-full">
-                    Non configurée
+                    {w.profileWatchUnconfigured}
                   </span>
                 )}
               </div>
               <div className="text-xs text-slate-500 dark:text-slate-400">
                 {user.connectedWatch?.lastSync
-                  ? `Dernière synchro : ${user.connectedWatch.lastSync}`
+                  ? `${w.profileWatchLastSync} ${user.connectedWatch.lastSync}`
                   : 'Apple Watch, Garmin, Galaxy Watch, Fitbit, Withings, Bluetooth BLE'}
               </div>
             </div>
@@ -922,7 +962,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             className="px-4 py-2 rounded-xl bg-sky-600 hover:bg-sky-700 text-white text-xs font-bold transition-all flex items-center gap-1.5 shadow-xs cursor-pointer shrink-0 self-stretch sm:self-auto justify-center"
           >
             <Watch className="w-3.5 h-3.5" />
-            <span>{user.connectedWatch?.connected ? 'Gérer / Synchroniser' : 'Connecter ma montre'}</span>
+            <span>{user.connectedWatch?.connected ? w.profileWatchManageBtn : w.profileWatchConnectBtn}</span>
           </button>
         </div>
 
@@ -937,7 +977,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </div>
             <div>
               <div className="text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                <span>Accueil Vocal Automatique du Coach</span>
+                <span>{w.profileVoiceAutoTitle}</span>
                 <span
                   className={`text-[10px] font-bold px-2 py-0.5 rounded-full ${
                     user.autoVoiceGreeting !== false
@@ -945,11 +985,11 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                       : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300'
                   }`}
                 >
-                  {user.autoVoiceGreeting !== false ? 'Activé' : 'Désactivé'}
+                  {user.autoVoiceGreeting !== false ? w.profileEnabled : w.profileDisabled}
                 </span>
               </div>
               <div className="text-xs text-slate-500 dark:text-slate-400">
-                Le Coach vous accueille de vive voix à l'ouverture : « Que vas-tu manger aujourd'hui ? »
+                {w.profileVoiceAutoDesc}
               </div>
             </div>
           </div>
@@ -977,7 +1017,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 {t('profileLanguage')}
               </div>
               <div className="text-xs text-slate-500 dark:text-slate-400">
-                21 langues disponibles • Traduction universelle (130+ langues)
+                {w.profileLangSubtitle}
               </div>
             </div>
           </div>
@@ -990,7 +1030,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
               {user.name} {user.email ? `(${user.email})` : ''}
             </div>
             <div className="text-xs text-slate-500 dark:text-slate-400">
-              {user.isLoggedIn ? "Compte synchronisé & Période d'essai activée" : 'Mode invité'}
+              {user.isLoggedIn ? w.profileAccountSynced : w.profileGuestMode}
             </div>
           </div>
 
@@ -1009,7 +1049,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 onClick={onOpenAuth}
                 className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-colors cursor-pointer"
               >
-                Créer un compte
+                {w.profileCreateAccount}
               </button>
             )}
             <a
@@ -1035,7 +1075,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
           {/* Mention L'ESCAPADE DE JOS */}
           <div className="pt-3 border-t border-slate-200/60 dark:border-slate-800/80 flex items-center justify-between text-xs text-slate-500 dark:text-slate-400">
             <span className="flex items-center gap-1.5 font-medium">
-              ✨ Une création de <strong className="text-emerald-600 dark:text-emerald-400 font-extrabold uppercase">L'ESCAPADE DE JOS</strong>
+              {w.profileCreatorCredit} <strong className="text-emerald-600 dark:text-emerald-400 font-extrabold uppercase">L'ESCAPADE DE JOS</strong>
             </span>
             <span className="text-[11px] opacity-75 font-semibold">NutriCoach</span>
           </div>
@@ -1058,24 +1098,24 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
             </div>
 
             <div className="text-center space-y-1.5">
-              <h3 className="text-lg font-black">Confirmer le désabonnement</h3>
+              <h3 className="text-lg font-black">{w.profileCancelModalTitle}</h3>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Êtes-vous certain(e) de vouloir résilier votre abonnement NutriCoach Premium ?
+                {w.profileCancelModalQuestion}
               </p>
             </div>
 
             <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700 text-xs space-y-2 text-slate-600 dark:text-slate-300">
               <div className="flex items-start gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                <span><strong>Aucun frais de résiliation :</strong> La résiliation est 100% gratuite et immédiate.</span>
+                <span><strong>{w.profileCancelPerk1Title}</strong> {w.profileCancelPerk1Body}</span>
               </div>
               <div className="flex items-start gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                <span><strong>Arrêt définitif des prélèvements :</strong> Aucun montant ne sera plus débité sur votre carte.</span>
+                <span><strong>{w.profileCancelPerk2Title}</strong> {w.profileCancelPerk2Body}</span>
               </div>
               <div className="flex items-start gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
-                <span><strong>Vos données sont préservées :</strong> Votre profil, vos repas enregistrés et calculs métaboliques restent intacts.</span>
+                <span><strong>{w.profileCancelPerk3Title}</strong> {w.profileCancelPerk3Body}</span>
               </div>
             </div>
 
@@ -1085,7 +1125,7 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 onClick={() => setShowCancelModal(false)}
                 className="flex-1 py-3 px-4 rounded-2xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-bold text-xs cursor-pointer transition-colors"
               >
-                Garder mon abonnement
+                {w.profileKeepSubBtn}
               </button>
 
               <button
@@ -1097,12 +1137,12 @@ export const ProfileView: React.FC<ProfileViewProps> = ({
                 {isCancelling ? (
                   <>
                     <Loader2 className="w-4 h-4 animate-spin" />
-                    Résiliation en cours...
+                    {w.profileCancellingBtn}
                   </>
                 ) : (
                   <>
                     <XCircle className="w-4 h-4" />
-                    Confirmer le désabonnement
+                    {w.profileConfirmUnsubBtn}
                   </>
                 )}
               </button>

@@ -1,15 +1,61 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { Language, LANGUAGES, translations, TranslationKey } from './translations.ts';
 
+export const LOCALE_BY_LANGUAGE: Record<Language, string> = {
+  fr: 'fr-FR',
+  en: 'en-US',
+  es: 'es-ES',
+  de: 'de-DE',
+  it: 'it-IT',
+  pt: 'pt-PT',
+  nl: 'nl-NL',
+  pl: 'pl-PL',
+  no: 'nb-NO',
+  sv: 'sv-SE',
+  da: 'da-DK',
+  fi: 'fi-FI',
+  ru: 'ru-RU',
+  ja: 'ja-JP',
+  zh: 'zh-CN',
+  ar: 'ar-SA',
+  tr: 'tr-TR',
+  el: 'el-GR',
+  cs: 'cs-CZ',
+  ro: 'ro-RO',
+  uk: 'uk-UA',
+};
+
+export const getLocaleForLanguage = (lang: Language): string => {
+  return LOCALE_BY_LANGUAGE[lang] || 'fr-FR';
+};
+
 interface LanguageContextType {
   language: Language;
   setLanguage: (lang: Language) => void;
   t: (key: TranslationKey, params?: Record<string, string | number>) => string;
   isRtl: boolean;
+  locale: string;
   triggerGoogleTranslate: (targetLang?: string) => void;
+  resetGoogleTranslate: () => void;
 }
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
+
+const clearGoogleTranslateCookies = () => {
+  if (typeof document === 'undefined' || typeof window === 'undefined') return;
+  const expired = 'Thu, 01 Jan 1970 00:00:00 GMT';
+  const hostname = window.location.hostname;
+  const hostParts = hostname.split('.');
+  const domains = ['', hostname, `.${hostname}`];
+  if (hostParts.length >= 2) {
+    domains.push(`.${hostParts.slice(-2).join('.')}`);
+  }
+  domains.forEach((dom) => {
+    const domPart = dom ? ` domain=${dom};` : '';
+    document.cookie = `googtrans=; expires=${expired}; path=/;${domPart}`;
+    document.cookie = `googtrans=/auto/fr; expires=${expired}; path=/;${domPart}`;
+  });
+};
 
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
@@ -19,11 +65,10 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       return saved;
     }
 
-    // Detect browser language
     const navFull = (navigator.language || '').toLowerCase();
     const navShort = navFull.slice(0, 2) as Language;
 
-    if (navShort === 'nb' as any || navShort === 'nn' as any) {
+    if (navShort === ('nb' as any) || navShort === ('nn' as any)) {
       return 'no';
     }
 
@@ -34,7 +79,10 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     return 'fr';
   });
 
+  const [showGoogleTranslateBar, setShowGoogleTranslateBar] = useState(false);
+
   const isRtl = language === 'ar';
+  const locale = getLocaleForLanguage(language);
 
   const applyLanguageEffects = useCallback((lang: Language) => {
     document.documentElement.lang = lang;
@@ -45,7 +93,26 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     }
   }, []);
 
+  const resetGoogleTranslate = useCallback(() => {
+    clearGoogleTranslateCookies();
+    setShowGoogleTranslateBar(false);
+    if (typeof document !== 'undefined') {
+      const combo = document.querySelector<HTMLSelectElement>('.goog-te-combo');
+      if (combo && combo.value) {
+        combo.value = '';
+        combo.dispatchEvent(new Event('change'));
+      }
+      // Remove Google Translate top banner / translated classes if present
+      document.documentElement.classList.remove('translated-ltr', 'translated-rtl');
+      const gtBanner = document.querySelector('.goog-te-banner-frame') as HTMLElement | null;
+      if (gtBanner) {
+        gtBanner.style.display = 'none';
+      }
+    }
+  }, []);
+
   const setLanguage = (lang: Language) => {
+    resetGoogleTranslate();
     setLanguageState(lang);
     localStorage.setItem('nutricoach_lang', lang);
     applyLanguageEffects(lang);
@@ -55,11 +122,25 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
     applyLanguageEffects(language);
   }, [language, applyLanguageEffects]);
 
-  // Dynamic Google Translate trigger for 130+ languages
+  // Dynamic Google Translate trigger for 130+ languages (single persistent root mount)
   const triggerGoogleTranslate = useCallback((targetLang?: string) => {
     if (typeof window === 'undefined') return;
+    setShowGoogleTranslateBar(true);
 
-    // Check if script is already added
+    const initWidget = () => {
+      const el = document.getElementById('google_translate_element');
+      if (el && el.childElementCount === 0 && (window as any).google?.translate?.TranslateElement) {
+        new (window as any).google.translate.TranslateElement(
+          {
+            pageLanguage: language,
+            layout: (window as any).google.translate.TranslateElement.InlineLayout.SIMPLE,
+            autoDisplay: true,
+          },
+          'google_translate_element'
+        );
+      }
+    };
+
     const existingScript = document.getElementById('google-translate-script');
     if (!existingScript) {
       const script = document.createElement('script');
@@ -67,26 +148,23 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       script.type = 'text/javascript';
       script.src = '//translate.google.com/translate_a/element.js?cb=googleTranslateElementInit';
       (window as any).googleTranslateElementInit = () => {
-        if ((window as any).google?.translate?.TranslateElement) {
-          new (window as any).google.translate.TranslateElement(
-            {
-              pageLanguage: 'fr',
-              layout: (window as any).google.translate.TranslateElement.InlineLayout.SIMPLE,
-              autoDisplay: true,
-            },
-            'google_translate_element'
-          );
-        }
+        initWidget();
       };
       document.body.appendChild(script);
+    } else {
+      initWidget();
     }
 
-    // If targetLang provided, try setting google translate select or cookie
     if (targetLang) {
       document.cookie = `googtrans=/auto/${targetLang}; path=/;`;
       document.cookie = `googtrans=/auto/${targetLang}; domain=.${window.location.hostname}; path=/;`;
+      const combo = document.querySelector<HTMLSelectElement>('.goog-te-combo');
+      if (combo) {
+        combo.value = targetLang;
+        combo.dispatchEvent(new Event('change'));
+      }
     }
-  }, []);
+  }, [language]);
 
   const t = (key: TranslationKey, params?: Record<string, string | number>): string => {
     const langDict = (translations as any)[language] || translations.fr;
@@ -102,8 +180,29 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   };
 
   return (
-    <LanguageContext.Provider value={{ language, setLanguage, t, isRtl, triggerGoogleTranslate }}>
+    <LanguageContext.Provider
+      value={{ language, setLanguage, t, isRtl, locale, triggerGoogleTranslate, resetGoogleTranslate }}
+    >
       {children}
+      {/* Single persistent Google Translate root mount so popovers closing never unmount the widget */}
+      <div
+        id="google-translate-floating-bar"
+        className={
+          showGoogleTranslateBar
+            ? 'fixed bottom-20 lg:bottom-5 right-4 z-[65] bg-white dark:bg-slate-900 border border-emerald-300 dark:border-emerald-700 rounded-2xl shadow-2xl p-3 flex items-center gap-3 max-w-[92vw]'
+            : 'hidden'
+        }
+      >
+        <div id="google_translate_element" className="min-w-[160px]" />
+        <button
+          type="button"
+          onClick={resetGoogleTranslate}
+          className="px-2.5 py-1 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-xs font-bold text-slate-700 dark:text-slate-200 cursor-pointer shrink-0"
+          aria-label="Close"
+        >
+          ✕
+        </button>
+      </div>
     </LanguageContext.Provider>
   );
 };

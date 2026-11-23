@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '../i18n/LanguageContext.tsx';
+import { getUiCore } from '../i18n/uiCoreI18n.ts';
 import { LANGUAGES, POPULAR_LANGUAGE_CODES, Language } from '../i18n/translations.ts';
 import { Globe, Check, Search, Sparkles, ChevronDown, X } from 'lucide-react';
 
@@ -13,9 +14,9 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   className = '',
 }) => {
   const { language, setLanguage, t, triggerGoogleTranslate } = useLanguage();
+  const ui = getUiCore(language);
   const [isOpen, setIsOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [showGoogleTranslate, setShowGoogleTranslate] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
 
@@ -69,8 +70,8 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
   };
 
   const handleActivateUniversalTranslate = () => {
-    setShowGoogleTranslate(true);
     triggerGoogleTranslate();
+    setIsOpen(false);
   };
 
   // -------------------------------------------------------------
@@ -106,7 +107,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
             className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold text-emerald-700 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-slate-700/80 transition-all cursor-pointer border border-dashed border-emerald-300 dark:border-emerald-600"
           >
             <Globe className="w-3.5 h-3.5" />
-            <span>+ {LANGUAGES.length - 6} autres</span>
+            <span>{ui.otherLanguagesCount(LANGUAGES.length - 6)}</span>
           </button>
         </div>
 
@@ -205,9 +206,8 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
                       className="mt-1 self-start px-3 py-1.5 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer flex items-center gap-1.5"
                     >
                       <Globe className="w-3.5 h-3.5" />
-                      Activer la traduction universelle
+                      {ui.activateUniversal}
                     </button>
-                    <div id="google_translate_element" className="mt-1" />
                   </div>
                 </div>
               </div>
@@ -318,7 +318,7 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
 
               {filteredLanguages.length === 0 && (
                 <div className="p-4 text-center text-xs text-slate-400">
-                  Aucune langue trouvée pour "{searchQuery}".
+                  {ui.noLanguageFound(searchQuery)}
                 </div>
               )}
             </div>
@@ -333,11 +333,10 @@ export const LanguageSelector: React.FC<LanguageSelectorProps> = ({
             >
               <div className="flex items-center gap-1.5">
                 <Globe className="w-3.5 h-3.5" />
-                <span>🌐 Toutes les langues (130+ langues)</span>
+                <span>{ui.allLanguages130}</span>
               </div>
               <Sparkles className="w-3 h-3 text-amber-500" />
             </button>
-            <div id="google_translate_element" className="mt-1" />
           </div>
         </div>
       )}

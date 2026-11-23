@@ -29,6 +29,7 @@ import {
 } from 'lucide-react';
 import { UserProfile } from '../types.ts';
 import { useLanguage } from '../i18n/LanguageContext.tsx';
+import { getUiAuthBilling } from '../i18n/uiAuthBillingI18n.ts';
 import { LanguageSelector } from './LanguageSelector.tsx';
 
 interface RegistrationViewProps {
@@ -44,7 +45,8 @@ export const RegistrationView: React.FC<RegistrationViewProps> = ({
   onOpenLogin,
   isDarkMode,
 }) => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
+  const ab = getUiAuthBilling(language);
 
   // Mode selection: instant discovery (1-click guest preview) vs custom registration form
   const [onboardingMode, setOnboardingMode] = useState<'instant_discovery' | 'custom_profile'>('instant_discovery');
@@ -187,22 +189,22 @@ export const RegistrationView: React.FC<RegistrationViewProps> = ({
             </div>
             <div>
               <span className="text-xs font-black text-slate-900 dark:text-white flex items-center gap-2">
-                <span>⏱️ Décompte de l'Essai Gratuit : 30 Jours Inclus</span>
+                <span>{ab.regCountdownTitle}</span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 font-extrabold uppercase">
-                  Actif dès l'inscription
+                  {ab.regActiveOnSignup}
                 </span>
               </span>
               <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed">
-                Le compte à rebours démarre automatiquement dès votre entrée dans l'application. Vous suivez vos jours restants en direct • <strong>0 € pendant 30 jours, puis abonnement requis (4,99 €/mois ou 39,99 €/an) pour continuer</strong>.
+                {ab.regCountdownDesc1} • <strong>{ab.regCountdownDescBold}</strong>.
               </p>
             </div>
           </div>
           <div className="text-right sm:text-center shrink-0 bg-white/80 dark:bg-slate-800/80 px-4 py-2 rounded-xl border border-amber-200 dark:border-amber-900">
             <span className="text-xl font-black text-amber-600 dark:text-amber-400 block leading-tight">
-              30 Jours
+              {ab.reg30Days}
             </span>
             <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block uppercase tracking-wider">
-              100% Gratuits
+              {ab.reg100Free}
             </span>
           </div>
         </div>
@@ -232,7 +234,7 @@ export const RegistrationView: React.FC<RegistrationViewProps> = ({
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="font-extrabold text-sm sm:text-base leading-tight">Mode Découverte 1-Clic</span>
+              <span className="font-extrabold text-sm sm:text-base leading-tight">{ab.regModeDiscTitle}</span>
               <span
                 className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase shrink-0 ${
                   onboardingMode === 'instant_discovery'
@@ -240,7 +242,7 @@ export const RegistrationView: React.FC<RegistrationViewProps> = ({
                     : 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
                 }`}
               >
-                Accès Immédiat
+                {ab.regModeDiscBadge}
               </span>
             </div>
             <p
@@ -248,7 +250,7 @@ export const RegistrationView: React.FC<RegistrationViewProps> = ({
                 onboardingMode === 'instant_discovery' ? 'text-white/90' : 'text-slate-500 dark:text-slate-400'
               }`}
             >
-              Entrez directement sans remplir de formulaire pour tester toutes les fonctionnalités.
+              {ab.regModeDiscDesc}
             </p>
           </div>
         </button>
@@ -275,7 +277,7 @@ export const RegistrationView: React.FC<RegistrationViewProps> = ({
           </div>
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-1.5 flex-wrap">
-              <span className="font-extrabold text-sm sm:text-base leading-tight">Profil Sur-Mesure</span>
+              <span className="font-extrabold text-sm sm:text-base leading-tight">{ab.regModeCustomTitle}</span>
               <span
                 className={`text-[10px] font-bold px-2 py-0.5 rounded-full uppercase shrink-0 ${
                   onboardingMode === 'custom_profile'
@@ -283,7 +285,7 @@ export const RegistrationView: React.FC<RegistrationViewProps> = ({
                     : 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-400'
                 }`}
               >
-                Formulaire
+                {ab.regModeCustomBadge}
               </span>
             </div>
             <p
@@ -291,7 +293,7 @@ export const RegistrationView: React.FC<RegistrationViewProps> = ({
                 onboardingMode === 'custom_profile' ? 'text-white/90' : 'text-slate-500 dark:text-slate-400'
               }`}
             >
-              Renseignez vos mensurations réelles (taille, poids, rythme) pour un calcul direct.
+              {ab.regModeCustomDesc}
             </p>
           </div>
         </button>
@@ -310,13 +312,13 @@ export const RegistrationView: React.FC<RegistrationViewProps> = ({
             <div>
               <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-black bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 mb-2">
                 <Zap className="w-3.5 h-3.5" />
-                Accès Testeur & Invité 1-Clic
+                {ab.regTesterBadge}
               </span>
               <h2 className="text-xl sm:text-2xl font-black text-slate-900 dark:text-white">
-                Découvrez NutriCoach Minceur en direct
+                {ab.regDiscoverTitle}
               </h2>
               <p className="text-sm text-slate-600 dark:text-slate-300 mt-1 max-w-xl">
-                Testez immédiatement l'ensemble de l'application sans formulaire préalable. Un profil démo complet avec 30 jours d'essai gratuit est prêt pour vous.
+                {ab.regDiscoverDesc}
               </p>
             </div>
           </div>
@@ -329,10 +331,10 @@ export const RegistrationView: React.FC<RegistrationViewProps> = ({
               </div>
               <div>
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Scanner Photo & IA de Repas
+                  {ab.regFeatScanTitle}
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed">
-                  Reconnaissance instantanée des aliments et calcul automatique des calories, glucides, lipides et protéines.
+                  {ab.regFeatScanDesc}
                 </p>
               </div>
             </div>
@@ -343,10 +345,10 @@ export const RegistrationView: React.FC<RegistrationViewProps> = ({
               </div>
               <div>
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Coach Vocal & Chat IA
+                  {ab.regFeatVoiceTitle}
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed">
-                  Dialogue fluide par la voix ou par écrit pour recevoir des recommandations minceur personnalisées.
+                  {ab.regFeatVoiceDesc}
                 </p>
               </div>
             </div>
@@ -357,10 +359,10 @@ export const RegistrationView: React.FC<RegistrationViewProps> = ({
               </div>
               <div>
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Recettes Saines & Sans Gluten
+                  {ab.regFeatRecipesTitle}
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed">
-                  Catalogue gourmand adapté aux intolérances, prêt en moins de 25 min avec ratios macronutriments.
+                  {ab.regFeatRecipesDesc}
                 </p>
               </div>
             </div>
@@ -371,10 +373,10 @@ export const RegistrationView: React.FC<RegistrationViewProps> = ({
               </div>
               <div>
                 <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                  Journal & Bilan 7 Jours
+                  {ab.regFeatJournalTitle}
                 </h3>
                 <p className="text-xs text-slate-600 dark:text-slate-300 mt-0.5 leading-relaxed">
-                  Suivi de l'eau (verres du jour), des pas quotidiens et analyse du déficit calorique hebdomadaire.
+                  {ab.regFeatJournalDesc}
                 </p>
               </div>
             </div>
@@ -389,20 +391,20 @@ export const RegistrationView: React.FC<RegistrationViewProps> = ({
               className="w-full py-4 px-6 rounded-2xl bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white font-black text-base sm:text-lg shadow-xl shadow-emerald-600/30 flex items-center justify-center gap-3 transition-all hover:scale-[1.01] active:scale-[0.99] cursor-pointer"
             >
               <Rocket className="w-6 h-6 animate-pulse" />
-              <span>Entrer dans l'Application (Mode Découverte 1 Clic)</span>
+              <span>{ab.regEnter1Click}</span>
               <ArrowRight className="w-6 h-6" />
             </button>
             <p className="text-center text-xs text-slate-500 dark:text-slate-400 mt-2.5 flex items-center justify-center gap-2 flex-wrap">
               <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
-                <Check className="w-3.5 h-3.5" /> Aucune inscription requise
+                <Check className="w-3.5 h-3.5" /> {ab.regCheckNoReg}
               </span>
               <span>•</span>
               <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
-                <Check className="w-3.5 h-3.5" /> Données de démonstration prêtes
+                <Check className="w-3.5 h-3.5" /> {ab.regCheckDemoReady}
               </span>
               <span>•</span>
               <span className="flex items-center gap-1 text-emerald-600 dark:text-emerald-400 font-semibold">
-                <Check className="w-3.5 h-3.5" /> 30 jours gratuits activés
+                <Check className="w-3.5 h-3.5" /> {ab.regCheck30DaysFree}
               </span>
             </p>
           </div>
@@ -414,10 +416,10 @@ export const RegistrationView: React.FC<RegistrationViewProps> = ({
             </div>
             <div className="text-xs text-slate-600 dark:text-slate-300">
               <span className="font-bold text-slate-900 dark:text-white block mb-0.5">
-                📱 Vous testez sur smartphone (Samsung Galaxy Note9 ou Android) ?
+                {ab.regPhoneTipTitle}
               </span>
               <span>
-                Pour utiliser NutriCoach en plein écran comme une application native sans la barre d'adresse du navigateur Samsung Internet ou Chrome, touchez le menu <strong className="text-slate-800 dark:text-white">⋮</strong> ou l'icône de partage, puis sélectionnez <strong className="text-emerald-600 dark:text-emerald-400">« Ajouter à l'écran d'accueil »</strong>.
+                {ab.regPhoneTip1} <strong className="text-emerald-600 dark:text-emerald-400">{ab.regPhoneTipBold}</strong>
               </span>
             </div>
           </div>
@@ -429,7 +431,7 @@ export const RegistrationView: React.FC<RegistrationViewProps> = ({
               onClick={() => setOnboardingMode('custom_profile')}
               className="text-xs font-semibold text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 underline cursor-pointer"
             >
-              Vous préférez saisir vos mensurations exactes dès maintenant ? Ouvrir le formulaire sur-mesure →
+              {ab.regPreferCustomBtn}
             </button>
           </div>
         </div>
@@ -450,7 +452,7 @@ export const RegistrationView: React.FC<RegistrationViewProps> = ({
           <div className="p-3.5 rounded-2xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between gap-3 flex-wrap">
             <div className="flex items-center gap-2 text-xs text-slate-700 dark:text-slate-300">
               <Zap className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-              <span>Vous préférez tester l'application sans remplir de formulaire ?</span>
+              <span>{ab.regCustomFastPrompt}</span>
             </div>
             <button
               type="button"
@@ -458,7 +460,7 @@ export const RegistrationView: React.FC<RegistrationViewProps> = ({
               className="text-xs font-bold px-3 py-1.5 rounded-xl bg-emerald-600 text-white hover:bg-emerald-700 transition-colors shadow-xs cursor-pointer flex items-center gap-1.5"
             >
               <Rocket className="w-3.5 h-3.5" />
-              <span>Lancer en 1 Clic</span>
+              <span>{ab.regLaunch1Click}</span>
             </button>
           </div>
 
@@ -545,7 +547,7 @@ export const RegistrationView: React.FC<RegistrationViewProps> = ({
                 type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute right-3.5 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
-                aria-label={showPassword ? 'Masquer' : 'Afficher'}
+                aria-label={showPassword ? ab.regHidePwd : ab.regShowPwd}
               >
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
@@ -773,24 +775,24 @@ export const RegistrationView: React.FC<RegistrationViewProps> = ({
 
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400 mb-1.5">
-              Régime & Préférence alimentaire
+              {ab.regDietLabel}
             </label>
             <select
               id="reg-select-dietary-preference"
               value={dietaryPreference}
-              onChange={(e) => setDietaryPreference(e.target.value)}
+              onChange={(e) => setDietaryPreference(e.target.value as any)}
               className={`w-full px-4 py-2.5 rounded-xl border text-sm focus:outline-hidden focus:ring-2 focus:ring-emerald-500 transition-all ${
                 isDarkMode
                   ? 'bg-slate-800 border-slate-700 text-white'
                   : 'bg-slate-50 border-slate-300 text-slate-900'
               }`}
             >
-              <option value="standard">Standard / Tous aliments</option>
-              <option value="sans_gluten">🌾 Sans Gluten (Gluten-Free)</option>
-              <option value="vegetarien">🥗 Végétarien</option>
-              <option value="vegan">🌱 Végétalien / Végan</option>
-              <option value="pescetarien">🐟 Pescétarien</option>
-              <option value="keto">🥑 Low Carb / Cétogène</option>
+              <option value="standard">{ab.regDietStandard}</option>
+              <option value="sans_gluten">{ab.regDietGlutenFree}</option>
+              <option value="vegetarien">{ab.regDietVegetarian}</option>
+              <option value="vegan">{ab.regDietVegan}</option>
+              <option value="pescetarien">{ab.regDietPescetarian}</option>
+              <option value="keto">{ab.regDietKeto}</option>
             </select>
           </div>
         </div>

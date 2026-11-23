@@ -19,9 +19,9 @@ import {
 } from 'lucide-react';
 import { MealEntry, MealType, UserProfile } from '../types.ts';
 import { initialUser } from '../data/initialData.ts';
-import { getMealTypeLabel } from '../utils/metrics.ts';
 import { estimateMealFromText, MealCalculationResult } from '../utils/mealEstimator.ts';
 import { useLanguage } from '../i18n/LanguageContext.tsx';
+import { getUiTracking, getMealTypeLabelLocal } from '../i18n/uiTrackingI18n.ts';
 import { WeeklyMealRecap } from './WeeklyMealRecap.tsx';
 import {
   BlossomFlower,
@@ -52,7 +52,8 @@ export const JournalView: React.FC<JournalViewProps> = ({
   onOpenAiScan,
   isDarkMode,
 }) => {
-  const { t } = useLanguage();
+  const { t, language, locale } = useLanguage();
+  const trk = getUiTracking(language);
   const [activeSubTab, setActiveSubTab] = useState<'today' | 'weekly'>(initialSubTab || 'today');
   const [selectedPeriod, setSelectedPeriod] = useState<'today' | 'tomorrow' | 'week'>('today');
   const [completedMeals, setCompletedMeals] = useState<Record<string, boolean>>({
@@ -74,35 +75,8 @@ export const JournalView: React.FC<JournalViewProps> = ({
   const [isCalculating, setIsCalculating] = useState(false);
   const [calculationResult, setCalculationResult] = useState<MealCalculationResult | null>(null);
 
-  const mealTypesConfig: Array<{
-    type: MealType;
-    label: string;
-    icon: React.ComponentType<{ className?: string }>;
-    color: string;
-  }> = [
-    { type: 'petit_dejeuner', label: 'Petit-déjeuner', icon: Coffee, color: 'from-amber-500 to-orange-500' },
-    { type: 'dejeuner', label: 'Déjeuner', icon: Utensils, color: 'from-emerald-500 to-teal-500' },
-    { type: 'collation', label: 'Collation', icon: Apple, color: 'from-violet-500 to-purple-500' },
-    { type: 'diner', label: 'Dîner', icon: Moon, color: 'from-indigo-500 to-blue-500' },
-  ];
-
-  const FRESH_FRUITS = [
-    { emoji: '🍎', name: '1 Pomme', kcal: 52, grams: 150 },
-    { emoji: '🍊', name: '1 Clémentine', kcal: 38, grams: 80 },
-    { emoji: '🍓', name: 'Fruits rouges', kcal: 38, grams: 100 },
-    { emoji: '🥝', name: '1 Kiwi', kcal: 42, grams: 75 },
-    { emoji: '🍌', name: '1/2 Banane', kcal: 45, grams: 60 },
-    { emoji: '🍐', name: '1 Poire', kcal: 57, grams: 120 },
-  ];
-
-  const quickMealExamples = [
-    '☕ Un café',
-    '☕ Café au lait & 1 biscotte',
-    '🥚 Une omelette et mousse chocolat',
-    '🍎 Omelette nature, salade & 1 pomme',
-    '🍓 Yaourt grec & fruits rouges',
-    '🥩 Steak haché, haricots & 1 poire',
-  ];
+  const FRESH_FRUITS = trk.fruits;
+  const quickMealExamples = trk.quickExamples;
 
   const handleOpenAddModal = (type: MealType) => {
     setSelectedMealType(type);
@@ -139,7 +113,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
       const res = await fetch('/api/ai/calculate-meal', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ mealText: textToCalculate }),
+        body: JSON.stringify({ mealText: textToCalculate, language }),
       });
 
       if (res.ok) {
@@ -287,15 +261,15 @@ export const JournalView: React.FC<JournalViewProps> = ({
               onClick={() => setActiveSubTab('today')}
               className="px-4 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 hover:text-emerald-600 dark:hover:text-emerald-400 transition-all cursor-pointer"
             >
-              📅 Aujourd'hui
+              📅 {trk.periodToday}
             </button>
             <button
               type="button"
               id="btn-journal-tab-weekly"
               className="px-4 py-2 rounded-xl text-xs font-black bg-emerald-600 text-white shadow-xs transition-all cursor-pointer flex items-center gap-1.5"
             >
-              <span>📊 Récapitulatif Semaine</span>
-              <span className="text-[10px] bg-white/20 px-1.5 py-0.2 rounded-full">7j</span>
+              <span>📊 {trk.weeklyRecapTab}</span>
+              <span className="text-[10px] bg-white/20 px-1.5 py-0.2 rounded-full">{trk.sevenDaysShort}</span>
             </button>
           </div>
         </div>
@@ -321,7 +295,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
           </div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl sm:text-2xl font-black text-black dark:text-white tracking-tight">
-              Mon alimentation
+              {trk.journalTitle}
             </h1>
             <BlossomFlower size={22} palette="pink" />
           </div>
@@ -331,7 +305,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
           type="button"
           onClick={() => setSelectedPeriod('week')}
           className="w-9 h-9 rounded-full bg-white dark:bg-slate-800 border border-[#DCE8DC] dark:border-slate-700 flex items-center justify-center text-black dark:text-emerald-400 hover:bg-[#EAF3EA] transition-all cursor-pointer shadow-xs"
-          title="Historique & Bilan semaine"
+          title={trk.historyWeekTitle}
         >
           <Calendar className="w-4 h-4" />
         </button>
@@ -348,7 +322,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
               : 'bg-[#E3ECE2] text-black hover:bg-[#D5E4D5]'
           }`}
         >
-          Aujourd'hui
+          {trk.periodToday}
         </button>
         <button
           type="button"
@@ -359,7 +333,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
               : 'bg-[#E3ECE2] text-black hover:bg-[#D5E4D5]'
           }`}
         >
-          Demain
+          {trk.periodTomorrow}
         </button>
         <button
           type="button"
@@ -370,7 +344,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
               : 'bg-[#E3ECE2] text-black hover:bg-[#D5E4D5]'
           }`}
         >
-          Semaine
+          {trk.periodWeek}
         </button>
       </div>
 
@@ -398,7 +372,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
             <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden shrink-0 shadow-xs border-2 border-emerald-200 dark:border-slate-700 p-0.5 bg-gradient-to-tr from-emerald-400 via-teal-300 to-amber-300">
               <img
                 src="https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=300&q=80"
-                alt="Salade équilibrée"
+                alt={trk.saladAlt}
                 className="w-full h-full object-cover rounded-full"
                 loading="lazy"
               />
@@ -408,22 +382,22 @@ export const JournalView: React.FC<JournalViewProps> = ({
             <div className="space-y-1.5 flex-1 relative z-10">
               <div className="flex items-center gap-2">
                 <h3 className="text-xs sm:text-sm font-black text-black dark:text-slate-200">
-                  Votre objectif nutritionnel
+                  {trk.nutritionGoalTitle}
                 </h3>
                 <BlossomFlower size={15} palette="emerald" />
               </div>
               <div className="space-y-1 text-xs font-black text-black dark:text-white">
                 <div className="flex items-center gap-2">
                   <span className="text-[#10B981] dark:text-emerald-400 font-bold">✔</span>
-                  <span>1 800 kcal</span>
+                  <span>{(1800).toLocaleString(locale)} {trk.kcal}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[#10B981] dark:text-emerald-400 font-bold">✔</span>
-                  <span>Protéines : 90 g</span>
+                  <span>{trk.proteinsTarget90}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <span className="text-[#10B981] dark:text-emerald-400 font-bold">✔</span>
-                  <span>Fibres : 25 g</span>
+                  <span>{trk.fiberTarget25}</span>
                 </div>
               </div>
             </div>
@@ -434,35 +408,35 @@ export const JournalView: React.FC<JournalViewProps> = ({
             {[
               {
                 type: 'petit_dejeuner' as MealType,
-                label: 'Petit-déjeuner',
+                label: trk.mealBreakfast,
                 icon: '☀️',
                 targetKcal: 400,
                 defaultImage: 'https://images.unsplash.com/photo-1517673132405-a56a62b18caf?auto=format&fit=crop&w=260&q=80',
-                placeholderText: "Flocons d'avoine, fruits rouges, yaourt nature...",
+                placeholderText: trk.placeholderBreakfast,
               },
               {
                 type: 'dejeuner' as MealType,
-                label: 'Déjeuner',
+                label: trk.mealLunch,
                 icon: '🥗',
                 targetKcal: 600,
                 defaultImage: 'https://images.unsplash.com/photo-1540420773420-3366772f4999?auto=format&fit=crop&w=260&q=80',
-                placeholderText: 'Salade composée, féculents, légumes, poisson ou viande...',
+                placeholderText: trk.placeholderLunch,
               },
               {
                 type: 'collation' as MealType,
-                label: 'Collation',
+                label: trk.mealSnack,
                 icon: '🍎',
                 targetKcal: 200,
                 defaultImage: 'https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?auto=format&fit=crop&w=260&q=80',
-                placeholderText: 'Fruit frais, amandes, fromage blanc ou compote...',
+                placeholderText: trk.placeholderSnack,
               },
               {
                 type: 'diner' as MealType,
-                label: 'Dîner',
+                label: trk.mealDinner,
                 icon: '🌙',
                 targetKcal: 500,
                 defaultImage: 'https://images.unsplash.com/photo-1467003909585-2f8a72700288?auto=format&fit=crop&w=260&q=80',
-                placeholderText: 'Filet de poulet, légumes vapeur, soupe légère...',
+                placeholderText: trk.placeholderDinner,
               },
             ].map((cat) => {
               const categoryMeals = mealsByType[cat.type] || [];
@@ -524,7 +498,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
                         }));
                       }}
                       className="w-7 h-7 rounded-full flex items-center justify-center shrink-0 cursor-pointer transition-all"
-                      title={isChecked ? 'Marqué comme complété' : 'Cocher ce repas'}
+                      title={isChecked ? trk.markCompletedTitle : trk.checkMealTitle}
                     >
                       {isChecked ? (
                         <div className="w-6 h-6 rounded-full bg-[#1F6F43] text-white flex items-center justify-center text-xs font-black shadow-xs">
@@ -549,13 +523,13 @@ export const JournalView: React.FC<JournalViewProps> = ({
                         >
                           <span className="truncate max-w-[130px] sm:max-w-[200px]">{item.foodName}</span>
                           <span className="font-extrabold text-emerald-700 dark:text-emerald-400 shrink-0">
-                            {item.calories} kcal
+                            {item.calories} {trk.kcal}
                           </span>
                           <button
                             type="button"
                             onClick={() => onDeleteMeal(item.id)}
                             className="text-slate-400 hover:text-rose-500 transition-colors cursor-pointer p-0.5 ml-0.5"
-                            title="Supprimer cet aliment"
+                            title={trk.deleteFoodTitle}
                           >
                             <Trash2 className="w-3 h-3" />
                           </button>
@@ -568,7 +542,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
                         className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-white dark:bg-slate-800 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100/60 transition-colors cursor-pointer"
                       >
                         <Plus className="w-3 h-3" />
-                        <span>Ajouter</span>
+                        <span>{trk.add}</span>
                       </button>
                     </div>
                   )}
@@ -584,7 +558,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
             onClick={() => handleOpenAddModal(getSuggestedMealTypeNow())}
             className="w-full h-14 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white rounded-full font-black text-base flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/20 active:scale-[0.99] transition-all cursor-pointer"
           >
-            <span>Ajouter un aliment</span>
+            <span>{trk.addFoodCta}</span>
             <span className="text-lg font-bold">+</span>
             <span className="text-sm">🌸</span>
           </button>
@@ -598,7 +572,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
               className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold bg-white dark:bg-slate-800 border border-[#DCE8DC] dark:border-slate-700 text-black dark:text-slate-200 hover:bg-[#EAF3EA] transition-all cursor-pointer shadow-xs"
             >
               <Barcode className="w-3.5 h-3.5 text-[#1F6F43]" />
-              <span>Code-barres</span>
+              <span>{trk.barcodeBtn}</span>
             </button>
             <button
               type="button"
@@ -607,17 +581,17 @@ export const JournalView: React.FC<JournalViewProps> = ({
               className="flex items-center gap-1.5 px-4 py-2 rounded-full text-xs font-bold bg-[#EAF3EA] dark:bg-emerald-950/60 border border-[#D5E4D5] dark:border-emerald-800 text-[#1F6F43] dark:text-emerald-300 hover:bg-[#D5EBD5] transition-all cursor-pointer shadow-xs"
             >
               <Camera className="w-3.5 h-3.5 text-[#1F6F43]" />
-              <span>Scanner Photo IA</span>
+              <span>{trk.aiScannerBtn}</span>
             </button>
             {todayMeals.length > 0 && onResetTodayMeals && (
               <button
                 type="button"
                 onClick={onResetTodayMeals}
                 className="flex items-center gap-1 px-3 py-2 rounded-full text-xs font-semibold text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
-                title="Vider aujourd'hui"
+                title={trk.clearTodayTitle}
               >
                 <RotateCcw className="w-3.5 h-3.5" />
-                <span>Vider</span>
+                <span>{trk.clearShort}</span>
               </button>
             )}
           </div>
@@ -628,7 +602,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
       {todayMeals.length > 0 && (
         <details className="group bg-white dark:bg-slate-900 border border-[#E2ECE2] dark:border-slate-800 rounded-[24px] p-4 text-xs">
           <summary className="font-black text-black dark:text-slate-200 cursor-pointer select-none flex items-center justify-between">
-            <span>Détail des {todayMeals.length} aliments enregistrés ({totalCaloriesConsumedToday} kcal)</span>
+            <span>{trk.loggedItemsSummary(todayMeals.length, totalCaloriesConsumedToday)}</span>
             <span className="text-[#1F6F43] group-open:rotate-180 transition-transform">▼</span>
           </summary>
           <div className="mt-3 divide-y divide-[#EDF3ED] dark:divide-slate-800">
@@ -637,16 +611,16 @@ export const JournalView: React.FC<JournalViewProps> = ({
                 <div className="min-w-0">
                   <span className="font-black text-black dark:text-white block truncate">{m.foodName}</span>
                   <span className="text-[10px] text-slate-400 font-semibold">
-                    {getMealTypeLabel(m.mealType)} • {m.portionGrams}g • P:{m.protein}g G:{m.carbs}g L:{m.fat}g
+                    {getMealTypeLabelLocal(language, m.mealType)} • {m.portionGrams}g • {trk.macroP}:{m.protein}g {trk.macroC}:{m.carbs}g {trk.macroF}:{m.fat}g
                   </span>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <span className="font-black text-[#1F6F43] dark:text-emerald-400">{m.calories} kcal</span>
+                  <span className="font-black text-[#1F6F43] dark:text-emerald-400">{m.calories} {trk.kcal}</span>
                   <button
                     type="button"
                     onClick={() => onDeleteMeal(m.id)}
                     className="p-1 text-slate-400 hover:text-rose-500 cursor-pointer"
-                    title="Supprimer cet aliment"
+                    title={trk.deleteFoodTitle}
                   >
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
@@ -670,32 +644,33 @@ export const JournalView: React.FC<JournalViewProps> = ({
                   <Sparkles className="w-4 h-4" />
                 </div>
                 <h3 className="font-black text-lg">
-                  {t('modalAddMealTitle', { meal: getMealTypeLabel(selectedMealType) })}
+                  {t('modalAddMealTitle', { meal: getMealTypeLabelLocal(language, selectedMealType) })}
                 </h3>
               </div>
               <button
                 onClick={() => setIsAddModalOpen(false)}
                 className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg cursor-pointer"
+                aria-label={trk.close}
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
             <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
-              Tapez simplement ce que vous mangez (ex : <em>une omelette et mousse chocolat</em>). Les calories et quantités sont calculées directement !
+              {trk.modalSubtitle}
             </p>
 
             {/* Meal Category Switcher Tabs */}
             <div className="mb-3.5">
               <label className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block mb-1.5">
-                Enregistrer dans quel repas ?
+                {trk.saveInWhichMeal}
               </label>
               <div className="grid grid-cols-4 gap-1.5 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800/90 border border-slate-200 dark:border-slate-700">
                 {[
-                  { id: 'petit_dejeuner' as MealType, label: 'Petit-déj.', icon: '☀️' },
-                  { id: 'dejeuner' as MealType, label: 'Déjeuner', icon: '🥗' },
-                  { id: 'collation' as MealType, label: 'Collation', icon: '🍎' },
-                  { id: 'diner' as MealType, label: 'Dîner', icon: '🌙' },
+                  { id: 'petit_dejeuner' as MealType, label: trk.mealBreakfastShort, icon: '☀️' },
+                  { id: 'dejeuner' as MealType, label: trk.mealLunch, icon: '🥗' },
+                  { id: 'collation' as MealType, label: trk.mealSnack, icon: '🍎' },
+                  { id: 'diner' as MealType, label: trk.mealDinner, icon: '🌙' },
                 ].map((item) => (
                   <button
                     key={item.id}
@@ -772,7 +747,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
                     ) : (
                       <>
                         <Sparkles className="w-3.5 h-3.5" />
-                        <span>Calculer</span>
+                        <span>{trk.calculateBtn}</span>
                       </>
                     )}
                   </button>
@@ -788,7 +763,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
                       {t('calcConfidence')}
                     </span>
                     <span className="text-emerald-700 dark:text-emerald-300 bg-white/80 dark:bg-emerald-900/60 px-2 py-0.5 rounded-md text-[11px] font-bold">
-                      {calculationResult.totalCalories} kcal • {calculationResult.totalPortionGrams}g
+                      {calculationResult.totalCalories} {trk.kcal} • {calculationResult.totalPortionGrams}g
                     </span>
                   </div>
 
@@ -807,7 +782,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
                               {item.name}
                             </span>
                             <span className="font-bold text-emerald-700 dark:text-emerald-400 shrink-0">
-                              {item.portionGrams}g • ~{item.calories} kcal
+                              {item.portionGrams}g • ~{item.calories} {trk.kcal}
                             </span>
                           </div>
                         ))}
@@ -827,7 +802,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
                     </h4>
                   </div>
                   <span className="text-[10px] font-extrabold text-amber-800 dark:text-amber-300 bg-amber-200/70 dark:bg-amber-900/70 px-2 py-0.5 rounded-md">
-                    Satiété & Vitamines
+                    {trk.satietyVitamins}
                   </span>
                 </div>
                 <p className="text-[11px] text-amber-900/80 dark:text-amber-300/80 leading-snug">
@@ -840,12 +815,12 @@ export const JournalView: React.FC<JournalViewProps> = ({
                       type="button"
                       onClick={() => handleAddFruitToMeal(fruit.name)}
                       className="px-2.5 py-1 rounded-lg bg-white dark:bg-slate-800 border border-amber-200 dark:border-amber-700/60 hover:border-amber-400 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-amber-100/60 dark:hover:bg-amber-900/40 transition-all flex items-center gap-1 cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
-                      title={`Ajouter ${fruit.name} à ce repas`}
+                      title={trk.addFruitTitle(fruit.name)}
                     >
                       <span>{fruit.emoji}</span>
                       <span>+ {fruit.name}</span>
                       <span className="text-[10px] font-normal text-slate-400 dark:text-slate-400">
-                        (~{fruit.kcal} kcal)
+                        (~{fruit.kcal} {trk.kcal})
                       </span>
                     </button>
                   ))}
@@ -865,7 +840,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
                     id="input-food-calories"
                     type="number"
                     required
-                    placeholder="ex: 425"
+                    placeholder={trk.kcalPlaceholderEx}
                     value={calories}
                     onChange={(e) => setCalories(e.target.value)}
                     className={`w-full p-2.5 rounded-xl border text-sm font-bold outline-hidden focus:ring-2 focus:ring-emerald-500 ${
@@ -884,7 +859,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
                   <input
                     id="input-food-portion"
                     type="number"
-                    placeholder="ex: 240"
+                    placeholder={trk.portionPlaceholderEx}
                     value={portionGrams}
                     onChange={(e) => setPortionGrams(e.target.value)}
                     className={`w-full p-2.5 rounded-xl border text-sm font-bold outline-hidden focus:ring-2 focus:ring-emerald-500 ${
@@ -897,7 +872,7 @@ export const JournalView: React.FC<JournalViewProps> = ({
               {/* Macronutrients */}
               <div>
                 <span className="text-[11px] font-bold text-slate-400 block mb-1">
-                  Macronutriments (g)
+                  {trk.macronutrientsG}
                 </span>
                 <div className="grid grid-cols-3 gap-2">
                   <div>

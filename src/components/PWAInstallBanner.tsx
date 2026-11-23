@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Smartphone, X, Download, ExternalLink } from 'lucide-react';
 import { usePWAInstall } from '../hooks/usePWAInstall.ts';
 import { useLanguage } from '../i18n/LanguageContext.tsx';
+import { getUiCore } from '../i18n/uiCoreI18n.ts';
 import { PWAInstallGuideModal } from './PWAInstallButton.tsx';
 
 const DISMISS_STORAGE_KEY = 'nutricoach_pwa_banner_dismissed_at';
@@ -10,6 +11,7 @@ const DISMISS_TTL_MS = 24 * 60 * 60 * 1000;
 export const PWAInstallBanner: React.FC = () => {
   const { isInstallable, isInstalled, platform, isInAppBrowser, install } = usePWAInstall();
   const { language } = useLanguage();
+  const ui = getUiCore(language);
   const [dismissed, setDismissed] = useState<boolean>(true);
   const [showGuide, setShowGuide] = useState(false);
 
@@ -54,30 +56,9 @@ export const PWAInstallBanner: React.FC = () => {
     setShowGuide(true);
   };
 
-  const isEn = language === 'en';
-  const title = isInAppBrowser
-    ? isEn
-      ? 'Switch from web view to Real App'
-      : 'Passer du mode web au vrai mode Appli'
-    : isEn
-    ? 'Open NutriCoach as a real full-screen App'
-    : 'Ouvrir NutriCoach en vrai mode Application';
-
-  const subtitle = isInAppBrowser
-    ? isEn
-      ? 'Tap ⋮ → Open in Chrome / Safari for full-screen app mode.'
-      : 'Touchez ⋮ → Ouvrir dans Chrome / Safari pour le plein écran.'
-    : isEn
-    ? 'No browser bar • Home screen icon • Instant launch'
-    : 'Sans barre web • Icône directe • Plein écran';
-
-  const ctaLabel = isInAppBrowser
-    ? isEn
-      ? 'How to open'
-      : 'Voir comment'
-    : isEn
-    ? 'Open as App'
-    : 'Mode Appli';
+  const title = isInAppBrowser ? ui.pwaInAppTitle : ui.pwaAppTitle;
+  const subtitle = isInAppBrowser ? ui.pwaInAppSub : ui.pwaAppSub;
+  const ctaLabel = isInAppBrowser ? ui.pwaHowTo : ui.pwaOpenAsApp;
 
   return (
     <>
@@ -114,7 +95,7 @@ export const PWAInstallBanner: React.FC = () => {
             id="btn-dismiss-pwa-banner"
             onClick={handleDismiss}
             className="p-1.5 rounded-xl text-white/75 hover:text-white hover:bg-white/10 cursor-pointer"
-            aria-label={isEn ? 'Close' : 'Fermer'}
+            aria-label={ui.close}
           >
             <X className="w-4 h-4" />
           </button>

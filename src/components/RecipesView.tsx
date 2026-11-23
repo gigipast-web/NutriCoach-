@@ -16,6 +16,7 @@ import { Recipe, UserProfile } from '../types.ts';
 import { getWeekDateRangeLabel, getCurrentWeekTheme, getIsoWeekNumber } from '../data/weeklyRecipes.ts';
 import { useLanguage } from '../i18n/LanguageContext.tsx';
 import { getRecipesUi } from '../i18n/recipesI18n.ts';
+import { getUiCore } from '../i18n/uiCoreI18n.ts';
 import {
   getStaticRecipeTranslation,
   getStaticWeekTheme,
@@ -658,7 +659,7 @@ export const RecipesView: React.FC<RecipesViewProps> = ({
               </span>
               <button
                 type="button"
-                aria-label="Fermer"
+                aria-label={getUiCore(language).close}
                 onClick={() => setSelectedRecipeId(null)}
                 className="p-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer shrink-0"
               >

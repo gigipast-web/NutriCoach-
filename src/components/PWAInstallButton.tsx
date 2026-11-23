@@ -2,69 +2,7 @@ import React, { useState } from 'react';
 import { Download, Smartphone, Share, MoreVertical, ExternalLink, X, CheckCircle2 } from 'lucide-react';
 import { usePWAInstall, PWAPlatform } from '../hooks/usePWAInstall.ts';
 import { useLanguage } from '../i18n/LanguageContext.tsx';
-
-interface InstallCopy {
-  btnLabel: string;
-  btnTitle: string;
-  modalTitle: string;
-  modalSubtitle: string;
-  inAppWarningTitle: string;
-  inAppWarningDesc: string;
-  iosStep1: string;
-  iosStep2: string;
-  iosStep3: string;
-  androidStep1: string;
-  androidStep2: string;
-  androidStep3: string;
-  desktopStep1: string;
-  desktopStep2: string;
-  benefitFullScreen: string;
-  benefitIcon: string;
-  close: string;
-}
-
-function getInstallCopy(lang: string): InstallCopy {
-  if (lang === 'en') {
-    return {
-      btnLabel: 'App Mode',
-      btnTitle: 'Install NutriCoach as a native-like full-screen app',
-      modalTitle: 'Open NutriCoach as a Real App',
-      modalSubtitle: 'Remove the browser address bar and launch NutriCoach full-screen from your home screen.',
-      inAppWarningTitle: 'Opened inside an in-app browser (WhatsApp / Mail / Social)',
-      inAppWarningDesc: 'Tap the menu (⋮ or Share) and choose "Open in Chrome" or "Open in Safari" first so you can install the app.',
-      iosStep1: 'Tap the Share button (⎋) at the bottom/top of Safari.',
-      iosStep2: 'Scroll down and tap "Add to Home Screen".',
-      iosStep3: 'Tap "Add", then open NutriCoach from your home screen icon.',
-      androidStep1: 'Tap the Chrome menu (⋮) in the top right corner.',
-      androidStep2: 'Tap "Install app" or "Add to Home screen".',
-      androidStep3: 'Confirm, then launch NutriCoach directly from your home screen.',
-      desktopStep1: 'Click the Install icon (⊕) on the right side of the Chrome or Edge address bar.',
-      desktopStep2: 'Confirm "Install" to open NutriCoach in its own standalone app window.',
-      benefitFullScreen: 'Full-screen view without browser bar',
-      benefitIcon: 'Direct icon on your home screen',
-      close: 'Got it',
-    };
-  }
-  return {
-    btnLabel: 'Mode Appli',
-    btnTitle: "Installer NutriCoach en vrai mode Application (plein écran)",
-    modalTitle: 'Ouvrir NutriCoach en mode Application',
-    modalSubtitle: "Supprimez la barre web du navigateur et lancez NutriCoach en plein écran depuis votre écran d'accueil.",
-    inAppWarningTitle: 'Ouvert dans un navigateur intégré (WhatsApp / Mail / Réseaux)',
-    inAppWarningDesc: 'Touchez le menu (⋮ ou Partager) puis choisissez « Ouvrir dans Chrome » (Android) ou « Ouvrir dans Safari » (iPhone) avant d’installer.',
-    iosStep1: 'Touchez le bouton Partager (⎋) dans la barre d’outils de Safari.',
-    iosStep2: 'Faites défiler et touchez « Sur l’écran d’accueil ».',
-    iosStep3: 'Appuyez sur « Ajouter » puis ouvrez l’icône NutriCoach sur votre écran.',
-    androidStep1: 'Touchez le menu Chrome (⋮) en haut à droite de votre écran.',
-    androidStep2: 'Sélectionnez « Installer l’application » (ou « Ajouter à l’écran d’accueil »).',
-    androidStep3: 'Validez, puis ouvrez NutriCoach depuis l’icône créée sur votre téléphone.',
-    desktopStep1: 'Cliquez sur l’icône Installer (⊕) à droite de la barre d’adresse (Chrome / Edge).',
-    desktopStep2: 'Cliquez sur « Installer » pour ouvrir NutriCoach dans sa propre fenêtre.',
-    benefitFullScreen: 'Affichage plein écran sans barre web',
-    benefitIcon: 'Icône directe sur l’écran d’accueil',
-    close: 'Compris',
-  };
-}
+import { getUiCore } from '../i18n/uiCoreI18n.ts';
 
 export const PWAInstallGuideModal: React.FC<{
   isOpen: boolean;
@@ -75,7 +13,26 @@ export const PWAInstallGuideModal: React.FC<{
   const { language } = useLanguage();
   if (!isOpen) return null;
 
-  const copy = getInstallCopy(language);
+  const ui = getUiCore(language);
+  const copy = {
+    btnLabel: ui.pwaBtnLabel,
+    btnTitle: ui.pwaBtnTitle,
+    modalTitle: ui.pwaModalTitle,
+    modalSubtitle: ui.pwaModalSubtitle,
+    inAppWarningTitle: ui.pwaInAppWarnTitle,
+    inAppWarningDesc: ui.pwaInAppWarnDesc,
+    iosStep1: ui.pwaIos1,
+    iosStep2: ui.pwaIos2,
+    iosStep3: ui.pwaIos3,
+    androidStep1: ui.pwaAndroid1,
+    androidStep2: ui.pwaAndroid2,
+    androidStep3: ui.pwaAndroid3,
+    desktopStep1: ui.pwaDesktop1,
+    desktopStep2: ui.pwaDesktop2,
+    benefitFullScreen: ui.pwaBenefitFull,
+    benefitIcon: ui.pwaBenefitIcon,
+    close: ui.pwaGotIt,
+  };
 
   return (
     <div
@@ -201,7 +158,11 @@ export const PWAInstallButton: React.FC<{ className?: string }> = ({ className =
     return null;
   }
 
-  const copy = getInstallCopy(language);
+  const ui = getUiCore(language);
+  const copy = {
+    btnLabel: ui.pwaBtnLabel,
+    btnTitle: ui.pwaBtnTitle,
+  };
 
   const handleClick = async () => {
     if (isInstallable) {

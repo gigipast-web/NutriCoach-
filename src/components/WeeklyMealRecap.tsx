@@ -22,6 +22,8 @@ import {
 } from 'lucide-react';
 import { MealEntry, UserProfile, MealType } from '../types.ts';
 import { calculateMetrics } from '../utils/metrics.ts';
+import { useLanguage } from '../i18n/LanguageContext.tsx';
+import { getUiTracking, getMealTypeLabelLocal } from '../i18n/uiTrackingI18n.ts';
 
 interface WeeklyMealRecapProps {
   meals: MealEntry[];
@@ -52,6 +54,8 @@ export const WeeklyMealRecap: React.FC<WeeklyMealRecapProps> = ({
   onBackToToday,
   onDeleteMeal,
 }) => {
+  const { language, locale } = useLanguage();
+  const trk = getUiTracking(language);
   // Week offset: 0 = current 7-day period / current week, -1 = previous week
   const [weekOffset, setWeekOffset] = useState<number>(0);
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
@@ -83,15 +87,15 @@ export const WeeklyMealRecap: React.FC<WeeklyMealRecapProps> = ({
       const totalCarbs = dayMeals.reduce((acc, m) => acc + (m.carbs || 0), 0);
       const totalFat = dayMeals.reduce((acc, m) => acc + (m.fat || 0), 0);
 
-      // Check fruit mentions
+      // Check fruit mentions (multilingual)
       const fruitCount = dayMeals.filter((m) =>
-        /pomme|poire|banane|fraise|framboise|kiwi|clementine|clémentine|orange|mandarine|raisin|melon|pasteque|pastèque|peche|pêche|abricot|fruit|baies/i.test(
+        /pomme|poire|banane|fraise|framboise|kiwi|clementine|clémentine|orange|mandarine|raisin|melon|pasteque|pastèque|peche|pêche|abricot|fruit|baies|apple|pear|banana|strawberr|raspberr|berr|manzana|pera|plátano|fresa|apfel|birne|banane|erdbeere|mela|fragola|maçã|appel|jabłko|eple|äpple|æble|omena|яблок|груш|банан|клубник|りんご|林檎|みかん|いちご|バナナ|梨|苹果|香蕉|草莓|猕猴桃|تفاح|موز|كمثرى|فراولة|elma|armut|muz|çilek|μήλο|αχλάδι|μπανάνα|jablko|hruška|măr|pară|яблук/i.test(
           m.foodName
         )
       ).length;
 
-      const dayName = d.toLocaleDateString('fr-FR', { weekday: 'short' });
-      const dayNumber = d.toLocaleDateString('fr-FR', { day: 'numeric', month: 'short' });
+      const dayName = d.toLocaleDateString(locale, { weekday: 'short' });
+      const dayNumber = d.toLocaleDateString(locale, { day: 'numeric', month: 'short' });
 
       days.push({
         dateStr,
@@ -108,7 +112,7 @@ export const WeeklyMealRecap: React.FC<WeeklyMealRecapProps> = ({
     }
 
     return days;
-  }, [meals, weekOffset]);
+  }, [meals, weekOffset, locale]);
 
   // Weekly Aggregates
   const totalWeeklyCalories = useMemo(
@@ -153,31 +157,31 @@ export const WeeklyMealRecap: React.FC<WeeklyMealRecapProps> = ({
     }).length;
   }, [daysList, targetCalories]);
 
-  // Week range label (e.g. "Du lun. 6 oct. au dim. 12 oct.")
+  // Week range label
   const weekRangeLabel = useMemo(() => {
     if (daysList.length < 7) return '';
     const first = daysList[0];
     const last = daysList[6];
-    return `Semaine du ${first.dayNumber} au ${last.dayNumber}`;
-  }, [daysList]);
+    return trk.recapWeekFromTo(first.dayNumber, last.dayNumber);
+  }, [daysList, trk]);
 
   // Copy weekly summary to clipboard
   const handleCopySummary = () => {
-    let text = `📊 Récapitulatif Nutritionnel NutriCoach\n${weekRangeLabel}\n\n`;
-    text += `🎯 Objectif quotidien : ${targetCalories} kcal\n`;
-    text += `🔥 Moyenne réelle : ${averageCaloriesPerDay} kcal / jour\n`;
-    text += `⚖️ Total consommé : ${totalWeeklyCalories} kcal (${daysWithMealsCount}/7 jours renseignés)\n`;
-    text += `🍎 Portions de fruits : ${totalFruitPortions} portions\n\n`;
-    text += `Détail par jour :\n`;
+    let text = `${trk.copyTitle}\n${weekRangeLabel}\n\n`;
+    text += `${trk.copyDailyTarget} ${targetCalories} ${trk.kcal}\n`;
+    text += `${trk.copyRealAvg} ${averageCaloriesPerDay} ${trk.kcal}\n`;
+    text += `${trk.copyTotalConsumed} ${totalWeeklyCalories} ${trk.kcal} (${trk.copyDaysLoggedText(daysWithMealsCount)})\n`;
+    text += `${trk.copyFruitsLabel} ${totalFruitPortions} ${trk.portionsUnit}\n\n`;
+    text += `${trk.copyDetailByDay}\n`;
 
     daysList.forEach((d) => {
-      text += `\n• ${d.dayName} ${d.dayNumber} : ${d.totalCalories} kcal (${d.meals.length} repas)\n`;
+      text += `\n• ${d.dayName} ${d.dayNumber} : ${d.totalCalories} ${trk.kcal} (${trk.copyMealsCount(d.meals.length)})\n`;
       if (d.meals.length > 0) {
         d.meals.forEach((m) => {
-          text += `  - [${m.mealType}] ${m.foodName} (${m.calories} kcal)\n`;
+          text += `  - [${getMealTypeLabelLocal(language, m.mealType)}] ${m.foodName} (${m.calories} ${trk.kcal})\n`;
         });
       } else {
-        text += `  (Aucun repas enregistré)\n`;
+        text += `  ${trk.copyNoMeals}\n`;
       }
     });
 
@@ -189,13 +193,13 @@ export const WeeklyMealRecap: React.FC<WeeklyMealRecapProps> = ({
   const getMealTypeConfig = (type: MealType) => {
     switch (type) {
       case 'petit_dejeuner':
-        return { label: 'Petit-déjeuner', icon: Coffee, color: 'text-amber-500 bg-amber-50 dark:bg-amber-950/50 border-amber-200 dark:border-amber-900' };
+        return { label: trk.mealBreakfast, icon: Coffee, color: 'text-amber-500 bg-amber-50 dark:bg-amber-950/50 border-amber-200 dark:border-amber-900' };
       case 'dejeuner':
-        return { label: 'Déjeuner', icon: Utensils, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-900' };
+        return { label: trk.mealLunch, icon: Utensils, color: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/50 border-emerald-200 dark:border-emerald-900' };
       case 'collation':
-        return { label: 'Collation', icon: Apple, color: 'text-purple-500 bg-purple-50 dark:bg-purple-950/50 border-purple-200 dark:border-purple-900' };
+        return { label: trk.mealSnack, icon: Apple, color: 'text-purple-500 bg-purple-50 dark:bg-purple-950/50 border-purple-200 dark:border-purple-900' };
       case 'diner':
-        return { label: 'Dîner', icon: Moon, color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-900' };
+        return { label: trk.mealDinner, icon: Moon, color: 'text-blue-500 bg-blue-50 dark:bg-blue-950/50 border-blue-200 dark:border-blue-900' };
     }
   };
 
@@ -221,15 +225,15 @@ export const WeeklyMealRecap: React.FC<WeeklyMealRecapProps> = ({
         <div>
           <div className="flex items-center gap-2 mb-1">
             <span className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 px-3 py-1 rounded-full text-xs font-black">
-              📊 Synthèse Hebdomadaire
+              📊 {trk.recapBadge}
             </span>
             <span className="text-xs text-slate-400 font-bold">{weekRangeLabel}</span>
           </div>
           <h1 className="text-2xl font-black text-slate-800 dark:text-white">
-            Récapitulatif des Repas de la Semaine
+            {trk.recapTitle}
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-            Vue d'ensemble de vos apports caloriques, macronutriments et portions de fruits sur 7 jours.
+            {trk.recapSubtitle}
           </p>
         </div>
 
@@ -240,23 +244,23 @@ export const WeeklyMealRecap: React.FC<WeeklyMealRecapProps> = ({
               id="btn-recap-prev-week"
               onClick={() => setWeekOffset((prev) => prev - 1)}
               className="p-1.5 rounded-xl hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
-              title="Semaine précédente"
+              title={trk.prevWeek}
             >
               <ChevronLeft className="w-4 h-4" />
             </button>
             <span className="px-3 text-xs font-bold text-slate-700 dark:text-slate-200">
               {weekOffset === 0
-                ? 'Cette semaine'
+                ? trk.thisWeek
                 : weekOffset === -1
-                ? 'Semaine dernière'
-                : `Semaine ${weekOffset}`}
+                ? trk.lastWeek
+                : trk.weekOffsetLabel(weekOffset)}
             </span>
             <button
               id="btn-recap-next-week"
               onClick={() => setWeekOffset((prev) => prev + 1)}
               disabled={weekOffset >= 0}
               className="p-1.5 rounded-xl hover:bg-white dark:hover:bg-slate-700 text-slate-600 dark:text-slate-300 transition-colors disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
-              title="Semaine suivante"
+              title={trk.nextWeek}
             >
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -275,7 +279,7 @@ export const WeeklyMealRecap: React.FC<WeeklyMealRecapProps> = ({
             }`}
           >
             {isCopied ? <Check className="w-3.5 h-3.5" /> : <Copy className="w-3.5 h-3.5 text-emerald-600" />}
-            <span>{isCopied ? 'Copié !' : 'Copier le bilan'}</span>
+            <span>{isCopied ? trk.copied : trk.copySummary}</span>
           </button>
 
           {onBackToToday && (
@@ -284,7 +288,7 @@ export const WeeklyMealRecap: React.FC<WeeklyMealRecapProps> = ({
               onClick={onBackToToday}
               className="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
             >
-              ← Vue Aujourd'hui
+              {trk.backToToday}
             </button>
           )}
         </div>
@@ -300,7 +304,7 @@ export const WeeklyMealRecap: React.FC<WeeklyMealRecapProps> = ({
         >
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Moyenne / Jour
+              {trk.avgPerDay}
             </span>
             <div className="w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950 flex items-center justify-center text-emerald-600">
               <Flame className="w-4 h-4" />
@@ -310,14 +314,14 @@ export const WeeklyMealRecap: React.FC<WeeklyMealRecapProps> = ({
             <span className="text-2xl font-black text-slate-800 dark:text-white">
               {averageCaloriesPerDay}
             </span>
-            <span className="text-xs font-bold text-slate-400">kcal</span>
+            <span className="text-xs font-bold text-slate-400">{trk.kcal}</span>
           </div>
           <div className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 flex items-center gap-1">
-            <span>Cible :</span>
-            <strong className="text-emerald-600 dark:text-emerald-400">{targetCalories} kcal</strong>
+            <span>{trk.targetPrefix}</span>
+            <strong className="text-emerald-600 dark:text-emerald-400">{targetCalories} {trk.kcal}</strong>
             <span className="text-slate-400">
               ({averageCaloriesPerDay > 0
-                ? `${averageCaloriesPerDay - targetCalories > 0 ? '+' : ''}${averageCaloriesPerDay - targetCalories} kcal`
+                ? `${averageCaloriesPerDay - targetCalories > 0 ? '+' : ''}${averageCaloriesPerDay - targetCalories} ${trk.kcal}`
                 : '0'})
             </span>
           </div>
@@ -331,7 +335,7 @@ export const WeeklyMealRecap: React.FC<WeeklyMealRecapProps> = ({
         >
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Total Semaine
+              {trk.weekTotal}
             </span>
             <div className="w-7 h-7 rounded-lg bg-amber-50 dark:bg-amber-950 flex items-center justify-center text-amber-600">
               <Scale className="w-4 h-4" />
@@ -339,12 +343,12 @@ export const WeeklyMealRecap: React.FC<WeeklyMealRecapProps> = ({
           </div>
           <div className="flex items-baseline gap-1.5">
             <span className="text-2xl font-black text-slate-800 dark:text-white">
-              {totalWeeklyCalories.toLocaleString('fr-FR')}
+              {totalWeeklyCalories.toLocaleString(locale)}
             </span>
-            <span className="text-xs font-bold text-slate-400">kcal</span>
+            <span className="text-xs font-bold text-slate-400">{trk.kcal}</span>
           </div>
           <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-            {daysWithMealsCount} / 7 jours renseignés
+            {trk.daysLogged(daysWithMealsCount)}
           </p>
         </div>
 
@@ -356,7 +360,7 @@ export const WeeklyMealRecap: React.FC<WeeklyMealRecapProps> = ({
         >
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-rose-500 dark:text-rose-400">
-              Fruits & Vitalité
+              {trk.fruitsVitality}
             </span>
             <div className="w-7 h-7 rounded-lg bg-rose-50 dark:bg-rose-950 flex items-center justify-center text-rose-600 text-sm">
               🍎
@@ -366,10 +370,10 @@ export const WeeklyMealRecap: React.FC<WeeklyMealRecapProps> = ({
             <span className="text-2xl font-black text-slate-800 dark:text-white">
               {totalFruitPortions}
             </span>
-            <span className="text-xs font-bold text-rose-500">portions</span>
+            <span className="text-xs font-bold text-rose-500">{trk.portionsUnit}</span>
           </div>
           <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">
-            ~{(totalFruitPortions / 7).toFixed(1)} portion / jour (Objectif : 2-3)
+            {trk.fruitPerDayAvg((totalFruitPortions / 7).toFixed(1))}
           </p>
         </div>
 
@@ -381,7 +385,7 @@ export const WeeklyMealRecap: React.FC<WeeklyMealRecapProps> = ({
         >
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
-              Régularité Cible
+              {trk.targetRegularity}
             </span>
             <div className="w-7 h-7 rounded-lg bg-indigo-50 dark:bg-indigo-950 flex items-center justify-center text-indigo-600">
               <Award className="w-4 h-4" />
@@ -391,10 +395,10 @@ export const WeeklyMealRecap: React.FC<WeeklyMealRecapProps> = ({
             <span className="text-2xl font-black text-slate-800 dark:text-white">
               {daysOnTargetCount} / {daysWithMealsCount || 7}
             </span>
-            <span className="text-xs font-bold text-slate-400">jours</span>
+            <span className="text-xs font-bold text-slate-400">{trk.daysUnit}</span>
           </div>
           <p className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400">
-            {daysOnTargetCount >= 5 ? '🎯 Excellent respect du budget' : '⚖️ Rythme équilibré'}
+            {daysOnTargetCount >= 5 ? trk.excellentBudget : trk.balancedPace}
           </p>
         </div>
       </div>
@@ -409,25 +413,25 @@ export const WeeklyMealRecap: React.FC<WeeklyMealRecapProps> = ({
           <div>
             <h3 className="font-extrabold text-base text-slate-800 dark:text-white flex items-center gap-2">
               <BarChart3 className="w-5 h-5 text-emerald-600" />
-              Évolution Journalière des Calories
+              {trk.dailyCalEvolution}
             </h3>
             <p className="text-xs text-slate-400">
-              Cliquez sur une barre pour isoler le détail des repas de cette journée.
+              {trk.clickBarHint}
             </p>
           </div>
 
           <div className="flex items-center gap-3 text-xs">
             <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-medium">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block" />
-              Dans la cible
+              {trk.inTarget}
             </span>
             <span className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 font-medium">
               <span className="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block" />
-              Au-dessus
+              {trk.aboveTarget}
             </span>
             <span className="flex items-center gap-1.5 text-slate-400 font-medium">
               <span className="w-4 h-0.5 border-t border-dashed border-emerald-500 inline-block" />
-              Ligne Cible ({targetCalories} kcal)
+              {trk.targetLine(targetCalories)}
             </span>
           </div>
         </div>
@@ -502,7 +506,7 @@ export const WeeklyMealRecap: React.FC<WeeklyMealRecapProps> = ({
                       {day.dayName}
                     </span>
                     <span className="text-[10px] text-slate-400 block font-medium">
-                      {day.dayNumber.split(' ')[0]}
+                      {new Date(day.dateStr + 'T12:00:00').getDate()}
                     </span>
                   </div>
                 </div>
@@ -513,7 +517,7 @@ export const WeeklyMealRecap: React.FC<WeeklyMealRecapProps> = ({
           {selectedDate && (
             <div className="mt-3 flex items-center justify-between text-xs bg-emerald-50 dark:bg-emerald-950/40 p-2.5 rounded-xl border border-emerald-200 dark:border-emerald-900">
               <span className="font-bold text-emerald-800 dark:text-emerald-300">
-                Jour sélectionné :{' '}
+                {trk.selectedDayLabel}{' '}
                 {daysList.find((d) => d.dateStr === selectedDate)?.dayName}{' '}
                 {daysList.find((d) => d.dateStr === selectedDate)?.dayNumber}
               </span>
@@ -522,7 +526,7 @@ export const WeeklyMealRecap: React.FC<WeeklyMealRecapProps> = ({
                 onClick={() => setSelectedDate(null)}
                 className="text-emerald-700 dark:text-emerald-300 font-extrabold underline hover:opacity-80 cursor-pointer"
               >
-                Réafficher tous les jours
+                {trk.showAllDays}
               </button>
             </div>
           )}
@@ -539,14 +543,14 @@ export const WeeklyMealRecap: React.FC<WeeklyMealRecapProps> = ({
           <div>
             <h3 className="font-extrabold text-base text-slate-800 dark:text-white flex items-center gap-2">
               <PieChart className="w-5 h-5 text-indigo-500" />
-              Répartition des Macronutriments de la Semaine
+              {trk.macroDistTitle}
             </h3>
             <p className="text-xs text-slate-400">
-              Total cumulé et part relative des protéines, glucides et lipides.
+              {trk.macroDistSub}
             </p>
           </div>
           <span className="text-xs font-bold text-slate-400 hidden sm:inline">
-            Total {totalWeeklyProtein + totalWeeklyCarbs + totalWeeklyFat}g absorbés
+            {trk.totalAbsorbed(totalWeeklyProtein + totalWeeklyCarbs + totalWeeklyFat)}
           </span>
         </div>
 
@@ -554,54 +558,54 @@ export const WeeklyMealRecap: React.FC<WeeklyMealRecapProps> = ({
           {/* Protéines */}
           <div className="p-4 rounded-2xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-200/80 dark:border-blue-900/50 space-y-1">
             <span className="text-[11px] font-bold uppercase tracking-wider text-blue-700 dark:text-blue-300">
-              Protéines
+              {trk.proteins}
             </span>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl font-black text-blue-900 dark:text-blue-100">
                 {totalWeeklyProtein}g
               </span>
               <span className="text-xs text-blue-600 dark:text-blue-400 font-semibold">
-                (~{Math.round(totalWeeklyProtein / (daysWithMealsCount || 1))}g/j)
+                {trk.approxPerDay(Math.round(totalWeeklyProtein / (daysWithMealsCount || 1)))}
               </span>
             </div>
             <p className="text-[11px] text-blue-800/80 dark:text-blue-300/80">
-              Maintien et développement de la masse musculaire.
+              {trk.proteinDesc}
             </p>
           </div>
 
           {/* Glucides */}
           <div className="p-4 rounded-2xl bg-amber-50/70 dark:bg-amber-950/30 border border-amber-200/80 dark:border-amber-900/50 space-y-1">
             <span className="text-[11px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300">
-              Glucides
+              {trk.carbs}
             </span>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl font-black text-amber-900 dark:text-amber-100">
                 {totalWeeklyCarbs}g
               </span>
               <span className="text-xs text-amber-600 dark:text-amber-400 font-semibold">
-                (~{Math.round(totalWeeklyCarbs / (daysWithMealsCount || 1))}g/j)
+                {trk.approxPerDay(Math.round(totalWeeklyCarbs / (daysWithMealsCount || 1)))}
               </span>
             </div>
             <p className="text-[11px] text-amber-800/80 dark:text-amber-300/80">
-              Énergie disponible pour vos journées et activités.
+              {trk.carbsDesc}
             </p>
           </div>
 
           {/* Lipides */}
           <div className="p-4 rounded-2xl bg-rose-50/70 dark:bg-rose-950/30 border border-rose-200/80 dark:border-rose-900/50 space-y-1">
             <span className="text-[11px] font-bold uppercase tracking-wider text-rose-700 dark:text-rose-300">
-              Lipides
+              {trk.fats}
             </span>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl font-black text-rose-900 dark:text-rose-100">
                 {totalWeeklyFat}g
               </span>
               <span className="text-xs text-rose-600 dark:text-rose-400 font-semibold">
-                (~{Math.round(totalWeeklyFat / (daysWithMealsCount || 1))}g/j)
+                {trk.approxPerDay(Math.round(totalWeeklyFat / (daysWithMealsCount || 1)))}
               </span>
             </div>
             <p className="text-[11px] text-rose-800/80 dark:text-rose-300/80">
-              Équilibre hormonal et assimilation des vitamines.
+              {trk.fatDesc}
             </p>
           </div>
         </div>
@@ -614,15 +618,15 @@ export const WeeklyMealRecap: React.FC<WeeklyMealRecapProps> = ({
             🤖
           </div>
           <h4 className="font-extrabold text-sm sm:text-base">
-            Le Bilan du Coach IA pour votre semaine
+            {trk.coachWeeklyTitle}
           </h4>
         </div>
         <p className="text-xs sm:text-sm text-emerald-100 leading-relaxed">
           {averageCaloriesPerDay === 0
-            ? "Commencez à enregistrer vos repas pour que le coach puisse analyser la qualité de votre alimentation hebdomadaire !"
+            ? trk.coachWeeklyEmpty
             : averageCaloriesPerDay <= targetCalories
-            ? `Bravo ${user.name || ''} ! Votre moyenne hebdomadaire (${averageCaloriesPerDay} kcal) est parfaitement alignée avec votre budget cible de ${targetCalories} kcal. Vous avez également enregistré ${totalFruitPortions} portions de fruits : maintenez ce cap pour maximiser votre satiété !`
-            : `Bonne semaine ${user.name || ''} ! Votre moyenne hebdomadaire est légèrement au-dessus (${averageCaloriesPerDay} kcal vs ${targetCalories} kcal). Privilégiez des dîners riches en légumes vapeur et en protéines maigres pour rééquilibrer vos journées sans frustration.`}
+            ? trk.coachWeeklyGood(user.name || '', averageCaloriesPerDay, targetCalories, totalFruitPortions)
+            : trk.coachWeeklyHigh(user.name || '', averageCaloriesPerDay, targetCalories)}
         </p>
       </div>
 
@@ -631,12 +635,12 @@ export const WeeklyMealRecap: React.FC<WeeklyMealRecapProps> = ({
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
           <h3 className="font-extrabold text-lg text-slate-800 dark:text-white flex items-center gap-2">
             <Calendar className="w-5 h-5 text-emerald-600" />
-            Détail des Repas par Jour ({displayedDays.length} jours affichés)
+            {trk.dailyDetailHeading(displayedDays.length)}
           </h3>
 
           {/* Quick filter by meal category */}
           <div className="flex items-center gap-1.5 flex-wrap">
-            <span className="text-xs text-slate-400 font-bold mr-1">Filtrer :</span>
+            <span className="text-xs text-slate-400 font-bold mr-1">{trk.filterLabel}</span>
             {(['all', 'petit_dejeuner', 'dejeuner', 'collation', 'diner'] as const).map((type) => (
               <button
                 key={type}
@@ -651,14 +655,14 @@ export const WeeklyMealRecap: React.FC<WeeklyMealRecapProps> = ({
                 }`}
               >
                 {type === 'all'
-                  ? 'Tous'
+                  ? trk.filterAll
                   : type === 'petit_dejeuner'
-                  ? 'Petit-déj'
+                  ? trk.mealBreakfastShort
                   : type === 'dejeuner'
-                  ? 'Déjeuner'
+                  ? trk.mealLunch
                   : type === 'collation'
-                  ? 'Collation'
-                  : 'Dîner'}
+                  ? trk.mealSnack
+                  : trk.mealDinner}
               </button>
             ))}
           </div>
@@ -704,17 +708,17 @@ export const WeeklyMealRecap: React.FC<WeeklyMealRecapProps> = ({
                         </h4>
                         {day.isToday && (
                           <span className="bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 px-2 py-0.5 rounded-full text-[10px] font-black">
-                            Aujourd'hui
+                            {trk.todayPill}
                           </span>
                         )}
                         {day.fruitCount > 0 && (
                           <span className="text-xs bg-rose-50 text-rose-700 dark:bg-rose-950 dark:text-rose-300 px-2 py-0.5 rounded-full font-bold">
-                            🍎 {day.fruitCount} fruit{day.fruitCount > 1 ? 's' : ''}
+                            🍎 {trk.fruitCountLabel(day.fruitCount)}
                           </span>
                         )}
                       </div>
                       <span className="text-xs text-slate-400">
-                        {day.meals.length} élément{day.meals.length > 1 ? 's' : ''} enregistré{day.meals.length > 1 ? 's' : ''}
+                        {trk.loggedItemsCount(day.meals.length)}
                       </span>
                     </div>
                   </div>
@@ -726,14 +730,14 @@ export const WeeklyMealRecap: React.FC<WeeklyMealRecapProps> = ({
                         <span className="text-lg font-black text-emerald-600 dark:text-emerald-400">
                           {day.totalCalories}
                         </span>
-                        <span className="text-xs font-bold text-slate-400">kcal</span>
+                        <span className="text-xs font-bold text-slate-400">{trk.kcal}</span>
                       </div>
                       <div className="text-[10px] text-slate-400 space-x-1.5 font-semibold">
-                        <span>P: {day.totalProtein}g</span>
+                        <span>{trk.macroP}: {day.totalProtein}g</span>
                         <span>•</span>
-                        <span>G: {day.totalCarbs}g</span>
+                        <span>{trk.macroC}: {day.totalCarbs}g</span>
                         <span>•</span>
-                        <span>L: {day.totalFat}g</span>
+                        <span>{trk.macroF}: {day.totalFat}g</span>
                       </div>
                     </div>
                   </div>
@@ -742,7 +746,7 @@ export const WeeklyMealRecap: React.FC<WeeklyMealRecapProps> = ({
                 {/* Day Meals List */}
                 {filteredMeals.length === 0 ? (
                   <div className="py-4 text-center text-xs text-slate-400 italic">
-                    Aucun repas enregistré pour ce jour avec le filtre sélectionné.
+                    {trk.noMealsFilter}
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
@@ -773,14 +777,14 @@ export const WeeklyMealRecap: React.FC<WeeklyMealRecapProps> = ({
                                 {meal.foodName}
                               </h5>
                               <span className="text-[10px] text-slate-400 block">
-                                {meal.portionGrams}g • P:{meal.protein}g G:{meal.carbs}g L:{meal.fat}g
+                                {meal.portionGrams}g • {trk.macroP}:{meal.protein}g {trk.macroC}:{meal.carbs}g {trk.macroF}:{meal.fat}g
                               </span>
                             </div>
                           </div>
 
                           <div className="text-right shrink-0">
                             <span className="font-black text-xs sm:text-sm text-emerald-600 dark:text-emerald-400 block">
-                              {meal.calories} kcal
+                              {meal.calories} {trk.kcal}
                             </span>
                             {onDeleteMeal && (
                               <button
@@ -788,7 +792,7 @@ export const WeeklyMealRecap: React.FC<WeeklyMealRecapProps> = ({
                                 onClick={() => onDeleteMeal(meal.id)}
                                 className="text-[10px] text-slate-400 hover:text-rose-500 transition-colors cursor-pointer"
                               >
-                                Supprimer
+                                {trk.remove}
                               </button>
                             )}
                           </div>

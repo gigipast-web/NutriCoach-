@@ -16,6 +16,7 @@ import {
 import { UserProfile, UserMetrics, MealEntry, WaterData, ActivityEntry, TabType } from '../types.ts';
 import { useLanguage } from '../i18n/LanguageContext.tsx';
 import { getDashboardUi } from '../i18n/dashboardI18n.ts';
+import { getUiCore } from '../i18n/uiCoreI18n.ts';
 import { playWelcomeVoiceGreeting, stopSpeaking } from '../utils/voiceCoach.ts';
 import { RobotCoachMascot } from './RobotCoachMascot.tsx';
 import {
@@ -55,8 +56,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   onOpenWeighIn,
   isDarkMode,
 }) => {
-  const { language } = useLanguage();
+  const { language, locale } = useLanguage();
   const dui = getDashboardUi(language);
+  const ui = getUiCore(language);
   const [isSpeakingVoicePrompt, setIsSpeakingVoicePrompt] = useState(false);
 
   useEffect(() => {
@@ -92,7 +94,11 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
   const currentLiters = Math.max(0, water.amountMl) / 1000;
   const waterPercent = Math.min(100, Math.round((currentLiters / targetLiters) * 100));
 
-  const isEn = language === 'en';
+  const formatNum = (val: number, decimals = 1) =>
+    val.toLocaleString(locale, {
+      minimumFractionDigits: decimals,
+      maximumFractionDigits: decimals,
+    });
 
   // Representative meals for today's visual row computed dynamically from todayMeals
   const mealPreviews = [
@@ -219,7 +225,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           }`}
         >
           <Plus className="w-4 h-4 text-[#1F6F43] dark:text-emerald-400 shrink-0" />
-          <span className="truncate">{isEn ? 'Add Meal' : 'Ajouter repas'}</span>
+          <span className="truncate">{ui.addMealQuick}</span>
         </button>
 
         <button
@@ -233,7 +239,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           }`}
         >
           <Camera className="w-4 h-4 text-amber-600 dark:text-amber-400 shrink-0" />
-          <span className="truncate">{isEn ? 'Photo Scan' : 'Scan Photo IA'}</span>
+          <span className="truncate">{ui.aiScanQuick}</span>
         </button>
 
         <button
@@ -247,7 +253,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           }`}
         >
           <Barcode className="w-4 h-4 text-sky-600 dark:text-sky-400 shrink-0" />
-          <span className="truncate">{isEn ? 'Barcode' : 'Code-barres'}</span>
+          <span className="truncate">{ui.barcodeQuick}</span>
         </button>
 
         <button
@@ -261,7 +267,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           }`}
         >
           <Scale className="w-4 h-4 text-rose-600 dark:text-rose-400 shrink-0" />
-          <span className="truncate">{isEn ? 'Log Weight' : 'Noter poids'}</span>
+          <span className="truncate">{ui.weighInQuick}</span>
         </button>
       </div>
 
@@ -334,7 +340,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 {dui.currentWeight}
               </span>
               <span className="text-2xl font-black tabular-nums text-black dark:text-white">
-                {currentWeight.toFixed(1).replace('.', ',')}{' '}
+                {formatNum(currentWeight, 1)}{' '}
                 <small className="text-xs font-bold text-slate-600 dark:text-slate-400">kg</small>
               </span>
             </div>
@@ -353,7 +359,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 {dui.goal}
               </span>
               <span className="text-2xl font-black tabular-nums text-black dark:text-white">
-                {targetWeight.toFixed(1).replace('.', ',')}{' '}
+                {formatNum(targetWeight, 1)}{' '}
                 <small className="text-xs font-bold text-slate-600 dark:text-slate-400">kg</small>
               </span>
             </div>
@@ -381,19 +387,15 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
             </div>
             <span className="text-[11px] font-bold text-amber-800 dark:text-amber-300 tabular-nums">
               {caloriesDisplay <= targetCalories
-                ? isEn
-                  ? `${caloriesRemaining.toLocaleString()} kcal left`
-                  : `Reste ${caloriesRemaining.toLocaleString()} kcal`
-                : isEn
-                ? `+${(caloriesDisplay - targetCalories).toLocaleString()} kcal`
-                : `+${(caloriesDisplay - targetCalories).toLocaleString()} kcal`}
+                ? ui.kcalLeft(caloriesRemaining.toLocaleString(locale))
+                : `+${(caloriesDisplay - targetCalories).toLocaleString(locale)} kcal`}
             </span>
           </div>
 
           <div className="text-2xl font-black tabular-nums text-black dark:text-white">
-            {caloriesDisplay.toLocaleString()}{' '}
+            {caloriesDisplay.toLocaleString(locale)}{' '}
             <span className="text-sm font-bold text-slate-600 dark:text-slate-300">
-              / {targetCalories.toLocaleString()} kcal
+              / {targetCalories.toLocaleString(locale)} kcal
             </span>
           </div>
 
@@ -434,9 +436,9 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
           </div>
 
           <div className="text-2xl font-black tabular-nums text-black dark:text-white">
-            {currentLiters.toFixed(2).replace('.', ',')}{' '}
+            {formatNum(currentLiters, 2)}{' '}
             <span className="text-sm font-bold text-slate-600 dark:text-slate-300">
-              / {targetLiters.toFixed(1).replace('.', ',')} L
+              / {formatNum(targetLiters, 1)} L
             </span>
           </div>
 
@@ -510,7 +512,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                   </>
                 ) : (
                   <span className="text-slate-400 dark:text-slate-500 font-semibold">
-                    {isEn ? '0 kcal · Tap to add' : '0 kcal · Ajouter'}
+                    {ui.kcalTapAdd}
                   </span>
                 )}
               </span>
@@ -548,7 +550,7 @@ export const DashboardView: React.FC<DashboardViewProps> = ({
                 {dui.physicalActivity}
               </span>
               <span className="block text-base font-black tabular-nums text-black dark:text-white truncate">
-                {totalSteps.toLocaleString()} / {(user.stepTarget || 10000).toLocaleString()} {dui.stepsWord}
+                {totalSteps.toLocaleString(locale)} / {(user.stepTarget || 10000).toLocaleString(locale)} {dui.stepsWord}
               </span>
             </div>
           </div>

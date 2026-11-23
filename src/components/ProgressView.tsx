@@ -24,6 +24,8 @@ import {
   Droplets,
 } from 'lucide-react';
 import { UserProfile, WeightEntry } from '../types.ts';
+import { useLanguage } from '../i18n/LanguageContext.tsx';
+import { getUiWellness } from '../i18n/uiWellnessI18n.ts';
 import {
   BlossomFlower,
   CornerFloralFlourish,
@@ -92,6 +94,8 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
   onAddWeightEntry,
   isDarkMode,
 }) => {
+  const { language, locale } = useLanguage();
+  const w = getUiWellness(language);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [newWeight, setNewWeight] = useState(user.currentWeightKg.toString());
   const [newWaist, setNewWaist] = useState('80');
@@ -167,7 +171,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
       }));
     } catch (err) {
       console.error('Erreur compression image:', err);
-      setPhotoUploadError("Impossible de charger l'image. Essayez un autre format (JPG ou PNG).");
+      setPhotoUploadError(w.progressPhotoLoadError);
     } finally {
       if (type === 'before') setIsUploadingBefore(false);
       else setIsUploadingAfter(false);
@@ -410,7 +414,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
           </div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl sm:text-2xl font-black text-[#163321] dark:text-white tracking-tight">
-              Mon évolution
+              {w.progressHeaderTitle}
             </h1>
             <BlossomFlower size={22} palette="orchid" />
           </div>
@@ -420,13 +424,13 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
           type="button"
           onClick={() => setIsModalOpen(true)}
           className="w-9 h-9 rounded-full bg-white dark:bg-slate-800 border border-[#DCE8DC] dark:border-slate-700 flex items-center justify-center text-[#1F6F43] dark:text-emerald-400 hover:bg-[#EAF3EA] transition-all cursor-pointer shadow-xs"
-          title="Calendrier des pesées & nouvelle pesée"
+          title={w.progressCalendarTitle}
         >
           <Calendar className="w-4 h-4" />
         </button>
       </div>
 
-      {/* 2. Toggle Tabs: [Poids] [Calories] [Hydratation] with Radiant Gradients */}
+      {/* 2. Toggle Tabs */}
       <div className="flex items-center gap-2 max-w-md">
         <button
           type="button"
@@ -437,7 +441,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
               : 'bg-[#E3ECE2] text-black hover:bg-[#D5E4D5]'
           }`}
         >
-          Poids
+          {w.progressTabWeight}
         </button>
         <button
           type="button"
@@ -448,7 +452,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
               : 'bg-[#E3ECE2] text-black hover:bg-[#D5E4D5]'
           }`}
         >
-          Calories
+          {w.progressTabCalories}
         </button>
         <button
           type="button"
@@ -459,7 +463,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
               : 'bg-[#E3ECE2] text-black hover:bg-[#D5E4D5]'
           }`}
         >
-          Hydratation
+          {w.progressTabHydration}
         </button>
       </div>
 
@@ -511,12 +515,12 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                 </g>
               ))}
 
-              {/* X Axis Labels (S1, S2, S3, S4) */}
+              {/* X Axis Labels */}
               {[
-                { label: 'S1', x: 50 },
-                { label: 'S2', x: 155 },
-                { label: 'S3', x: 260 },
-                { label: 'S4', x: 365 },
+                { label: `${w.progressWeekPrefix}1`, x: 50 },
+                { label: `${w.progressWeekPrefix}2`, x: 155 },
+                { label: `${w.progressWeekPrefix}3`, x: 260 },
+                { label: `${w.progressWeekPrefix}4`, x: 365 },
               ].map((item) => (
                 <text
                   key={item.label}
@@ -548,15 +552,15 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
               <circle cx="365" cy="99" r="5" fill="#1F6F43" />
             </svg>
 
-            {/* Floating Pill on S4: 67,5 kg (Screen 2) */}
+            {/* Floating Pill on S4 */}
             <div className="absolute right-3 top-16 bg-[#1F6F43] text-white px-3 py-1 rounded-full text-xs font-black shadow-md flex items-center gap-1 animate-pulse">
-              <span>{currentWeight.toFixed(1).replace('.', ',')} kg</span>
+              <span>{currentWeight.toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kg</span>
             </div>
           </div>
         </div>
       )}
 
-      {/* 4. Trophy Milestone Card (Screen 2) with Sunset Coral & Gold Gradient */}
+      {/* 4. Trophy Milestone Card */}
       <div
         id="milestone-trophy-card"
         className="p-5 rounded-[26px] bg-gradient-to-r from-[#FFF7E8] via-[#FFF0DB] to-[#FFE4E6] dark:from-amber-950/40 dark:via-orange-950/30 dark:to-rose-950/40 border border-amber-300 dark:border-amber-700/60 flex items-center justify-between gap-4 shadow-xs relative overflow-hidden"
@@ -568,12 +572,12 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
           <div>
             <div className="flex items-center gap-1.5">
               <h3 className="text-base sm:text-lg font-black text-[#8A5800] dark:text-amber-300">
-                Bravo !
+                {w.progressBravo}
               </h3>
               <BlossomFlower size={16} palette="golden" />
             </div>
             <p className="text-xs sm:text-sm font-bold text-[#A76D00] dark:text-amber-400">
-              - {totalLost > 0 ? totalLost.toFixed(1).replace('.', ',') : '2,5'} kg depuis le début
+              - {(totalLost > 0 ? totalLost : 2.5).toLocaleString(locale, { minimumFractionDigits: 1, maximumFractionDigits: 1 })} kg {w.progressLostSinceStart}
             </p>
           </div>
         </div>
@@ -595,7 +599,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h2 className="text-base sm:text-lg font-black text-[#163321] dark:text-white">
-              Vos objectifs
+              {w.progressGoalsTitle}
             </h2>
             <FlowerGardenCluster />
           </div>
@@ -604,13 +608,13 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
             onClick={() => setIsModalOpen(true)}
             className="text-xs font-black text-black dark:text-slate-300 hover:text-[#1F6F43] flex items-center gap-0.5 cursor-pointer"
           >
-            Voir tout ›
+            {w.progressViewAll}
           </button>
         </div>
 
-        {/* 3 Circular Goal Rings (Screen 2) */}
+        {/* 3 Circular Goal Rings */}
         <div className="grid grid-cols-3 gap-2 sm:gap-4 text-center">
-          {/* Ring 1: Poids -5 kg */}
+          {/* Ring 1 */}
           <div className="flex flex-col items-center">
             <div className="relative w-18 h-18 sm:w-20 sm:h-20 flex items-center justify-center">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 80 80">
@@ -635,11 +639,11 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
               </div>
             </div>
             <span className="text-[10px] font-black text-black dark:text-slate-300 mt-2 block">
-              sur 8 semaines
+              {w.progressOverWeeks}
             </span>
           </div>
 
-          {/* Ring 2: Streak 5 jours */}
+          {/* Ring 2 */}
           <div className="flex flex-col items-center">
             <div className="relative w-18 h-18 sm:w-20 sm:h-20 flex items-center justify-center">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 80 80">
@@ -659,16 +663,16 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
               <div className="absolute inset-0 flex flex-col items-center justify-center">
                 <span className="text-amber-500 text-xs mb-0.5">★</span>
                 <span className="text-[11px] font-black text-black dark:text-white leading-none">
-                  5 jours
+                  5 {w.progressDaysUnit}
                 </span>
               </div>
             </div>
             <span className="text-[10px] font-black text-black dark:text-slate-300 mt-2 block">
-              série active
+              {w.progressActiveStreak}
             </span>
           </div>
 
-          {/* Ring 3: Eau 2 L */}
+          {/* Ring 3 */}
           <div className="flex flex-col items-center">
             <div className="relative w-18 h-18 sm:w-20 sm:h-20 flex items-center justify-center">
               <svg className="w-full h-full -rotate-90" viewBox="0 0 80 80">
@@ -693,13 +697,13 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
               </div>
             </div>
             <span className="text-[10px] font-black text-black dark:text-slate-300 mt-2 block">
-              d'eau / jour
+              {w.progressWaterPerDay}
             </span>
           </div>
         </div>
       </div>
 
-      {/* 6. Encouragement Banner with Sprout & Flowers (Screen 2) */}
+      {/* 6. Encouragement Banner */}
       <div
         id="sprout-encouragement-banner"
         className="p-4 rounded-2xl bg-gradient-to-r from-[#E6EFE6] via-[#EAF5EC] to-[#F1F9F3] dark:from-emerald-950/40 dark:to-teal-950/30 border border-[#D5E4D5] dark:border-emerald-800/60 flex items-center justify-between gap-3 shadow-xs"
@@ -707,13 +711,13 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
         <div className="flex items-center gap-3">
           <span className="text-2xl shrink-0 select-none">🌱</span>
           <p className="text-xs sm:text-sm font-bold text-[#1F6F43] dark:text-emerald-300">
-            Vous êtes sur la bonne voie ! Continuez, vous y arriverez 💚
+            {w.progressEncouragementBanner}
           </p>
         </div>
         <span className="text-xl select-none">🌸</span>
       </div>
 
-      {/* Action CTA: Enregistrer une nouvelle pesée with Rich Gradient */}
+      {/* Action CTA */}
       <div className="flex justify-center pt-1">
         <button
           id="btn-open-weighin-modal-pastel"
@@ -721,7 +725,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
           className="w-full sm:w-auto px-7 py-3.5 bg-gradient-to-r from-emerald-600 via-teal-600 to-emerald-700 hover:from-emerald-700 hover:to-teal-800 text-white rounded-full font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-emerald-900/20 active:scale-[0.99] transition-all cursor-pointer"
         >
           <Plus className="w-4 h-4 stroke-[3]" />
-          <span>Enregistrer une nouvelle pesée</span>
+          <span>{w.progressRecordWeighInCta}</span>
           <span className="text-sm">🌸</span>
         </button>
       </div>
@@ -741,15 +745,15 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
             </div>
             <div>
               <h3 className="font-black text-base text-slate-800 dark:text-slate-100 flex items-center gap-2">
-                Évolution Graphique du Poids
+                {w.progressChartTitle}
               </h3>
               <p className="text-[11px] text-slate-400 font-bold">
-                Objectif visé : <span className="text-emerald-600 dark:text-emerald-400 font-black">{user.targetWeightKg} kg</span>
+                {w.progressTargetGoalLabel} <span className="text-emerald-600 dark:text-emerald-400 font-black">{user.targetWeightKg} kg</span>
               </p>
             </div>
           </div>
 
-          {/* Controls: Chart Mode (Spline vs Bars) & Color Theme Selector - 100% Mobile 9:16 Safe */}
+          {/* Controls */}
           <div className="w-full sm:w-auto flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
             {/* Chart Mode Toggle */}
             <div className="grid grid-cols-2 p-1 rounded-2xl bg-slate-100 dark:bg-slate-800 border border-slate-200/80 dark:border-slate-700/80 w-full sm:w-auto shrink-0">
@@ -761,10 +765,10 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                     ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white border-emerald-500/70 shadow-xs ring-1 ring-emerald-400/40'
                     : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
                 }`}
-                title="Courbe fluide et lumineuse"
+                title={w.progressModeSplineTitle}
               >
                 <LineChart className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                <span className="truncate">Courbe</span>
+                <span className="truncate">{w.progressModeSpline}</span>
               </button>
               <button
                 type="button"
@@ -774,10 +778,10 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                     ? 'bg-white dark:bg-slate-700 text-slate-800 dark:text-white border-cyan-500/70 shadow-xs ring-1 ring-cyan-400/40'
                     : 'border-transparent text-slate-500 hover:text-slate-800 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600'
                 }`}
-                title="Histogramme coloré"
+                title={w.progressModeBarsTitle}
               >
                 <BarChart3 className="w-3.5 h-3.5 text-cyan-500 shrink-0" />
-                <span className="truncate">Barres</span>
+                <span className="truncate">{w.progressModeBars}</span>
               </button>
             </div>
 
@@ -793,7 +797,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                 }`}
               >
                 <span className="w-2 h-2 rounded-full bg-emerald-300 shrink-0 inline-block" />
-                <span className="truncate">Aurore</span>
+                <span className="truncate">{w.progressThemeAurora}</span>
               </button>
 
               <button
@@ -806,7 +810,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                 }`}
               >
                 <span className="w-2 h-2 rounded-full bg-rose-300 shrink-0 inline-block" />
-                <span className="truncate">Sunset</span>
+                <span className="truncate">{w.progressThemeSunset}</span>
               </button>
 
               <button
@@ -819,7 +823,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                 }`}
               >
                 <span className="w-2 h-2 rounded-full bg-lime-300 shrink-0 inline-block" />
-                <span className="truncate">Néon</span>
+                <span className="truncate">{w.progressThemeElectric}</span>
               </button>
             </div>
           </div>
@@ -832,7 +836,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
             <div className="flex items-center gap-2">
               <Calendar className="w-4 h-4 text-emerald-500" />
               <span className="font-bold text-slate-700 dark:text-slate-200">
-                {new Date(activeEntry.date).toLocaleDateString('fr-FR', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
+                {new Date(activeEntry.date).toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
               </span>
               {activeEntry.note && (
                 <span className="text-slate-500 italic text-[11px]">« {activeEntry.note} »</span>
@@ -840,11 +844,11 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-1">
-                <span className="text-slate-400 font-bold">Pesée :</span>
+                <span className="text-slate-400 font-bold">{w.progressWeighInLabel}</span>
                 <span className="text-sm font-black text-slate-800 dark:text-white">{activeEntry.weightKg} kg</span>
               </div>
               <div className="flex items-center gap-1">
-                <span className="text-slate-400 font-bold">Évolution :</span>
+                <span className="text-slate-400 font-bold">{w.progressDeltaLabel}</span>
                 <span className={`px-2 py-0.5 rounded-full font-black text-[11px] ${
                   activeEntry.weightKg <= startWeight
                     ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
@@ -950,9 +954,9 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                 strokeOpacity="0.85"
               />
               <rect
-                x={svgWidth - 118}
+                x={svgWidth - 150}
                 y={targetY - 10}
-                width="104"
+                width="136"
                 height="20"
                 rx="10"
                 fill={isDarkMode ? '#064e3b' : '#ecfdf5'}
@@ -960,14 +964,14 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                 strokeWidth="1.2"
               />
               <text
-                x={svgWidth - 66}
+                x={svgWidth - 82}
                 y={targetY + 3.5}
                 textAnchor="middle"
                 fill="#10B981"
                 fontSize="9.5"
                 fontWeight="900"
               >
-                🎯 CIBLE {user.targetWeightKg} KG
+                {w.progressTargetSvgPrefix} {user.targetWeightKg} KG
               </text>
             </g>
 
@@ -1021,9 +1025,9 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
 
                       {/* Lowest weight marker badge */}
                       {isLowest && (
-                        <g transform={`translate(${pt.x - 14}, ${pt.y - 28})`}>
+                        <g transform={`translate(${pt.x - 20}, ${pt.y - 28})`}>
                           <rect
-                            width="28"
+                            width="40"
                             height="16"
                             rx="8"
                             fill="#F59E0B"
@@ -1032,14 +1036,14 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                             className="shadow-sm"
                           />
                           <text
-                            x="14"
+                            x="20"
                             y="11"
                             textAnchor="middle"
                             fill="#ffffff"
-                            fontSize="9"
+                            fontSize="8.5"
                             fontWeight="900"
                           >
-                            MIN
+                            {w.progressMinSvg}
                           </text>
                         </g>
                       )}
@@ -1078,7 +1082,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                           isHovered ? 'fill-emerald-600 dark:fill-emerald-400' : 'fill-slate-400'
                         }`}
                       >
-                        {new Date(pt.entry.date).toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' })}
+                        {new Date(pt.entry.date).toLocaleDateString(locale, { month: 'short', day: 'numeric' })}
                       </text>
                     </g>
                   );
@@ -1129,9 +1133,9 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
 
                       {/* Min record badge */}
                       {isLowest && (
-                        <g transform={`translate(${pt.x - 14}, ${pt.y - 22})`}>
+                        <g transform={`translate(${pt.x - 20}, ${pt.y - 22})`}>
                           <rect
-                            width="28"
+                            width="40"
                             height="14"
                             rx="7"
                             fill="#F59E0B"
@@ -1139,14 +1143,14 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                             strokeWidth="1.2"
                           />
                           <text
-                            x="14"
+                            x="20"
                             y="10"
                             textAnchor="middle"
                             fill="#ffffff"
-                            fontSize="8"
+                            fontSize="7.5"
                             fontWeight="900"
                           >
-                            MIN
+                            {w.progressMinSvg}
                           </text>
                         </g>
                       )}
@@ -1174,7 +1178,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                           isHovered ? 'fill-emerald-600 dark:fill-emerald-400' : 'fill-slate-400'
                         }`}
                       >
-                        {new Date(pt.entry.date).toLocaleDateString('fr-FR', { month: 'short', day: 'numeric' })}
+                        {new Date(pt.entry.date).toLocaleDateString(locale, { month: 'short', day: 'numeric' })}
                       </text>
                     </g>
                   );
@@ -1189,25 +1193,25 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
           <div className="flex flex-wrap items-center gap-x-3.5 gap-y-1.5">
             <div className="flex items-center gap-1.5">
               <span className="w-3 h-1.5 rounded-full bg-gradient-to-r from-emerald-500 to-cyan-500 inline-block shrink-0" />
-              <span>Courbe lissée</span>
+              <span>{w.progressLegendSpline}</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-3 h-0.5 border-t-2 border-dashed border-emerald-500 inline-block shrink-0" />
-              <span>Cible ({user.targetWeightKg} kg)</span>
+              <span>{w.progressLegendTarget} ({user.targetWeightKg} kg)</span>
             </div>
             <div className="flex items-center gap-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-amber-400 text-white flex items-center justify-center text-[7px] font-black shrink-0">★</span>
-              <span>Record bas</span>
+              <span>{w.progressLegendLow}</span>
             </div>
           </div>
-          <span className="text-[10px] sm:text-[11px] text-slate-400 italic">Touchez un point pour inspecter</span>
+          <span className="text-[10px] sm:text-[11px] text-slate-400 italic">{w.progressTouchInspect}</span>
         </div>
       </div>
 
-      {/* 2-Column: Avant/Après & Historique */}
+      {/* 2-Column: Before/After & History */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
-        {/* Avant / Après Card - FULLY FUNCTIONAL */}
+        {/* Before / After Card */}
         <div
           id="photo-comparison-card"
           className={`p-6 rounded-3xl border ${
@@ -1217,10 +1221,9 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
             <h3 className="font-extrabold text-base text-slate-800 dark:text-slate-100 flex items-center gap-2">
               <Camera className="w-5 h-5 text-emerald-600" />
-              Photos Avant / Après
+              {w.progressPhotosTitle}
             </h3>
 
-            {/* Mode switch & Demo helper */}
             <div className="flex items-center gap-2">
               {hasBothPhotos && (
                 <button
@@ -1229,7 +1232,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                   className="px-2.5 py-1 rounded-xl text-xs font-bold border border-emerald-300 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 flex items-center gap-1.5 transition-all cursor-pointer hover:bg-emerald-100"
                 >
                   <ArrowLeftRight className="w-3.5 h-3.5" />
-                  <span>{comparisonMode === 'cards' ? 'Mode Curseur ↔' : 'Vue Côte à Côte'}</span>
+                  <span>{comparisonMode === 'cards' ? w.progressModeSlider : w.progressModeSideBySide}</span>
                 </button>
               )}
 
@@ -1238,7 +1241,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                   type="button"
                   onClick={() => setIsFullscreenModalOpen(true)}
                   className="p-1.5 rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-                  title="Plein écran"
+                  title={w.progressFullscreenTitle}
                 >
                   <Maximize2 className="w-4 h-4" />
                 </button>
@@ -1247,7 +1250,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
           </div>
 
           <p className="text-xs text-slate-500 dark:text-slate-400">
-            Comparez visuellement votre silhouette pour mesurer l'impact réel de vos efforts.
+            {w.progressPhotosDesc}
           </p>
 
           {photoUploadError && (
@@ -1257,7 +1260,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                 type="button"
                 onClick={() => setPhotoUploadError(null)}
                 className="p-1 rounded-lg hover:bg-rose-100 dark:hover:bg-rose-900 cursor-pointer"
-                aria-label="Fermer"
+                aria-label={w.progressClose}
               >
                 <X className="w-3.5 h-3.5" />
               </button>
@@ -1278,11 +1281,11 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                 {/* AFTER image (Background layer) */}
                 <img
                   src={photos.after.url}
-                  alt="Après"
+                  alt={w.progressPhotoAfterAlt}
                   className="absolute inset-0 w-full h-full object-cover pointer-events-none"
                 />
                 <div className="absolute top-3 right-3 bg-emerald-600/90 text-white font-extrabold text-[11px] px-2.5 py-1 rounded-full shadow-md backdrop-blur-xs">
-                  ACTUEL ({photos.after.weightKg} kg)
+                  {w.progressBadgeCurrent} ({photos.after.weightKg} kg)
                 </div>
 
                 {/* BEFORE image (Clipped foreground layer) */}
@@ -1292,7 +1295,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                 >
                   <img
                     src={photos.before.url}
-                    alt="Avant"
+                    alt={w.progressPhotoBeforeAlt}
                     className="absolute inset-0 w-full h-full object-cover pointer-events-none"
                     style={{
                       width: sliderContainerRef.current?.clientWidth || '100%',
@@ -1300,7 +1303,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                     }}
                   />
                   <div className="absolute top-3 left-3 bg-slate-900/90 text-white font-extrabold text-[11px] px-2.5 py-1 rounded-full shadow-md backdrop-blur-xs">
-                    AVANT ({photos.before.weightKg} kg)
+                    {w.progressBadgeBefore} ({photos.before.weightKg} kg)
                   </div>
                 </div>
 
@@ -1316,16 +1319,16 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
               </div>
 
               <div className="flex items-center justify-between text-[11px] text-slate-400 px-1">
-                <span>Glissez le curseur de gauche à droite pour comparer</span>
+                <span>{w.progressDragSlider}</span>
                 <span className="font-bold text-emerald-600">
-                  -{(photos.before.weightKg - photos.after.weightKg).toFixed(1)} kg d'écart
+                  -{(photos.before.weightKg - photos.after.weightKg).toFixed(1)} {w.progressDiffKg}
                 </span>
               </div>
             </div>
           ) : (
             /* Cards Side-by-Side View */
             <div className="grid grid-cols-2 gap-3">
-              {/* Slot 1: AVANT */}
+              {/* Slot 1: BEFORE */}
               <div
                 className={`p-3.5 rounded-2xl border text-center flex flex-col justify-between transition-all ${
                   isDarkMode ? 'bg-slate-800/60 border-slate-700' : 'bg-slate-50 border-slate-200'
@@ -1334,14 +1337,14 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                      AVANT
+                      {w.progressBadgeBefore}
                     </span>
                     {photos.before && (
                       <button
                         type="button"
                         onClick={() => handleDeletePhoto('before')}
                         className="text-slate-400 hover:text-rose-500 p-0.5 rounded-md transition-colors"
-                        title="Supprimer la photo"
+                        title={w.progressDeletePhotoTitle}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -1352,7 +1355,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                     <div className="relative w-full h-44 rounded-xl overflow-hidden group border border-slate-200 dark:border-slate-700">
                       <img
                         src={photos.before.url}
-                        alt="Photo de départ"
+                        alt={w.progressPhotoBeforeAlt}
                         className="w-full h-full object-cover"
                       />
                       <button
@@ -1361,7 +1364,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                         className="absolute inset-0 bg-black/50 text-white opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center gap-1 transition-opacity text-xs font-bold"
                       >
                         <Upload className="w-4 h-4" />
-                        Changer la photo
+                        {w.progressChangePhoto}
                       </button>
                     </div>
                   ) : (
@@ -1376,10 +1379,10 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                         <Camera className="w-5 h-5" />
                       </div>
                       <span className="text-xs font-bold text-slate-700 dark:text-slate-200 block">
-                        {isUploadingBefore ? 'Chargement...' : 'Ajouter photo'}
+                        {isUploadingBefore ? w.progressLoading : w.progressAddPhoto}
                       </span>
                       <span className="text-[10px] text-slate-400 mt-0.5">
-                        Galerie ou appareil
+                        {w.progressGalleryOrDevice}
                       </span>
                     </button>
                   )}
@@ -1390,12 +1393,12 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                     {photos.before?.weightKg || sortedHistory[0]?.weightKg || startWeight} kg
                   </span>
                   <span className="text-[10px] text-slate-400 block">
-                    {photos.before?.date || sortedHistory[0]?.date || 'Date de départ'}
+                    {photos.before?.date || sortedHistory[0]?.date || w.progressStartDateFallback}
                   </span>
                 </div>
               </div>
 
-              {/* Slot 2: ACTUEL / APRÈS */}
+              {/* Slot 2: CURRENT / AFTER */}
               <div
                 className={`p-3.5 rounded-2xl border text-center flex flex-col justify-between transition-all ${
                   isDarkMode ? 'bg-slate-800/60 border-slate-700' : 'bg-slate-50 border-slate-200'
@@ -1404,14 +1407,14 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-[10px] font-black uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                      ACTUEL
+                      {w.progressBadgeCurrent}
                     </span>
                     {photos.after && (
                       <button
                         type="button"
                         onClick={() => handleDeletePhoto('after')}
                         className="text-slate-400 hover:text-rose-500 p-0.5 rounded-md transition-colors"
-                        title="Supprimer la photo"
+                        title={w.progressDeletePhotoTitle}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -1422,7 +1425,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                     <div className="relative w-full h-44 rounded-xl overflow-hidden group border border-emerald-200 dark:border-emerald-800">
                       <img
                         src={photos.after.url}
-                        alt="Photo actuelle"
+                        alt={w.progressPhotoAfterAlt}
                         className="w-full h-full object-cover"
                       />
                       <button
@@ -1431,7 +1434,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                         className="absolute inset-0 bg-black/50 text-white opacity-0 group-hover:opacity-100 flex flex-col items-center justify-center gap-1 transition-opacity text-xs font-bold"
                       >
                         <Upload className="w-4 h-4" />
-                        Changer la photo
+                        {w.progressChangePhoto}
                       </button>
                     </div>
                   ) : (
@@ -1446,10 +1449,10 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                         <CheckCircle2 className="w-5 h-5" />
                       </div>
                       <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300 block">
-                        {isUploadingAfter ? 'Chargement...' : 'Ajouter photo'}
+                        {isUploadingAfter ? w.progressLoading : w.progressAddPhoto}
                       </span>
                       <span className="text-[10px] text-slate-400 mt-0.5">
-                        Photo récente
+                        {w.progressRecentPhoto}
                       </span>
                     </button>
                   )}
@@ -1460,7 +1463,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                     {photos.after?.weightKg || currentWeight} kg
                   </span>
                   <span className="text-[10px] text-emerald-600/80 font-bold block">
-                    -{totalLost > 0 ? totalLost.toFixed(1) : 0} kg perdus !
+                    -{totalLost > 0 ? totalLost.toFixed(1) : 0} {w.progressLostUnit}
                   </span>
                 </div>
               </div>
@@ -1470,7 +1473,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
           {/* Quick Demo Test Buttons */}
           <div className="pt-1 flex items-center justify-between text-xs border-t border-slate-100 dark:border-slate-800">
             <span className="text-[11px] text-slate-400">
-              🔒 Vos photos restent 100% privées sur votre appareil.
+              {w.progressPrivacyNote}
             </span>
             {!hasBothPhotos && (
               <button
@@ -1479,13 +1482,13 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                 className="text-[11px] font-bold text-emerald-600 hover:underline flex items-center gap-1 cursor-pointer"
               >
                 <Sparkles className="w-3 h-3 text-amber-500" />
-                Charger des photos d'exemple
+                {w.progressLoadDemoPhotos}
               </button>
             )}
           </div>
         </div>
 
-        {/* Historique des Pesées Card */}
+        {/* Weigh-in History Card */}
         <div
           className={`p-6 rounded-3xl border ${
             isDarkMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'
@@ -1493,7 +1496,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
         >
           <h3 className="font-extrabold text-base text-slate-800 dark:text-slate-100 flex items-center gap-2">
             <History className="w-5 h-5 text-emerald-600" />
-            Historique des Pesées
+            {w.progressHistoryTitle}
           </h3>
           <div className="space-y-2 max-h-72 overflow-y-auto pr-1">
             {sortedHistory
@@ -1508,7 +1511,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                 >
                   <div>
                     <span className="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-100 block">
-                      {new Date(entry.date).toLocaleDateString('fr-FR', {
+                      {new Date(entry.date).toLocaleDateString(locale, {
                         weekday: 'short',
                         day: 'numeric',
                         month: 'long',
@@ -1524,7 +1527,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                       {entry.weightKg} kg
                     </span>
                     {entry.waistCm && (
-                      <span className="text-[10px] text-slate-400 block">Taille : {entry.waistCm} cm</span>
+                      <span className="text-[10px] text-slate-400 block">{w.progressWaistLabel} {entry.waistCm} cm</span>
                     )}
                   </div>
                 </div>
@@ -1541,14 +1544,14 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
               isDarkMode ? 'bg-slate-900 border-slate-800 text-white' : 'bg-white border-slate-200 text-slate-900'
             }`}
           >
-            <h3 className="font-black text-lg mb-1">Nouvelle pesée</h3>
+            <h3 className="font-black text-lg mb-1">{w.progressModalTitle}</h3>
             <p className="text-xs text-slate-400 mb-4">
-              Enregistrez votre poids et tour de taille pour mettre à jour vos graphiques.
+              {w.progressModalSubtitle}
             </p>
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <div>
-                <label className="text-xs font-bold text-slate-500 block mb-1">Poids (kg) *</label>
+                <label className="text-xs font-bold text-slate-500 block mb-1">{w.progressWeightField}</label>
                 <input
                   id="input-new-weight-kg"
                   type="number"
@@ -1563,7 +1566,7 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-500 block mb-1">Tour de taille (cm - optionnel)</label>
+                <label className="text-xs font-bold text-slate-500 block mb-1">{w.progressWaistField}</label>
                 <input
                   id="input-new-waist-cm"
                   type="number"
@@ -1577,11 +1580,11 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-500 block mb-1">Note personnelle</label>
+                <label className="text-xs font-bold text-slate-500 block mb-1">{w.progressNoteField}</label>
                 <input
                   id="input-new-weight-note"
                   type="text"
-                  placeholder="ex: Pesée à jeun du matin"
+                  placeholder={w.progressNotePlaceholder}
                   value={newNote}
                   onChange={(e) => setNewNote(e.target.value)}
                   className={`w-full p-3 rounded-xl border text-sm font-medium outline-hidden ${
@@ -1596,14 +1599,14 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
                   onClick={() => setIsModalOpen(false)}
                   className="px-4 py-2 rounded-xl border text-xs font-bold text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 cursor-pointer"
                 >
-                  Annuler
+                  {w.progressCancel}
                 </button>
                 <button
                   id="btn-save-new-weight-entry"
                   type="submit"
                   className="px-5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md cursor-pointer"
                 >
-                  Enregistrer
+                  {w.progressSave}
                 </button>
               </div>
             </form>
@@ -1622,13 +1625,13 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h3 className="font-black text-xl flex items-center gap-2">
-                  <span>Transformation Corporelle</span>
+                  <span>{w.progressTransformTitle}</span>
                   <span className="text-xs font-extrabold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 px-2.5 py-0.5 rounded-full">
-                    -{totalLost.toFixed(1)} kg perdus
+                    -{totalLost.toFixed(1)} {w.progressLostPill}
                   </span>
                 </h3>
                 <p className="text-xs text-slate-400">
-                  De {photos.before.weightKg} kg à {photos.after.weightKg} kg
+                  {w.progressFromWord} {photos.before.weightKg} kg {w.progressToWord} {photos.after.weightKg} kg
                 </p>
               </div>
               <button
@@ -1643,17 +1646,17 @@ export const ProgressView: React.FC<ProgressViewProps> = ({
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2 text-center">
                 <div className="aspect-3/4 rounded-2xl overflow-hidden border border-slate-300 dark:border-slate-700 bg-black">
-                  <img src={photos.before.url} alt="Avant" className="w-full h-full object-cover" />
+                  <img src={photos.before.url} alt={w.progressPhotoBeforeAlt} className="w-full h-full object-cover" />
                 </div>
-                <span className="font-extrabold text-sm block">AVANT ({photos.before.weightKg} kg)</span>
+                <span className="font-extrabold text-sm block">{w.progressBadgeBefore} ({photos.before.weightKg} kg)</span>
                 <span className="text-xs text-slate-400">{photos.before.date}</span>
               </div>
               <div className="space-y-2 text-center">
                 <div className="aspect-3/4 rounded-2xl overflow-hidden border border-emerald-500 bg-black">
-                  <img src={photos.after.url} alt="Actuel" className="w-full h-full object-cover" />
+                  <img src={photos.after.url} alt={w.progressPhotoAfterAlt} className="w-full h-full object-cover" />
                 </div>
                 <span className="font-extrabold text-sm text-emerald-600 dark:text-emerald-400 block">
-                  ACTUEL ({photos.after.weightKg} kg)
+                  {w.progressBadgeCurrent} ({photos.after.weightKg} kg)
                 </span>
                 <span className="text-xs text-slate-400">{photos.after.date}</span>
               </div>

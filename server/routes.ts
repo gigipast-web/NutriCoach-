@@ -325,6 +325,46 @@ const handleTranslateRecipes = async (req: Request, res: Response) => {
 apiRouter.post("/ai/translate-recipes", handleTranslateRecipes);
 apiRouter.post("/api/ai/translate-recipes", handleTranslateRecipes);
 
+// Resolve clean HTTP/HTTPS origin behind Cloud Run / reverse proxies
+function resolveSafeOrigin(req: Request): string {
+  const rawOrigin = typeof req.headers.origin === "string" ? req.headers.origin.trim() : "";
+  if (rawOrigin && rawOrigin !== "null" && /^https?:\/\/[^/\s]+/i.test(rawOrigin)) {
+    return rawOrigin.replace(/\/+$/, "");
+  }
+
+  const rawReferer = typeof req.headers.referer === "string" ? req.headers.referer.trim() : "";
+  if (rawReferer && /^https?:\/\//i.test(rawReferer)) {
+    try {
+      return new URL(rawReferer).origin;
+    } catch {
+      // Ignore malformed referer
+    }
+  }
+
+  const forwardedHost = typeof req.headers["x-forwarded-host"] === "string"
+    ? req.headers["x-forwarded-host"].split(",")[0].trim()
+    : "";
+  const host = forwardedHost || (typeof req.headers.host === "string" ? req.headers.host.trim() : "");
+  if (host) {
+    const forwardedProto = typeof req.headers["x-forwarded-proto"] === "string"
+      ? req.headers["x-forwarded-proto"].split(",")[0].trim().toLowerCase()
+      : "";
+    const proto = forwardedProto === "http" || forwardedProto === "https"
+      ? forwardedProto
+      : host.includes("localhost") || host.startsWith("127.0.0.1")
+      ? "http"
+      : "https";
+    return `${proto}://${host}`.replace(/\/+$/, "");
+  }
+
+  const envAppUrl = typeof process.env.APP_URL === "string" ? process.env.APP_URL.trim() : "";
+  if (envAppUrl && /^https?:\/\//i.test(envAppUrl)) {
+    return envAppUrl.replace(/\/+$/, "");
+  }
+
+  return "http://localhost:3000";
+}
+
 // Stripe Config
 const handleStripeConfig = (_req: Request, res: Response) => {
   res.json(getStripeConfig());
@@ -335,15 +375,18 @@ apiRouter.get("/api/stripe/config", handleStripeConfig);
 // Stripe Create Checkout Session
 const handleCreateCheckoutSession = async (req: Request, res: Response) => {
   try {
-    const { plan, userEmail, userName, skipTrial, trialDaysRemaining } = req.body || {};
-    const origin = req.headers.origin || process.env.APP_URL || `http://${req.headers.host || "localhost:3000"}`;
+    const { plan, userEmail, userName, skipTrial, trialDaysRemaining, uiMode } = req.body || {};
+    const origin = resolveSafeOrigin(req);
+    const normalizedPlan = plan === "yearly" ? "yearly" : "monthly";
+    const normalizedUiMode = uiMode === "embedded" ? "embedded" : "hosted";
     const result = await createCheckoutSession({
-      plan,
-      userEmail,
-      userName,
+      plan: normalizedPlan,
+      userEmail: typeof userEmail === "string" ? userEmail.trim().slice(0, 200) : "",
+      userName: typeof userName === "string" ? userName.trim().slice(0, 120) : "",
       origin,
       skipTrial: Boolean(skipTrial),
       trialDaysRemaining: typeof trialDaysRemaining === "number" ? trialDaysRemaining : undefined,
+      uiMode: normalizedUiMode,
     });
     res.json(result);
   } catch (error: any) {
@@ -397,8 +440,11 @@ apiRouter.post("/api/stripe/cancel-subscription", handleCancelSubscription);
 const handleCreatePortalSession = async (req: Request, res: Response) => {
   try {
     const { email } = req.body || {};
-    const origin = (req.headers.origin as string) || `http://${req.headers.host || "localhost:3000"}`;
-    const result = await createCustomerPortalSession(email, origin);
+    const origin = resolveSafeOrigin(req);
+    const result = await createCustomerPortalSession(
+      typeof email === "string" ? email.trim() : "",
+      origin
+    );
     res.json(result);
   } catch (error: any) {
     console.error("Stripe portal session error:", error);

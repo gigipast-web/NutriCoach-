@@ -53,9 +53,11 @@ export async function createCheckoutSession(params: {
   origin: string;
   skipTrial?: boolean;
   trialDaysRemaining?: number;
+  uiMode?: "hosted" | "embedded";
 }) {
-  const { plan, userEmail, userName, origin, skipTrial, trialDaysRemaining } = params;
+  const { plan, userEmail, userName, origin, skipTrial, trialDaysRemaining, uiMode } = params;
   const stripe = getStripe();
+  const publishableKey = process.env.STRIPE_PUBLISHABLE_KEY || null;
 
   if (!stripe) {
     return {
@@ -68,6 +70,7 @@ export async function createCheckoutSession(params: {
     };
   }
 
+  const cleanOrigin = origin.replace(/\/+$/, "");
   const isYearly = plan === "yearly";
   let lineItems: Stripe.Checkout.SessionCreateParams.LineItem[] = [];
 
@@ -95,9 +98,6 @@ export async function createCheckoutSession(params: {
       description:
         "Accès complet : Menus IA sur-mesure, Coach IA illimité, Scan photo de repas, 100+ recettes exclusives et synchronisation.",
     };
-    if (origin.startsWith("https://")) {
-      productData.images = [`${origin}/pwa-512x512.png`];
-    }
 
     lineItems = [
       {
@@ -133,6 +133,8 @@ export async function createCheckoutSession(params: {
     subscriptionData.trial_period_days = effectiveTrialDays;
   }
 
+  const useEmbedded = uiMode === "embedded" && Boolean(publishableKey);
+
   const sessionParams: Stripe.Checkout.SessionCreateParams = {
     mode: "subscription",
     payment_method_types: ["card"],
@@ -143,8 +145,16 @@ export async function createCheckoutSession(params: {
       userName: userName || "",
       userEmail: userEmail || "",
     },
-    success_url: `${origin}/?session_id={CHECKOUT_SESSION_ID}&payment_status=success`,
-    cancel_url: `${origin}/?payment_status=cancelled`,
+    ...(useEmbedded
+      ? {
+          ui_mode: "embedded_page",
+          redirect_on_completion: "if_required",
+          return_url: `${cleanOrigin}/?session_id={CHECKOUT_SESSION_ID}&payment_status=success`,
+        }
+      : {
+          success_url: `${cleanOrigin}/?session_id={CHECKOUT_SESSION_ID}&payment_status=success`,
+          cancel_url: `${cleanOrigin}/?payment_status=cancelled`,
+        }),
   };
 
   if (userEmail && userEmail.includes("@")) {
@@ -155,8 +165,11 @@ export async function createCheckoutSession(params: {
 
   return {
     configured: true,
+    uiMode: useEmbedded ? "embedded" : "hosted",
     sessionId: session.id,
     url: session.url,
+    clientSecret: session.client_secret,
+    publishableKey: useEmbedded ? publishableKey : undefined,
   };
 }
 

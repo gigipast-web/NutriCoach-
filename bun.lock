@@ -7,6 +7,7 @@
       "dependencies": {
         "@google/genai": "^3.3.0",
         "@netlify/functions": "^6.0.3",
+        "@stripe/stripe-js": "^10.3.0",
         "@tailwindcss/vite": "^4.3.3",
         "@vitejs/plugin-react": "^6.1.1",
         "@zxing/browser": "^0.2.1",
@@ -406,6 +407,8 @@
     "@rollup/rollup-win32-x64-gnu": ["@rollup/rollup-win32-x64-gnu@4.68.7", "", { "os": "win32", "cpu": "x64" }, "sha512-0ncKtQ55fqElV9Sk4cZ/4tiXVGlWxaH5PvDOlx1Sx8GuHIpSWgYrTcyrO51JnVFfy7LvAJiffkEg63ZHKwTMag=="],
 
     "@rollup/rollup-win32-x64-msvc": ["@rollup/rollup-win32-x64-msvc@4.68.7", "", { "os": "win32", "cpu": "x64" }, "sha512-XY9DYHO5UxxVR8G6AErXDlccQmDpvGTLgKHFpvkgsyjwG/PrQuInRjQQfpEzBRuT+bhBtwfS8yDe9sPhVcq/9A=="],
+
+    "@stripe/stripe-js": ["@stripe/stripe-js@10.3.0", "", {}, "sha512-/C+qwO7bkDIYbIHypxppg8qGnWXdqQEOM855lJ8wTkd2VPoRAYLTGDOFTpJ8B7kso3o9cjMy2r1KPw8WQregNA=="],
 
     "@tailwindcss/node": ["@tailwindcss/node@4.3.3", "", { "dependencies": { "@jridgewell/remapping": "^2.3.5", "enhanced-resolve": "^5.24.1", "jiti": "^2.7.0", "lightningcss": "1.32.0", "magic-string": "^0.30.21", "source-map-js": "^1.2.1", "tailwindcss": "4.3.3" } }, "sha512-/T8IKEsf9VTU6tLjgC7+sv2mOPtQxzE2jMw7u4Tt40Tx+QSZxpzh95/H6cMKoja9XuW7iMdLJYBB0o9G1CaAgg=="],
 

@@ -18,6 +18,8 @@ import {
   Zap,
 } from 'lucide-react';
 import { UserProfile, ActivityEntry } from '../types.ts';
+import { useLanguage } from '../i18n/LanguageContext.tsx';
+import { getUiTracking } from '../i18n/uiTrackingI18n.ts';
 
 interface SmartwatchSyncModalProps {
   isOpen: boolean;
@@ -28,107 +30,55 @@ interface SmartwatchSyncModalProps {
   isDarkMode: boolean;
 }
 
-interface WatchBrandOption {
+interface WatchBrandBase {
   id: string;
   name: string;
-  category: string;
   icon: string;
   models: string[];
-  gateway: string;
-  instructions: string[];
 }
 
-const WATCH_BRANDS: WatchBrandOption[] = [
+const WATCH_BRAND_BASES: WatchBrandBase[] = [
   {
     id: 'apple',
     name: 'Apple Watch',
-    category: 'iOS / WatchOS',
     icon: '🍏',
     models: ['Apple Watch Series 10 / 9 / 8', 'Apple Watch Ultra 2 / 1', 'Apple Watch SE'],
-    gateway: 'Apple Santé (HealthKit)',
-    instructions: [
-      'Vos pas et calories sont mesurés automatiquement par les capteurs de votre Apple Watch.',
-      'Ouvrez l’application « Santé » sur votre iPhone pour vérifier que le suivi d’activité est actif.',
-      'Cliquez sur « Lancer la synchronisation » ci-dessous : vos pas du jour sont instantanément importés dans NutriCoach.',
-    ],
   },
   {
     id: 'garmin',
     name: 'Garmin',
-    category: 'Garmin Connect',
     icon: '🏃',
     models: ['Forerunner 965 / 265 / 55', 'Fenix 7 / 8 / Epix Pro', 'Venu 3 / Vivoactive 5', 'Instinct 2'],
-    gateway: 'Garmin Connect ➔ Apple Santé ou Health Connect',
-    instructions: [
-      'Ouvrez l’application « Garmin Connect » sur votre smartphone.',
-      'Allez dans Paramètres > Applications connectées > activez « Apple Santé » (iPhone) ou « Google Santé Connect » (Android).',
-      'Votre montre Garmin envoie vos pas et dépenses en continu, prêts à être importés dans NutriCoach.',
-    ],
   },
   {
     id: 'samsung',
     name: 'Samsung Galaxy Watch',
-    category: 'Wear OS / Tizen',
     icon: '🌌',
     models: ['Galaxy Watch 7 / Ultra', 'Galaxy Watch 6 / 6 Classic', 'Galaxy Watch 5 / 4', 'Galaxy Fit 3'],
-    gateway: 'Samsung Health & Health Connect',
-    instructions: [
-      'Ouvrez Samsung Health sur votre smartphone Galaxy / Android.',
-      'Activez la synchronisation avec « Health Connect » (disponible sur Google Play Store).',
-      'Les pas comptabilisés à votre poignet remontent automatiquement dans votre tableau de bord.',
-    ],
   },
   {
     id: 'fitbit',
     name: 'Fitbit / Google Pixel Watch',
-    category: 'Fitbit & Google Health',
     icon: '🟢',
     models: ['Google Pixel Watch 3 / 2', 'Fitbit Charge 6 / 5', 'Fitbit Versa 4 / Sense 2', 'Fitbit Inspire 3'],
-    gateway: 'Application Fitbit & Google Fit',
-    instructions: [
-      'Synchronisez votre montre avec l’application Fitbit ou Google Pixel Watch.',
-      'Assurez-vous que l’application a accès aux données de pas et d’activités.',
-      'Lancez la synchronisation pour enregistrer automatiquement la dépense calorique et les pas.',
-    ],
   },
   {
     id: 'withings',
     name: 'Withings',
-    category: 'Withings Health Mate',
     icon: '🩺',
     models: ['ScanWatch 2 / Horizon', 'ScanWatch Light', 'Steel HR'],
-    gateway: 'Withings Withing Health Mate',
-    instructions: [
-      'Ouvrez l’application Withings sur votre smartphone.',
-      'Activez le partage des pas et du rythme cardiaque avec Apple Santé ou Google Fit.',
-      'NutriCoach récupère vos données pour ajuster vos besoins énergétiques du jour.',
-    ],
   },
   {
     id: 'polar',
     name: 'Polar & Suunto',
-    category: 'Sport & Performance',
     icon: '❄️',
     models: ['Polar Vantage V3 / Pacer Pro', 'Suunto Race / Vertical / 9 Peak', 'Polar Ignite 3'],
-    gateway: 'Polar Flow / Suunto App',
-    instructions: [
-      'Associez votre montre à l’application Polar Flow ou Suunto.',
-      'Activez le lien avec Santé / Google Fit dans les paramètres de compte.',
-      'Vos séances d’entraînement et pas quotidiens sont synchronisés.',
-    ],
   },
   {
     id: 'xiaomi',
     name: 'Xiaomi / Amazfit / Honor',
-    category: 'Mi Fitness / Zepp',
     icon: '⚡',
     models: ['Xiaomi Smart Band 8 / 9', 'Amazfit GTR 4 / Balance / T-Rex', 'Redmi Watch 4', 'Huawei Watch GT'],
-    gateway: 'Mi Fitness / Zepp App',
-    instructions: [
-      'Dans votre application Mi Fitness ou Zepp, liez vos données à Apple Santé ou Google Fit.',
-      'Activez le podomètre automatique.',
-      'Synchronisez en 1 clic pour actualiser votre suivi.',
-    ],
   },
 ];
 
@@ -140,6 +90,17 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
   onAddActivity,
   isDarkMode,
 }) => {
+  const { language, locale } = useLanguage();
+  const trk = getUiTracking(language);
+  const WATCH_BRANDS = WATCH_BRAND_BASES.map((base) => {
+    const meta = trk.brandSpecific[base.id] || trk.brandSpecific.apple;
+    return {
+      ...base,
+      category: meta.category,
+      gateway: meta.gateway,
+      instructions: meta.instructions,
+    };
+  });
   const currentWatch = user.connectedWatch;
   const [activeTab, setActiveTab] = useState<'sync' | 'select' | 'bluetooth' | 'guide'>('sync');
   const [selectedBrandId, setSelectedBrandId] = useState<string>(currentWatch?.brand ? currentWatch.brand.toLowerCase().split(' ')[0] : 'apple');
@@ -157,21 +118,28 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
 
   const currentBrand = WATCH_BRANDS.find((b) => b.id === selectedBrandId) || WATCH_BRANDS[0];
 
+  const formatWatchSyncLabel = (raw?: string) => {
+    if (!raw) return '';
+    const match = raw.match(/^(?:Aujourd'hui à|Today at)\s+(.+)$/i);
+    if (match) return trk.todayAtTime(match[1]);
+    return raw;
+  };
+
   // Handler to connect a watch
   const handleConnectWatch = (brandName: string, modelName: string) => {
-    const nowStr = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+    const nowStr = new Date().toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
     const stepsVal = Math.max(0, parseInt(manualStepsInput, 10) || 0);
     onUpdateUser({
       connectedWatch: {
         brand: brandName,
         model: modelName,
         connected: true,
-        lastSync: `Aujourd'hui à ${nowStr}`,
+        lastSync: trk.todayAtTime(nowStr),
         syncedStepsToday: stepsVal,
       },
     });
     setActiveTab('sync');
-    setSyncSuccess(`Votre montre ${brandName} (${modelName}) est maintenant connectée avec succès !`);
+    setSyncSuccess(trk.watchConnectedSuccess(brandName, modelName));
     setTimeout(() => setSyncSuccess(null), 4000);
   };
 
@@ -189,7 +157,7 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
       // Add or update activity entry
       const watchLabel = currentWatch?.brand || currentBrand.name;
       onAddActivity({
-        title: `Marche & Activité (${watchLabel})`,
+        title: trk.watchActivityTitle(watchLabel),
         type: 'walk',
         durationMinutes: durationMin,
         caloriesBurned: caloriesEst,
@@ -197,22 +165,22 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
         timestamp: new Date().toISOString(),
       });
 
-      const nowTime = new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' });
+      const nowTime = new Date().toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
 
       onUpdateUser({
         connectedWatch: {
           brand: currentWatch?.brand || currentBrand.name,
           model: currentWatch?.model || selectedModel,
           connected: true,
-          lastSync: `Aujourd'hui à ${nowTime}`,
+          lastSync: trk.todayAtTime(nowTime),
           syncedStepsToday: stepsToSync,
         },
       });
 
       setSyncSuccess(
         stepsToSync > 0
-          ? `Synchronisation réussie ! ${stepsToSync.toLocaleString('fr-FR')} pas et ${caloriesEst} kcal importés depuis votre ${watchLabel}.`
-          : `Compteur du jour remis à zéro (0 pas). Votre ${watchLabel} enregistrera vos mouvements tout au long de la journée.`
+          ? trk.syncSuccessWithSteps(stepsToSync.toLocaleString(locale), caloriesEst, watchLabel)
+          : trk.syncSuccessZero(watchLabel)
       );
     }, 1000);
   };
@@ -225,9 +193,7 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
     // Check if navigator.bluetooth exists
     if (!('bluetooth' in navigator)) {
       setBleStatus('unsupported');
-      setBleErrorMessage(
-        'L’API Web Bluetooth directe est disponible sous Google Chrome, Edge ou Brave (sur PC, Mac ou Android). Sur iPhone / Safari, la synchronisation des montres (Apple Watch, etc.) passe automatiquement et de façon sécurisée par Apple Santé.'
-      );
+      setBleErrorMessage(trk.bleUnsupported);
       return;
     }
 
@@ -239,26 +205,27 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
       });
 
       if (device) {
-        setBleDeviceName(device.name || 'Montre connectée détectée');
+        const nowStr = new Date().toLocaleTimeString(locale, { hour: '2-digit', minute: '2-digit' });
+        setBleDeviceName(device.name || trk.bleDetectedDefault);
         setBleStatus('connected');
         onUpdateUser({
           connectedWatch: {
             brand: 'Bluetooth BLE',
-            model: device.name || 'Appareil Connecté',
+            model: device.name || trk.bleConnectedAppDefault,
             connected: true,
-            lastSync: `Aujourd'hui à ${new Date().toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`,
+            lastSync: trk.todayAtTime(nowStr),
             syncedStepsToday: parseInt(manualStepsInput, 10) || 6850,
           },
         });
-        setSyncSuccess(`Appareil Bluetooth « ${device.name || 'Capteur'} » connecté avec succès !`);
+        setSyncSuccess(trk.bleConnectedMsg(device.name || trk.bleDetectedDefault));
       }
     } catch (err: any) {
       if (err.name === 'NotFoundError') {
         setBleStatus('cancelled');
-        setBleErrorMessage('Recherche annulée ou aucun appareil sélectionné.');
+        setBleErrorMessage(trk.bleCancelled);
       } else {
         setBleStatus('error');
-        setBleErrorMessage(err.message || 'Impossible de se connecter en Bluetooth direct.');
+        setBleErrorMessage(err.message || trk.bleError);
       }
     }
   };
@@ -267,7 +234,7 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
     onUpdateUser({
       connectedWatch: undefined,
     });
-    setSyncSuccess('Montre déconnectée.');
+    setSyncSuccess(trk.watchDisconnected);
     setTimeout(() => setSyncSuccess(null), 3000);
   };
 
@@ -292,18 +259,18 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
             <div>
               <div className="flex items-center gap-2">
                 <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded-full bg-sky-100 text-sky-800 dark:bg-sky-950 dark:text-sky-300">
-                  Capteurs & Podomètre
+                  {trk.watchModalBadge}
                 </span>
-                <span className="text-xs text-slate-400">100% Compatible</span>
+                <span className="text-xs text-slate-400">{trk.watchModalCompat}</span>
               </div>
-              <h2 className="text-lg sm:text-xl font-black">Synchronisation Montre Connectée</h2>
+              <h2 className="text-lg sm:text-xl font-black">{trk.watchModalTitle}</h2>
             </div>
           </div>
           <button
             id="btn-close-watch-modal"
             onClick={onClose}
             className="p-2 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer transition-colors"
-            aria-label="Fermer"
+            aria-label={trk.close}
           >
             <X className="w-5 h-5" />
           </button>
@@ -321,7 +288,7 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
             }`}
           >
             <RefreshCw className="w-3.5 h-3.5" />
-            Synchroniser
+            {trk.tabSync}
           </button>
           <button
             id="tab-watch-select"
@@ -333,7 +300,7 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
             }`}
           >
             <Watch className="w-3.5 h-3.5" />
-            Choisir ma montre ({WATCH_BRANDS.length})
+            {trk.tabSelect(WATCH_BRANDS.length)}
           </button>
           <button
             id="tab-watch-bluetooth"
@@ -345,7 +312,7 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
             }`}
           >
             <Bluetooth className="w-3.5 h-3.5" />
-            Bluetooth Direct (BLE)
+            {trk.tabBluetooth}
           </button>
           <button
             id="tab-watch-guide"
@@ -357,7 +324,7 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
             }`}
           >
             <HelpCircle className="w-3.5 h-3.5" />
-            Guide Pas-à-Pas
+            {trk.tabGuide}
           </button>
         </div>
 
@@ -399,24 +366,24 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
                   <div>
                     <div className="flex items-center gap-2">
                       <span className="text-xs font-black text-slate-800 dark:text-white">
-                        {currentWatch?.brand || 'Aucune montre configurée'}
+                        {currentWatch?.brand || trk.noWatchConfigured}
                       </span>
                       {currentWatch?.connected ? (
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300 flex items-center gap-1">
-                          <Check className="w-3 h-3" /> Connectée
+                          <Check className="w-3 h-3" /> {trk.statusConnected}
                         </span>
                       ) : (
                         <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
-                          Non liée
+                          {trk.statusNotLinked}
                         </span>
                       )}
                     </div>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      Modèle : <strong>{currentWatch?.model || 'Sélectionnez votre modèle'}</strong>
+                      {trk.modelLabel} <strong>{currentWatch?.model || trk.selectYourModel}</strong>
                     </p>
                     {currentWatch?.lastSync && (
                       <p className="text-[11px] text-teal-600 dark:text-teal-400 mt-0.5 font-medium">
-                        Dernière synchro : {currentWatch.lastSync}
+                        {trk.lastSyncLabel} {formatWatchSyncLabel(currentWatch.lastSync)}
                       </p>
                     )}
                   </div>
@@ -428,7 +395,7 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
                     onClick={() => setActiveTab('select')}
                     className="flex-1 sm:flex-none text-xs font-bold px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-600 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors cursor-pointer"
                   >
-                    Changer de montre
+                    {trk.switchWatch}
                   </button>
                   {currentWatch?.connected && (
                     <button
@@ -436,7 +403,7 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
                       onClick={handleDisconnect}
                       className="text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 px-2.5 py-2 rounded-xl transition-colors cursor-pointer font-semibold"
                     >
-                      Dissocier
+                      {trk.unlinkWatch}
                     </button>
                   )}
                 </div>
@@ -455,17 +422,17 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
                     <Activity className="w-8 h-8" />
                   </div>
                   <h3 className="text-lg font-black text-slate-800 dark:text-white">
-                    Transférer les pas et calories du jour
+                    {trk.transferTodayTitle}
                   </h3>
                   <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                    Cliquez sur le bouton ci-dessous pour importer directement vos pas enregistrés depuis votre montre connectée ou passerelle Santé (Apple Santé, Garmin, Samsung, Google Fit).
+                    {trk.transferTodayDesc}
                   </p>
                 </div>
 
                 {/* Steps Value Box */}
                 <div className="max-w-xs mx-auto p-3.5 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 space-y-1.5 shadow-xs">
                   <label htmlFor="input-steps-sync" className="text-[11px] font-bold text-slate-500 dark:text-slate-400 block">
-                    Pas relevés sur la montre aujourd'hui :
+                    {trk.stepsReadTodayLabel}
                   </label>
                   <div className="flex items-center justify-center gap-2">
                     <Footprints className="w-4 h-4 text-violet-500" />
@@ -479,7 +446,7 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
                       onChange={(e) => setManualStepsInput(e.target.value)}
                       className="w-28 text-center font-black text-lg text-slate-800 dark:text-white bg-slate-100 dark:bg-slate-900 rounded-xl px-2 py-1 border border-slate-300 dark:border-slate-600 focus:outline-hidden focus:ring-2 focus:ring-sky-500"
                     />
-                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300">pas</span>
+                    <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{trk.stepsUnit}</span>
                   </div>
 
                   {/* Quick Preset Buttons */}
@@ -494,7 +461,7 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
                           : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:bg-slate-200'
                       }`}
                     >
-                      0 (Matin / Réveil)
+                      {trk.morningZeroBtn}
                     </button>
                     {[1500, 3000, 6000, 10000].map((preset) => (
                       <button
@@ -507,15 +474,15 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
                             : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:bg-slate-200'
                         }`}
                       >
-                        {preset.toLocaleString('fr-FR')}
+                        {preset.toLocaleString(locale)}
                       </button>
                     ))}
                   </div>
 
                   <span className="text-[10px] text-slate-400 block pt-0.5">
                     {parseInt(manualStepsInput, 10) > 0
-                      ? `≈ ${Math.round((parseInt(manualStepsInput, 10) || 0) * 0.044 + 40)} kcal brûlées`
-                      : '0 kcal (Début de journée)'}
+                      ? trk.approxBurned(Math.round((parseInt(manualStepsInput, 10) || 0) * 0.044 + 40))
+                      : trk.zeroKcalStart}
                   </span>
                 </div>
 
@@ -527,19 +494,19 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
                     className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-gradient-to-r from-sky-600 via-teal-600 to-emerald-600 hover:opacity-95 text-white font-black text-sm flex items-center justify-center gap-2 shadow-lg shadow-teal-500/25 transition-all cursor-pointer disabled:opacity-50"
                   >
                     <RefreshCw className={`w-4 h-4 ${isSyncing ? 'animate-spin' : ''}`} />
-                    {isSyncing ? 'Synchronisation en cours...' : 'Lancer la Synchronisation Immédiate'}
+                    {isSyncing ? trk.syncingBtn : trk.startSyncNowBtn}
                   </button>
                 </div>
 
                 <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                  ☀️ <strong>Principe de la montre :</strong> Vos pas démarrent à 0 au réveil et augmentent au fur et à mesure de vos pas réels tout au long de la journée.
+                  {trk.watchPrincipleNote}
                 </p>
               </div>
 
               {/* Supported Brands Quick Badges */}
               <div className="pt-2">
                 <span className="text-xs font-bold text-slate-500 dark:text-slate-400 block mb-2.5">
-                  Montres et applications 100% compatibles :
+                  {trk.supportedWatches}
                 </span>
                 <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 text-xs">
                   {WATCH_BRANDS.slice(0, 4).map((brand) => (
@@ -573,10 +540,10 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
             <div className="space-y-4">
               <div>
                 <h3 className="font-extrabold text-sm text-slate-800 dark:text-white">
-                  Sélectionnez votre marque et modèle de montre :
+                  {trk.selectBrandTitle}
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Choisissez votre équipement pour bénéficier d'un suivi sur mesure et des conseils adaptés.
+                  {trk.selectBrandSub}
                 </p>
               </div>
 
@@ -608,19 +575,19 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
                         </div>
                         {isCurrent && (
                           <span className="px-2 py-0.5 rounded-full text-[9px] font-extrabold bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300">
-                            Actuelle
+                            {trk.badgeCurrent}
                           </span>
                         )}
                       </div>
 
                       <p className="text-[11px] text-slate-600 dark:text-slate-300 mb-2">
-                        Passerelle : <strong className="text-sky-600 dark:text-sky-400">{brand.gateway}</strong>
+                        {trk.gatewayLabel} <strong className="text-sky-600 dark:text-sky-400">{brand.gateway}</strong>
                       </p>
 
                       {isSelected && (
                         <div className="space-y-2 pt-2 border-t border-slate-200/60 dark:border-slate-700/60 animate-in fade-in">
                           <label className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block">
-                            Modèle précis :
+                            {trk.exactModelLabel}
                           </label>
                           <select
                             value={selectedModel}
@@ -643,7 +610,7 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
                             className="w-full py-2 px-3 rounded-xl bg-sky-600 hover:bg-sky-700 text-white font-bold text-xs flex items-center justify-center gap-1.5 transition-colors cursor-pointer shadow-xs mt-1"
                           >
                             <Check className="w-3.5 h-3.5" />
-                            Associer cette montre
+                            {trk.pairThisWatch}
                           </button>
                         </div>
                       )}
@@ -668,16 +635,16 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
                   </div>
                   <div>
                     <h3 className="font-black text-sm text-slate-800 dark:text-white">
-                      Connexion Directe sans Fil (Web Bluetooth BLE)
+                      {trk.bleDirectTitle}
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400">
-                      Pour montres de sport avec capteurs ouverts, cardiofréquencemètres et podomètres connectés.
+                      {trk.bleDirectSub}
                     </p>
                   </div>
                 </div>
 
                 <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-                  L'application utilise le standard sécurisé Web Bluetooth. Assurez-vous que le Bluetooth de votre appareil est activé et que votre montre est en mode détection / visible.
+                  {trk.bleDirectBody}
                 </p>
 
                 {bleErrorMessage && (
@@ -691,7 +658,7 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
                   <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-200 text-xs flex items-center gap-2">
                     <CheckCircle2 className="w-4 h-4 shrink-0" />
                     <span>
-                      Connecté à : <strong>{bleDeviceName}</strong>
+                      {trk.bleConnectedTo} <strong>{bleDeviceName}</strong>
                     </span>
                   </div>
                 )}
@@ -704,13 +671,13 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
                     className="w-full sm:w-auto px-5 py-2.5 rounded-2xl bg-indigo-600 hover:bg-indigo-700 text-white font-bold text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-md disabled:opacity-50"
                   >
                     <Radio className={`w-4 h-4 ${bleStatus === 'scanning' ? 'animate-pulse' : ''}`} />
-                    {bleStatus === 'scanning' ? 'Recherche en cours...' : 'Rechercher les appareils Bluetooth'}
+                    {bleStatus === 'scanning' ? trk.bleScanningBtn : trk.bleScanBtn}
                   </button>
                   <button
                     onClick={() => setActiveTab('guide')}
                     className="text-xs font-semibold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 underline cursor-pointer"
                   >
-                    Besoin d'aide pour appairer ?
+                    {trk.bleHelpLink}
                   </button>
                 </div>
               </div>
@@ -718,10 +685,10 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
               {/* Technical Note */}
               <div className="p-4 rounded-2xl bg-slate-100/70 dark:bg-slate-800/40 text-xs text-slate-500 dark:text-slate-400 space-y-1">
                 <p className="font-bold text-slate-700 dark:text-slate-300">
-                  💡 Note pour les utilisateurs Apple Watch & iPhone :
+                  {trk.bleAppleNoteTitle}
                 </p>
                 <p>
-                  Apple n'autorise pas la détection Bluetooth brute depuis Safari. Pour votre Apple Watch, la liaison se fait simplement via <strong>Apple Santé</strong> (onglet Synchroniser), qui garantit une protection maximale de vos données médicales.
+                  {trk.bleAppleNoteBody}
                 </p>
               </div>
             </div>
@@ -732,10 +699,10 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
             <div className="space-y-4">
               <div>
                 <h3 className="font-extrabold text-sm text-slate-800 dark:text-white">
-                  Comment fonctionne la synchronisation avec NutriCoach ?
+                  {trk.guideTitle}
                 </h3>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Suivez ces 3 étapes simples pour relier votre montre :
+                  {trk.guideSub}
                 </p>
               </div>
 
@@ -745,9 +712,9 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
                     1
                   </span>
                   <div className="text-xs space-y-0.5">
-                    <strong className="text-slate-800 dark:text-white">Portez votre montre au quotidien</strong>
+                    <strong className="text-slate-800 dark:text-white">{trk.guideStep1Title}</strong>
                     <p className="text-slate-500 dark:text-slate-400">
-                      Votre montre (Apple Watch, Garmin, Galaxy Watch, Fitbit, Withings...) mesure vos pas réels, votre fréquence cardiaque et vos calories brûlées.
+                      {trk.guideStep1Body}
                     </p>
                   </div>
                 </div>
@@ -758,10 +725,10 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
                   </span>
                   <div className="text-xs space-y-0.5">
                     <strong className="text-slate-800 dark:text-white">
-                      Transmission automatique à l'application Santé
+                      {trk.guideStep2Title}
                     </strong>
                     <p className="text-slate-500 dark:text-slate-400">
-                      L’application compagnon de votre montre (Garmin Connect, Samsung Health, Fitbit...) déverse automatiquement vos métriques dans <strong>Apple Santé</strong> (iPhone) ou <strong>Health Connect / Google Fit</strong> (Android).
+                      {trk.guideStep2Body}
                     </p>
                   </div>
                 </div>
@@ -772,10 +739,10 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
                   </span>
                   <div className="text-xs space-y-0.5">
                     <strong className="text-slate-800 dark:text-white">
-                      Synchronisation immédiate dans NutriCoach
+                      {trk.guideStep3Title}
                     </strong>
                     <p className="text-slate-500 dark:text-slate-400">
-                      Dans NutriCoach, cliquez sur <strong>« Lancer la synchronisation »</strong> (ou sur le bouton Synchro dans l'onglet Hydratation & Pas). Vos pas et calories sont ajoutés à votre bilan journalier !
+                      {trk.guideStep3Body}
                     </p>
                   </div>
                 </div>
@@ -784,7 +751,7 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
               {/* Brand-specific accordion/help */}
               <div className="p-4 rounded-2xl bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 text-xs space-y-2">
                 <span className="font-black text-sky-800 dark:text-sky-300 block">
-                  Guide spécifique pour {currentBrand.name} :
+                  {trk.guideSpecificFor(currentBrand.name)}
                 </span>
                 <ul className="space-y-1 list-disc list-inside text-slate-600 dark:text-slate-300">
                   {currentBrand.instructions.map((inst, idx) => (
@@ -800,7 +767,7 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
         <div className="p-4 sm:p-5 border-t border-slate-200/80 dark:border-slate-800 flex items-center justify-between bg-slate-50 dark:bg-slate-950/60">
           <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400">
             <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            <span>Données de santé privées & sécurisées</span>
+            <span>{trk.privateHealthFooter}</span>
           </div>
 
           <button
@@ -808,7 +775,7 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
             onClick={onClose}
             className="px-5 py-2 rounded-xl bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-bold text-xs cursor-pointer transition-colors"
           >
-            Fermer
+            {trk.close}
           </button>
         </div>
       </div>

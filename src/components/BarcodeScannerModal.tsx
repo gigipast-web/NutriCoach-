@@ -16,6 +16,7 @@ import { BrowserMultiFormatReader } from '@zxing/browser';
 import { FoodItem, MealType } from '../types.ts';
 import { compressImageFileToDataUrl, captureVideoFrameToDataUrl } from '../utils/imageCompressor.ts';
 import { useLanguage } from '../i18n/LanguageContext.tsx';
+import { getUiTracking } from '../i18n/uiTrackingI18n.ts';
 
 interface BarcodeScannerModalProps {
   isOpen: boolean;
@@ -49,6 +50,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
   isDarkMode,
 }) => {
   const { language } = useLanguage();
+  const trk = getUiTracking(language);
   const [scannedProduct, setScannedProduct] = useState<ScannedProduct | null>(null);
   const [manualCode, setManualCode] = useState('');
   const [isLookingUp, setIsLookingUp] = useState(false);
@@ -85,7 +87,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
   const lookupBarcodeOnServer = useCallback(async (rawCode: string) => {
     const cleanCode = rawCode.replace(/\D/g, '');
     if (!/^\d{8,14}$/.test(cleanCode)) {
-      setScanError('Saisissez un code-barres valide (8 à 14 chiffres, ex: 3017620422003).');
+      setScanError(trk.errInvalidBarcode);
       return;
     }
 
@@ -99,7 +101,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
 
       if (!res.ok || !data.found || !data.product) {
         setScanError(
-          data.error || `Produit non trouvé pour le code-barres ${cleanCode}. Essayez de photographier l'emballage.`
+          data.error || trk.errNotFoundBarcode(cleanCode)
         );
         return;
       }
@@ -108,13 +110,13 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
       const defaultPortion = Number(p.servingGrams) > 0 ? Number(p.servingGrams) : 100;
       setScannedProduct({
         id: `barcode_${p.barcode || Date.now()}`,
-        name: p.name || 'Produit scanné',
+        name: p.name || trk.scannedProductDefault,
         calories: Number(p.calories) || 0,
         protein: Number(p.protein) || 0,
         carbs: Number(p.carbs) || 0,
         fat: Number(p.fat) || 0,
         servingSize: '100g',
-        category: 'Produit scanné',
+        category: trk.scannedProductDefault,
         barcode: p.barcode,
         brand: p.brand,
         nutriscore: p.nutriscore,
@@ -128,11 +130,11 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
       setCameraStatus('paused');
     } catch (err) {
       console.error('Barcode lookup fetch error:', err);
-      setScanError('Erreur réseau lors de la recherche du produit. Réessayez dans un instant.');
+      setScanError(trk.errNetworkBarcode);
     } finally {
       setIsLookingUp(false);
     }
-  }, [stopCamera]);
+  }, [stopCamera, trk]);
 
   const scanImageWithAiFallback = useCallback(
     async (imageDataUrl: string) => {
@@ -150,8 +152,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
             setManualCode(data.detectedBarcode);
           }
           setScanError(
-            data.error ||
-              "Code-barres ou étiquette nutritionnelle illisible. Rapprochez la caméra ou saisissez les chiffres."
+            data.error || trk.errUnreadableLabel
           );
           return;
         }
@@ -160,13 +161,13 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
         const defaultPortion = Number(p.servingGrams) > 0 ? Number(p.servingGrams) : 100;
         setScannedProduct({
           id: `barcode_${p.barcode || Date.now()}`,
-          name: p.name || 'Produit scanné',
+          name: p.name || trk.scannedProductDefault,
           calories: Number(p.calories) || 0,
           protein: Number(p.protein) || 0,
           carbs: Number(p.carbs) || 0,
           fat: Number(p.fat) || 0,
           servingSize: '100g',
-          category: 'Produit scanné',
+          category: trk.scannedProductDefault,
           barcode: p.barcode,
           brand: p.brand,
           nutriscore: p.nutriscore,
@@ -180,12 +181,12 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
         setCameraStatus('paused');
       } catch (err) {
         console.error('AI barcode scan error:', err);
-        setScanError("Impossible d'analyser l'image pour le moment.");
+        setScanError(trk.errAnalyzeImage);
       } finally {
         setIsLookingUp(false);
       }
     },
-    [language, stopCamera]
+    [language, stopCamera, trk]
   );
 
   const tryDecodeCanvas = useCallback(async (canvas: HTMLCanvasElement): Promise<string | null> => {
@@ -312,7 +313,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
     }
     const frameDataUrl = captureVideoFrameToDataUrl(videoRef.current, 1280, 0.9);
     if (!frameDataUrl) {
-      setScanError("Caméra non prête. Réessayez ou importez une photo.");
+      setScanError(trk.errCameraNotReady);
       return;
     }
     await scanImageWithAiFallback(frameDataUrl);
@@ -347,7 +348,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
       // 2. Fallback to Gemini Vision (reads barcode numbers OR nutrition label directly)
       await scanImageWithAiFallback(compressedDataUrl);
     } catch (err: any) {
-      setScanError(err?.message || "Impossible de traiter cette image.");
+      setScanError(err?.message || trk.errProcessImage);
       setIsLookingUp(false);
     }
   };
@@ -382,10 +383,10 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
   };
 
   const mealOptions: Array<{ type: MealType; label: string }> = [
-    { type: 'petit_dejeuner', label: 'Petit-déj.' },
-    { type: 'dejeuner', label: 'Déjeuner' },
-    { type: 'collation', label: 'Collation' },
-    { type: 'diner', label: 'Dîner' },
+    { type: 'petit_dejeuner', label: trk.mealBreakfastShort },
+    { type: 'dejeuner', label: trk.mealLunch },
+    { type: 'collation', label: trk.mealSnack },
+    { type: 'diner', label: trk.mealDinner },
   ];
 
   return (
@@ -403,7 +404,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
             onClose();
           }}
           className="absolute top-4 right-4 p-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:text-black dark:hover:text-white cursor-pointer z-10"
-          aria-label="Fermer"
+          aria-label={trk.close}
         >
           <X className="w-5 h-5" />
         </button>
@@ -412,9 +413,9 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
           <div className="w-11 h-11 rounded-2xl bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-400 mx-auto flex items-center justify-center">
             <Barcode className="w-6 h-6" />
           </div>
-          <h3 className="font-black text-lg text-black dark:text-white">Scanner de Code-Barres</h3>
+          <h3 className="font-black text-lg text-black dark:text-white">{trk.scannerTitle}</h3>
           <p className="text-xs text-black/75 dark:text-slate-300">
-            Visez le code-barres avec la caméra, prenez une photo ou saisissez le numéro EAN.
+            {trk.scannerSubtitle}
           </p>
         </div>
 
@@ -447,7 +448,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                     <div className="absolute inset-x-2 h-0.5 bg-emerald-400 shadow-lg shadow-emerald-400 animate-pulse top-1/2" />
                   </div>
                   <span className="absolute bottom-2 px-2.5 py-0.5 rounded-full bg-black/65 text-[10px] font-bold text-emerald-300">
-                    {isLookingUp ? 'Recherche du produit...' : 'Détection automatique active'}
+                    {isLookingUp ? trk.lookingUpProduct : trk.autoDetectActive}
                   </span>
                 </div>
               )}
@@ -455,7 +456,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
               {cameraStatus === 'starting' && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-white text-xs font-bold">
                   <Loader2 className="w-6 h-6 animate-spin text-emerald-400" />
-                  <span>Ouverture de la caméra...</span>
+                  <span>{trk.cameraStarting}</span>
                 </div>
               )}
 
@@ -463,10 +464,10 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                 <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 p-4 text-center">
                   <VideoOff className="w-7 h-7 text-amber-400" />
                   <span className="text-xs font-bold text-white">
-                    Caméra en direct indisponible ou non autorisée
+                    {trk.cameraUnavailable}
                   </span>
                   <span className="text-[11px] text-slate-300">
-                    Utilisez le bouton photo ci-dessous ou saisissez les chiffres du code-barres.
+                    {trk.cameraUnavailableHint}
                   </span>
                 </div>
               )}
@@ -488,7 +489,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                 ) : (
                   <Camera className="w-4 h-4" />
                 )}
-                <span>{cameraStatus === 'active' ? 'Capturer & Lire IA' : 'Prendre photo'}</span>
+                <span>{cameraStatus === 'active' ? trk.captureReadAi : trk.takePhoto}</span>
               </button>
 
               <button
@@ -502,7 +503,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                 }`}
               >
                 <Upload className="w-4 h-4 text-emerald-600" />
-                <span>Photo / Galerie</span>
+                <span>{trk.photoGallery}</span>
               </button>
             </div>
 
@@ -515,7 +516,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
               className="space-y-1.5 pt-1"
             >
               <label className="text-[11px] font-extrabold text-black dark:text-slate-300 block">
-                Ou saisir le numéro du code-barres (EAN) :
+                {trk.orEnterEan}
               </label>
               <div className="flex items-center gap-2">
                 <input
@@ -539,7 +540,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                   className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:opacity-45 text-white font-black text-xs flex items-center gap-1.5 cursor-pointer shrink-0 shadow-xs"
                 >
                   <Search className="w-3.5 h-3.5" />
-                  <span>OK</span>
+                  <span>{trk.okBtn}</span>
                 </button>
               </div>
             </form>
@@ -564,7 +565,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-1.5 flex-wrap">
                   <span className="text-[10px] font-black uppercase text-emerald-700 dark:text-emerald-400">
-                    {scannedProduct.source === 'gemini-vision' ? 'Reconnu par IA' : 'OpenFoodFacts'}
+                    {scannedProduct.source === 'gemini-vision' ? trk.recognizedByAi : 'OpenFoodFacts'}
                   </span>
                   {scannedProduct.nutriscore && (
                     <span className="text-[10px] font-black px-1.5 py-0.5 rounded bg-emerald-600 text-white">
@@ -583,30 +584,30 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
               </div>
               <div className="text-right shrink-0">
                 <span className="font-black text-lg text-emerald-700 dark:text-emerald-400 block">
-                  {computedCalories} kcal
+                  {computedCalories} {trk.kcal}
                 </span>
                 <span className="text-[10px] font-bold text-black/65 dark:text-slate-400">
-                  pour {portionGrams}g
+                  {trk.forPortionG(portionGrams)}
                 </span>
               </div>
             </div>
 
             <div className="flex justify-between text-xs text-black dark:text-slate-200 border-t border-emerald-200/70 dark:border-emerald-800/60 pt-2.5 font-bold">
               <span>
-                Protéines : <strong>{computedProtein}g</strong>
+                {trk.proteins} : <strong>{computedProtein}g</strong>
               </span>
               <span>
-                Glucides : <strong>{computedCarbs}g</strong>
+                {trk.carbs} : <strong>{computedCarbs}g</strong>
               </span>
               <span>
-                Lipides : <strong>{computedFat}g</strong>
+                {trk.fats} : <strong>{computedFat}g</strong>
               </span>
             </div>
 
             {/* Portion Selector */}
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-[11px] font-extrabold text-black dark:text-slate-200">
-                <span>Quantité consommée (g) :</span>
+                <span>{trk.consumedQtyG}</span>
                 <input
                   type="number"
                   min={5}
@@ -641,7 +642,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
             {/* Meal Type Selector */}
             <div className="space-y-1">
               <span className="text-[11px] font-extrabold text-black dark:text-slate-200 block">
-                Enregistrer dans :
+                {trk.saveIn}
               </span>
               <div className="grid grid-cols-4 gap-1">
                 {mealOptions.map((opt) => (
@@ -672,7 +673,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                     ? 'bg-slate-800 border-slate-700 text-slate-200'
                     : 'bg-white border-emerald-200 text-black'
                 }`}
-                title="Scanner un autre produit"
+                title={trk.scanAnotherTitle}
               >
                 <RefreshCw className="w-4 h-4" />
               </button>
@@ -682,7 +683,7 @@ export const BarcodeScannerModal: React.FC<BarcodeScannerModalProps> = ({
                 onClick={handleAdd}
                 className="flex-1 bg-emerald-600 hover:bg-emerald-700 text-white font-black p-3 rounded-xl text-xs transition-all flex items-center justify-center gap-2 cursor-pointer shadow-md"
               >
-                <Check className="w-4 h-4" /> Ajouter au journal ({computedCalories} kcal)
+                <Check className="w-4 h-4" /> {trk.addToJournalKcal(computedCalories)}
               </button>
             </div>
           </div>
