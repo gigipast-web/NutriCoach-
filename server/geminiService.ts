@@ -614,8 +614,50 @@ export async function generateMenuPlan(params: {
   const lang = (language || "fr").toLowerCase();
   const ai = getGenAI();
   const isGlutenFree = preference === "sans_gluten" || String(preference || "").toLowerCase().includes("gluten");
+  const isFestiveGourmet =
+    preference === "festif_gastronomique" ||
+    String(preference || "").toLowerCase().includes("festif") ||
+    String(preference || "").toLowerCase().includes("gastronom");
 
-  const defaultMenu = isGlutenFree
+  const defaultMenu = isFestiveGourmet
+    ? {
+        dayPlan: {
+          breakfast: {
+            foodName: "Œufs brouillés aériens à la ciboulette, truite fumée & pain nordique toasté",
+            description: "Mise en bouche matinale raffinée, riche en protéines et oméga-3 sans excès de matières grasses.",
+            calories: 320,
+            protein: 24,
+            carbs: 22,
+            fat: 13,
+          },
+          lunch: {
+            foodName: "Noix de Saint-Jacques snackées, mousseline de panais vanillée & jus réduit aux agrumes",
+            description: "Assiette festive façon bistronomie légère : cuisson nacrée à sec et velouté sans crème lourde.",
+            calories: 490,
+            protein: 36,
+            carbs: 44,
+            fat: 14,
+          },
+          snack: {
+            foodName: "Poire pochée au safran & cardamome, nuage de fromage blanc et éclats de pistache",
+            description: "Pause sucrée délicate et parfumée aux épices nobles, naturellement légère.",
+            calories: 150,
+            protein: 11,
+            carbs: 19,
+            fat: 4,
+          },
+          dinner: {
+            foodName: "Suprême de pintade rôti aux cèpes, déclinaison de butternut & bûchette légère clémentine-cacao",
+            description: "Dîner de réveillon gastronomique et équilibré, conclu par une note chocolat-agrumes allégée.",
+            calories: 440,
+            protein: 39,
+            carbs: 34,
+            fat: 14,
+          },
+        },
+        tips: "Sublimez vos menus de fête avec des jus réduits dégraissés, des épices nobles (safran, vanille, fève tonka) et des cuissons nacrées plutôt que des sauces à la crème.",
+      }
+    : isGlutenFree
     ? {
         dayPlan: {
           breakfast: { foodName: "Bowl de sarrasin au lait végétal, myrtilles fraîches & graines de chia (Sans Gluten)", calories: 330, protein: 12, carbs: 46, fat: 8 },
@@ -645,16 +687,20 @@ export async function generateMenuPlan(params: {
     ? `\nEXIGENCE STRICTE SANS GLUTEN : Interdiction absolue de blé, froment, seigle, orge, épeautre ou kamut. Utilise UNIQUEMENT des céréales et féculents 100% naturellement sans gluten (quinoa, riz complet, sarrasin, millet, patates douces, maïs, légumineuses). Précise la mention "(Sans Gluten)" pour chaque repas.`
     : "";
 
-  const prompt = `Génère un menu journalier complet, savoureux et diététique pour un objectif total de ${targetCalories || 1500} kcal (Préférence alimentaire : ${preference || "standard"}).${glutenConstraint}
-Rédige les noms des repas et les conseils INTÉGRALEMENT dans la langue suivante : ${langName}.
+  const festiveConstraint = isFestiveGourmet
+    ? `\nEXIGENCE FESTIVE & GASTRONOMIQUE ALLÉGÉE : Compose une véritable carte de fête gastronomique (produits nobles, dressage raffiné, saveurs de réveillon ou de grande table : noix de Saint-Jacques, bar, turbot, chapon ou pintade fermière, champignons nobles, agrumes, épices précieuses, dessert festif léger aux fruits ou cacao pur), tout en restant strictement allégée en graisses saturées et sucres raffinés (cuissons douces, émulsions légères, jus réduits sans beurre/crème) afin de respecter l'objectif de ${targetCalories || 1500} kcal.`
+    : "";
+
+  const prompt = `Génère un menu journalier complet, savoureux et diététique pour un objectif total de ${targetCalories || 1500} kcal (Préférence alimentaire : ${preference || "standard"}).${glutenConstraint}${festiveConstraint}
+Rédige les noms des repas, descriptions et conseils INTÉGRALEMENT dans la langue suivante : ${langName}.
 Intègre toujours au moins une à deux portions de fruits frais entiers (ex : pomme, baies, kiwi, poire, agrumes) pour l'apport en fibres et vitamines.
 Structure JSON requise :
 {
   "dayPlan": {
-    "breakfast": { "foodName": "...", "calories": 350, "protein": 18, "carbs": 42, "fat": 10 },
-    "lunch": { "foodName": "...", "calories": 520, "protein": 40, "carbs": 50, "fat": 14 },
-    "snack": { "foodName": "...", "calories": 150, "protein": 5, "carbs": 18, "fat": 8 },
-    "dinner": { "foodName": "...", "calories": 420, "protein": 35, "carbs": 25, "fat": 12 }
+    "breakfast": { "foodName": "...", "description": "Courte description gourmande et astuce d'allègement (1 phrase)", "calories": 350, "protein": 18, "carbs": 42, "fat": 10 },
+    "lunch": { "foodName": "...", "description": "Courte description gourmande et astuce d'allègement (1 phrase)", "calories": 520, "protein": 40, "carbs": 50, "fat": 14 },
+    "snack": { "foodName": "...", "description": "Courte description gourmande et astuce d'allègement (1 phrase)", "calories": 150, "protein": 5, "carbs": 18, "fat": 8 },
+    "dinner": { "foodName": "...", "description": "Courte description gourmande et astuce d'allègement (1 phrase)", "calories": 420, "protein": 35, "carbs": 25, "fat": 12 }
   },
   "tips": "Un conseil clé du coach pour la journée dans la langue ${langName}."
 }`;

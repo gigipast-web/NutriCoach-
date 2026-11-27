@@ -338,25 +338,25 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
             {
               mealType: getMealTypeLabelLocal(language, 'petit-dejeuner'),
               title: res.dayPlan.breakfast?.foodName || w.coachMenuFallbackBreakfast,
-              description: w.coachMenuFallbackBreakfastDesc,
+              description: res.dayPlan.breakfast?.description || w.coachMenuFallbackBreakfastDesc,
               calories: res.dayPlan.breakfast?.calories || 340,
             },
             {
               mealType: getMealTypeLabelLocal(language, 'dejeuner'),
               title: res.dayPlan.lunch?.foodName || w.coachMenuFallbackLunch,
-              description: w.coachMenuFallbackLunchDesc,
+              description: res.dayPlan.lunch?.description || w.coachMenuFallbackLunchDesc,
               calories: res.dayPlan.lunch?.calories || 520,
             },
             {
               mealType: getMealTypeLabelLocal(language, 'collation'),
               title: res.dayPlan.snack?.foodName || w.coachMenuFallbackSnack,
-              description: w.coachMenuFallbackSnackDesc,
+              description: res.dayPlan.snack?.description || w.coachMenuFallbackSnackDesc,
               calories: res.dayPlan.snack?.calories || 160,
             },
             {
               mealType: getMealTypeLabelLocal(language, 'diner'),
               title: res.dayPlan.dinner?.foodName || w.coachMenuFallbackDinner,
-              description: w.coachMenuFallbackDinnerDesc,
+              description: res.dayPlan.dinner?.description || w.coachMenuFallbackDinnerDesc,
               calories: res.dayPlan.dinner?.calories || 380,
             },
           ],
@@ -371,6 +371,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
 
   const suggestionsByLang: Record<string, string[]> = {
     fr: [
+      'Menu de fête gastronomique et allégé ✨',
       'Propose-moi un menu sans gluten 🌾',
       'Que puis-je manger ce soir ? 🍽️',
       'Crée-moi un menu équilibré à 1500 kcal 🥗',
@@ -378,120 +379,140 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
       'Idée de collation saine à moins de 150 kcal 🍎',
     ],
     en: [
+      'Light gourmet festive menu ✨',
       'What should I eat for dinner tonight? 🍽️',
       'Create a balanced 1,500 kcal daily plan 🥗',
       'How to lose 5 kg sustainably? 🎯',
       'Healthy snack idea under 150 kcal 🍎',
     ],
     es: [
+      'Menú festivo gastronómico y ligero ✨',
       '¿Qué puedo cenar esta noche? 🍽️',
       'Crea un menú equilibrado de 1500 kcal 🥗',
       '¿Cómo perder 5 kg de forma saludable? 🎯',
       'Idea de merienda saludable de menos de 150 kcal 🍎',
     ],
     de: [
+      'Leichtes festliches Gourmet-Menü ✨',
       'Was kann ich heute Abend essen? 🍽️',
       'Erstelle mir einen 1500 kcal Tagesplan 🥗',
       'Wie nehme ich 5 kg gesund und nachhaltig ab? 🎯',
       'Gesunder Snack unter 150 kcal 🍎',
     ],
     it: [
+      'Menu festivo gourmet e leggero ✨',
       'Cosa posso mangiare stasera? 🍽️',
       'Creami un menu equilibrato da 1500 kcal 🥗',
       'Come perdere 5 kg in modo sostenibile? 🎯',
       'Idea per uno snack sano sotto i 150 kcal 🍎',
     ],
     pt: [
+      'Menu festivo gastronómico e leve ✨',
       'O que posso jantar hoje? 🍽️',
       'Crie um plano diário equilibrado de 1500 kcal 🥗',
       'Como perder 5 kg de forma saudável? 🎯',
       'Ideia de lanche saudável com menos de 150 kcal 🍎',
     ],
     nl: [
+      'Licht gastronomisch feestmenu ✨',
       'Wat kan ik vanavond eten? 🍽️',
       'Maak een uitgebalanceerd menu van 1500 kcal 🥗',
       'Hoe kan ik duurzaam 5 kg afvallen? 🎯',
       'Gezonde snack onder de 150 kcal 🍎',
     ],
     pl: [
+      'Lekkie wykwintne menu świąteczne ✨',
       'Co mogę zjeść na kolację? 🍽️',
       'Stwórz zbilansowane menu 1500 kcal 🥗',
       'Jak trwale schudnąć 5 kg? 🎯',
       'Pomysł na zdrową przekąskę poniżej 150 kcal 🍎',
     ],
     no: [
+      'Lett gastronomisk festmeny ✨',
       'Hva kan jeg spise til middag i kveld? 🍽️',
       'Lag en balansert dagsmeny på 1500 kcal 🥗',
       'Hvordan gå ned 5 kg på en sunn måte? 🎯',
       'Sunn mellommåltid under 150 kcal 🍎',
     ],
     sv: [
+      'Lätt gastronomisk festmeny ✨',
       'Vad kan jag äta till middag ikväll? 🍽️',
       'Skapa en balanserad meny på 1500 kcal 🥗',
       'Hur går jag ner 5 kg hållbart? 🎯',
       'Nyttigt mellanmål under 150 kcal 🍎',
     ],
     da: [
+      'Let gastronomisk festmenu ✨',
       'Hvad kan jeg spise til aften i dag? 🍽️',
       'Lav en afbalanceret menu på 1500 kcal 🥗',
       'Hvordan taber jeg 5 kg holdbart? 🎯',
       'Sund snack under 150 kcal 🍎',
     ],
     fi: [
+      'Kevyt gastronominen juhlamenu ✨',
       'Mitä voisin syödä illalliseksi? 🍽️',
       'Luo minulle tasapainoinen 1500 kcal ateriasuunnitelma 🥗',
       'Miten pudottaa 5 kg kestävästi? 🎯',
       'Terveellinen välipala alle 150 kcal 🍎',
     ],
     ru: [
+      'Лёгкое гастрономическое праздничное меню ✨',
       'Что приготовить на ужин? 🍽️',
       'Составь сбалансированное меню на 1500 ккал 🥗',
       'Как сбросить 5 кг без вреда для здоровья? 🎯',
       'Идея полезного перекуса до 150 ккал 🍎',
     ],
     ja: [
+      'ヘルシーで上品な祝祭ガストロノミー献立 ✨',
       '今夜は何を食べればいいですか？ 🍽️',
       '1500 kcalのバランスの良い献立を作って 🥗',
       '健康的に5kg痩せるには？ 🎯',
       '150 kcal未満のヘルシーな間食のアイデア 🍎',
     ],
     zh: [
+      '轻盈精致的节庆美食菜单 ✨',
       '今晚我该吃什么？ 🍽️',
       '为我定制一份1500大卡的均衡食谱 🥗',
       '如何健康持久地减重5公斤？ 🎯',
       '150大卡以内的健康加餐推荐 🍎',
     ],
     ar: [
+      'قائمة احتفالية راقية وخفيفة السعرات ✨',
       'ماذا يمكنني أن آكل على العشاء الليلة؟ 🍽️',
       'أنشئ لي خطة وجبات متوازنة بـ 1500 سعرة حرارية 🥗',
       'كيف أخسر 5 كجم بطريقة صحية ومستدامة؟ 🎯',
       'فكرة وجبة خفيفة صحية أقل من 150 سعرة حرارية 🍎',
     ],
     tr: [
+      'Hafif gurme davet ve bayram menüsü ✨',
       'Bu akşam ne yiyebilirim? 🍽️',
       'Bana 1500 kalorilik dengeli bir menü hazırla 🥗',
       'Sağlıklı şekilde 5 kg nasıl verebilirim? 🎯',
       '150 kalori altı sağlıklı atıştırmalık fikri 🍎',
     ],
     el: [
+      'Ελαφρύ γκουρμέ εορταστικό μενού ✨',
       'Τι μπορώ να φάω για βραδινό; 🍽️',
       'Φτιάξε μου ένα ισορροπημένο μενού 1500 kcal 🥗',
       'Πώς να χάσω 5 κιλά με υγιεινό τρόπο; 🎯',
       'Ιδέα για υγιεινό σνακ κάτω από 150 kcal 🍎',
     ],
     cs: [
+      'Lehké slavnostní gurmánské menu ✨',
       'Co si mohu dát dnes k večeři? 🍽️',
       'Vytvoř mi vyvážený jídelníček na 1500 kcal 🥗',
       'Jak zdravě a trvale zhubnout 5 kg? 🎯',
       'Tip na zdravou svačinu pod 150 kcal 🍎',
     ],
     ro: [
+      'Meniu festiv gastronomic și ușor ✨',
       'Ce pot mânca la cină în această seară? 🍽️',
       'Creează-mi un meniu echilibrat de 1500 kcal 🥗',
       'Cum să slăbesc 5 kg sănătos și sustenabil? 🎯',
       'Idee de gustare sănătoasă sub 150 kcal 🍎',
     ],
     uk: [
+      'Легке святкове гастрономічне меню ✨',
       'Що приготувати на вечерю? 🍽️',
       'Склади мені збалансоване меню на 1500 ккал 🥗',
       'Як здорово скинути 5 кг? 🎯',
@@ -1515,6 +1536,7 @@ export const AiCoachView: React.FC<AiCoachViewProps> = ({
                 }`}
               >
                 <option value="standard">{w.coachMenuPrefStandard}</option>
+                <option value="festif_gastronomique">{w.coachMenuPrefFestive}</option>
                 <option value="vegetarien">{w.coachMenuPrefVeg}</option>
                 <option value="sans_gluten">{w.coachMenuPrefGlutenFree}</option>
                 <option value="keto">{w.coachMenuPrefKeto}</option>

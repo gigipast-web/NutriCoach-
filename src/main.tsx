@@ -3,6 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import App from './App.tsx';
 import { LanguageProvider } from './i18n/LanguageContext.tsx';
+import { DecorProvider } from './theme/DecorContext.tsx';
 import './index.css';
 
 // Capture Chromium beforeinstallprompt early (before React mounts) so it is never missed
@@ -34,7 +35,9 @@ if (typeof window !== 'undefined' && 'serviceWorker' in navigator && process.env
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <LanguageProvider>
-      <App />
+      <DecorProvider>
+        <App />
+      </DecorProvider>
     </LanguageProvider>
   </StrictMode>,
 );

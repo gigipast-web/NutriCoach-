@@ -43,6 +43,8 @@ import { TrialExpiredPaywall } from './components/TrialExpiredPaywall.tsx';
 import { Footer } from './components/Footer.tsx';
 import { usePWAInstall } from './hooks/usePWAInstall.ts';
 import { useLanguage } from './i18n/LanguageContext.tsx';
+import { useDecor } from './theme/DecorContext.tsx';
+import { WinterSnowfallOverlay } from './components/WinterSnowfallOverlay.tsx';
 import { getDashboardUi } from './i18n/dashboardI18n.ts';
 import { getUiCore } from './i18n/uiCoreI18n.ts';
 import confetti from 'canvas-confetti';
@@ -57,6 +59,7 @@ export default function App() {
     languageRef.current = language;
   }, [language]);
   const { isInstalled: isStandaloneApp } = usePWAInstall();
+  const { activeSeason } = useDecor();
 
   // Theme state
   const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
@@ -970,6 +973,28 @@ export default function App() {
     setActiveTab('dashboard');
   };
 
+  const seasonalBackground = (() => {
+    switch (activeSeason) {
+      case 'winter':
+        return isDarkMode
+          ? 'linear-gradient(rgba(10, 19, 32, 0.88), rgba(11, 22, 36, 0.92)), url("/assets/winter_light_wallpaper.jpg")'
+          : 'linear-gradient(rgba(244, 249, 253, 0.54), rgba(247, 250, 254, 0.64)), url("/assets/winter_light_wallpaper.jpg")';
+      case 'summer':
+        return isDarkMode
+          ? 'linear-gradient(rgba(14, 22, 18, 0.89), rgba(14, 22, 18, 0.93)), url("/assets/summer_light_wallpaper.jpg")'
+          : 'linear-gradient(rgba(254, 252, 244, 0.50), rgba(253, 250, 240, 0.60)), url("/assets/summer_light_wallpaper.jpg")';
+      case 'autumn':
+        return isDarkMode
+          ? 'linear-gradient(rgba(23, 18, 13, 0.89), rgba(24, 19, 14, 0.93)), url("/assets/autumn_light_wallpaper.jpg")'
+          : 'linear-gradient(rgba(253, 249, 243, 0.52), rgba(252, 247, 239, 0.62)), url("/assets/autumn_light_wallpaper.jpg")';
+      case 'spring':
+      default:
+        return isDarkMode
+          ? 'linear-gradient(rgba(10, 22, 15, 0.90), rgba(10, 22, 15, 0.93)), url("/assets/floral_light_wallpaper.jpg")'
+          : 'linear-gradient(rgba(253, 252, 250, 0.50), rgba(253, 252, 250, 0.60)), url("/assets/floral_light_wallpaper.jpg")';
+    }
+  })();
+
   return (
     <div
       id="nutricoach-app-root"
@@ -977,14 +1002,13 @@ export default function App() {
         isDarkMode ? 'text-slate-100' : 'text-[#163321]'
       }`}
       style={{
-        backgroundImage: isDarkMode
-          ? 'linear-gradient(rgba(10, 22, 15, 0.90), rgba(10, 22, 15, 0.93)), url("/assets/floral_light_wallpaper.jpg")'
-          : 'linear-gradient(rgba(253, 252, 250, 0.50), rgba(253, 252, 250, 0.60)), url("/assets/floral_light_wallpaper.jpg")',
+        backgroundImage: seasonalBackground,
         backgroundRepeat: 'repeat',
         backgroundSize: '380px auto',
         backgroundPosition: 'center top',
       }}
     >
+      <WinterSnowfallOverlay />
       {/* Top Navigation */}
       <Navigation
         activeTab={activeTab}

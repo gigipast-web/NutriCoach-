@@ -231,6 +231,19 @@ export interface UiWellnessDict {
   profileDisabled: string;
   profileVoiceAutoDesc: string;
   profileLangSubtitle: string;
+  profileDecorTitle: string;
+  profileDecorDesc: string;
+  profileDecorWinter: string;
+  profileDecorClassic: string;
+  profileDecorAuto: string;
+  profileDecorSpring: string;
+  profileDecorSummer: string;
+  profileDecorAutumn: string;
+  profileHemisphereNorth: string;
+  profileHemisphereSouth: string;
+  profileDetectGpsBtn: string;
+  profileGpsDetecting: string;
+  profileGpsDenied: string;
   profileAccountSynced: string;
   profileGuestMode: string;
   profileCreateAccount: string;
@@ -318,6 +331,7 @@ export interface UiWellnessDict {
   coachMenuPrefVeg: string;
   coachMenuPrefGlutenFree: string;
   coachMenuPrefKeto: string;
+  coachMenuPrefFestive: string;
   coachMenuGenerateBtn: string;
   coachMenuSuggestedPrefix: string;
   coachMenuAiTipPrefix: string;
@@ -578,6 +592,19 @@ export const WLN_FR: UiWellnessDict = {
   profileDisabled: 'Désactivé',
   profileVoiceAutoDesc: "Le Coach vous accueille de vive voix à l'ouverture : « Que vas-tu manger aujourd'hui ? »",
   profileLangSubtitle: '21 langues disponibles • Traduction universelle (130+ langues)',
+  profileDecorTitle: 'Décor saisonnier',
+  profileDecorDesc: 'Choisissez l’ambiance visuelle de l’application.',
+  profileDecorWinter: 'Hiver givré',
+  profileDecorClassic: 'Classique floral',
+  profileDecorAuto: 'Auto (Position)',
+  profileDecorSpring: 'Printemps',
+  profileDecorSummer: 'Été',
+  profileDecorAutumn: 'Automne',
+  profileHemisphereNorth: 'Hémisphère Nord',
+  profileHemisphereSouth: 'Hémisphère Sud',
+  profileDetectGpsBtn: 'Position GPS',
+  profileGpsDetecting: 'Localisation...',
+  profileGpsDenied: 'Position GPS refusée — sélectionnez votre hémisphère manuellement.',
   profileAccountSynced: "Compte synchronisé & Période d'essai activée",
   profileGuestMode: 'Mode invité',
   profileCreateAccount: 'Créer un compte',
@@ -664,6 +691,7 @@ export const WLN_FR: UiWellnessDict = {
   coachMenuPrefVeg: 'Végétarien',
   coachMenuPrefGlutenFree: 'Sans Gluten',
   coachMenuPrefKeto: 'Low Carb / Protéiné',
+  coachMenuPrefFestive: 'Festif & Gastronomique allégé ✨',
   coachMenuGenerateBtn: 'Générer mon Menu',
   coachMenuSuggestedPrefix: 'Menu suggéré (~',
   coachMenuAiTipPrefix: 'Conseil IA :',
@@ -924,6 +952,19 @@ export const WLN_EN: UiWellnessDict = {
   profileDisabled: 'Disabled',
   profileVoiceAutoDesc: 'The Coach greets you out loud on launch: “What are you going to eat today?”',
   profileLangSubtitle: '21 built-in languages • Universal translation (130+ languages)',
+  profileDecorTitle: 'Seasonal Decor',
+  profileDecorDesc: 'Choose the visual atmosphere of the app.',
+  profileDecorWinter: 'Winter Frost',
+  profileDecorClassic: 'Classic Floral',
+  profileDecorAuto: 'Auto (Location)',
+  profileDecorSpring: 'Spring',
+  profileDecorSummer: 'Summer',
+  profileDecorAutumn: 'Autumn',
+  profileHemisphereNorth: 'Northern Hemisphere',
+  profileHemisphereSouth: 'Southern Hemisphere',
+  profileDetectGpsBtn: 'Detect GPS',
+  profileGpsDetecting: 'Locating...',
+  profileGpsDenied: 'GPS permission denied — select your hemisphere manually.',
   profileAccountSynced: 'Account synced & Trial active',
   profileGuestMode: 'Guest mode',
   profileCreateAccount: 'Create an account',
@@ -1010,6 +1051,7 @@ export const WLN_EN: UiWellnessDict = {
   coachMenuPrefVeg: 'Vegetarian',
   coachMenuPrefGlutenFree: 'Gluten-Free',
   coachMenuPrefKeto: 'Low Carb / High Protein',
+  coachMenuPrefFestive: 'Light Gourmet Festive ✨',
   coachMenuGenerateBtn: 'Generate my Menu',
   coachMenuSuggestedPrefix: 'Suggested menu (~',
   coachMenuAiTipPrefix: 'AI Tip:',
@@ -1270,6 +1312,19 @@ export const WLN_ES: UiWellnessDict = {
   profileDisabled: 'Desactivado',
   profileVoiceAutoDesc: 'El Coach te saluda en voz alta al abrir la app: «¿Qué vas a comer hoy?»',
   profileLangSubtitle: '21 idiomas disponibles • Traducción universal (130+ idiomas)',
+  profileDecorTitle: 'Decoración de temporada',
+  profileDecorDesc: 'Elige el ambiente visual de la aplicación.',
+  profileDecorWinter: 'Invierno helado',
+  profileDecorClassic: 'Floral clásico',
+  profileDecorAuto: 'Auto (Ubicación)',
+  profileDecorSpring: 'Primavera',
+  profileDecorSummer: 'Verano',
+  profileDecorAutumn: 'Otoño',
+  profileHemisphereNorth: 'Hemisferio Norte',
+  profileHemisphereSouth: 'Hemisferio Sur',
+  profileDetectGpsBtn: 'Detectar GPS',
+  profileGpsDetecting: 'Localizando...',
+  profileGpsDenied: 'GPS denegado: elige tu hemisferio manualmente.',
   profileAccountSynced: 'Cuenta sincronizada y Prueba activada',
   profileGuestMode: 'Modo invitado',
   profileCreateAccount: 'Crear cuenta',
@@ -1356,6 +1411,7 @@ export const WLN_ES: UiWellnessDict = {
   coachMenuPrefVeg: 'Vegetariano',
   coachMenuPrefGlutenFree: 'Sin Gluten',
   coachMenuPrefKeto: 'Bajo en Carbohidratos / Proteico',
+  coachMenuPrefFestive: 'Festivo y Gastronómico ligero ✨',
   coachMenuGenerateBtn: 'Generar mi Menú',
   coachMenuSuggestedPrefix: 'Menú sugerido (~',
   coachMenuAiTipPrefix: 'Consejo IA:',

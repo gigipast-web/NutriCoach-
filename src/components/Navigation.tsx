@@ -20,6 +20,7 @@ import { LanguageSelector } from './LanguageSelector.tsx';
 import { RobotCoachMascot } from './RobotCoachMascot.tsx';
 import { useLanguage } from '../i18n/LanguageContext.tsx';
 import { getUiCore } from '../i18n/uiCoreI18n.ts';
+import { useDecor } from '../theme/DecorContext.tsx';
 
 interface NavigationProps {
   activeTab: TabType;
@@ -44,6 +45,7 @@ export const Navigation: React.FC<NavigationProps> = ({
 }) => {
   const { t, language } = useLanguage();
   const ui = getUiCore(language);
+  const { activeSeason } = useDecor();
   const [showBellNotice, setShowBellNotice] = useState(false);
   const bellRef = useRef<HTMLDivElement>(null);
 
@@ -86,7 +88,19 @@ export const Navigation: React.FC<NavigationProps> = ({
       <header
         id="nutricoach-header"
         className={`${
-          isDarkMode
+          activeSeason === 'winter'
+            ? isDarkMode
+              ? 'bg-slate-900/90 backdrop-blur-md border-sky-900/60 text-white'
+              : 'bg-white/90 backdrop-blur-md border-sky-200/80 text-slate-900'
+            : activeSeason === 'autumn'
+            ? isDarkMode
+              ? 'bg-slate-900/90 backdrop-blur-md border-amber-900/50 text-white'
+              : 'bg-white/90 backdrop-blur-md border-amber-200/80 text-[#163321]'
+            : activeSeason === 'summer'
+            ? isDarkMode
+              ? 'bg-slate-900/90 backdrop-blur-md border-emerald-900/50 text-white'
+              : 'bg-white/90 backdrop-blur-md border-lime-200/80 text-[#163321]'
+            : isDarkMode
             ? 'bg-slate-900 border-slate-800 text-white'
             : 'bg-white border-[#E2ECE2] text-[#163321]'
         } safe-area-top border-b sticky top-0 z-40 shadow-xs transition-colors duration-200 select-none`}
@@ -100,6 +114,12 @@ export const Navigation: React.FC<NavigationProps> = ({
               className={`${
                 isTrialExpired
                   ? 'bg-gradient-to-r from-rose-600 via-rose-500 to-amber-500'
+                  : activeSeason === 'winter'
+                  ? 'bg-gradient-to-r from-teal-800 via-sky-700 to-emerald-700'
+                  : activeSeason === 'autumn'
+                  ? 'bg-gradient-to-r from-amber-700 via-orange-600 to-emerald-700'
+                  : activeSeason === 'summer'
+                  ? 'bg-gradient-to-r from-emerald-600 via-teal-500 to-amber-500'
                   : 'bg-gradient-to-r from-[#1F6F43] via-[#2A8F57] to-[#F59E0B]'
               } text-white text-xs px-4 py-1.5 flex items-center justify-between font-medium gap-2`}
             >
