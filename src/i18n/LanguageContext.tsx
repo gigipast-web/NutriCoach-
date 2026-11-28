@@ -35,6 +35,7 @@ interface LanguageContextType {
   t: (key: TranslationKey, params?: Record<string, string | number>) => string;
   isRtl: boolean;
   locale: string;
+  isUniversalTranslateOpen: boolean;
   triggerGoogleTranslate: (targetLang?: string) => void;
   resetGoogleTranslate: () => void;
 }
@@ -57,26 +58,40 @@ const clearGoogleTranslateCookies = () => {
   });
 };
 
+const hasGoogleTranslateDomMutation = (): boolean => {
+  if (typeof document === 'undefined') return false;
+  return (
+    document.documentElement.classList.contains('translated-ltr') ||
+    document.documentElement.classList.contains('translated-rtl') ||
+    document.querySelector('font[style*="vertical-align"]') !== null
+  );
+};
+
 export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [language, setLanguageState] = useState<Language>(() => {
-    const saved = localStorage.getItem('nutricoach_lang') as Language;
     const validCodes = LANGUAGES.map((l) => l.code);
+    const rawSaved = localStorage.getItem('nutricoach_lang');
+    const saved = rawSaved ? (rawSaved.trim().toLowerCase().slice(0, 2) as Language) : null;
+    let initialLang: Language = 'fr';
+
     if (saved && validCodes.includes(saved)) {
-      return saved;
+      initialLang = saved;
+    } else {
+      const navFull = (navigator.language || '').toLowerCase();
+      const navShort = navFull.slice(0, 2) as Language;
+      if (navShort === ('nb' as any) || navShort === ('nn' as any)) {
+        initialLang = 'no';
+      } else if (validCodes.includes(navShort)) {
+        initialLang = navShort;
+      }
     }
 
-    const navFull = (navigator.language || '').toLowerCase();
-    const navShort = navFull.slice(0, 2) as Language;
-
-    if (navShort === ('nb' as any) || navShort === ('nn' as any)) {
-      return 'no';
+    if (typeof document !== 'undefined') {
+      document.documentElement.lang = initialLang;
+      document.documentElement.setAttribute('dir', initialLang === 'ar' ? 'rtl' : 'ltr');
     }
 
-    if (validCodes.includes(navShort)) {
-      return navShort;
-    }
-
-    return 'fr';
+    return initialLang;
   });
 
   const [showGoogleTranslateBar, setShowGoogleTranslateBar] = useState(false);
@@ -102,7 +117,6 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
         combo.value = '';
         combo.dispatchEvent(new Event('change'));
       }
-      // Remove Google Translate top banner / translated classes if present
       document.documentElement.classList.remove('translated-ltr', 'translated-rtl');
       const gtBanner = document.querySelector('.goog-te-banner-frame') as HTMLElement | null;
       if (gtBanner) {
@@ -112,13 +126,18 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
   }, []);
 
   const setLanguage = (lang: Language) => {
+    const wasTranslatedDom = hasGoogleTranslateDomMutation();
+    localStorage.setItem('nutricoach_lang', lang);
     resetGoogleTranslate();
     setLanguageState(lang);
-    localStorage.setItem('nutricoach_lang', lang);
     applyLanguageEffects(lang);
+    if (wasTranslatedDom && typeof window !== 'undefined') {
+      window.location.reload();
+    }
   };
 
   useEffect(() => {
+    clearGoogleTranslateCookies();
     applyLanguageEffects(language);
   }, [language, applyLanguageEffects]);
 
@@ -181,7 +200,16 @@ export const LanguageProvider: React.FC<{ children: React.ReactNode }> = ({ chil
 
   return (
     <LanguageContext.Provider
-      value={{ language, setLanguage, t, isRtl, locale, triggerGoogleTranslate, resetGoogleTranslate }}
+      value={{
+        language,
+        setLanguage,
+        t,
+        isRtl,
+        locale,
+        isUniversalTranslateOpen: showGoogleTranslateBar,
+        triggerGoogleTranslate,
+        resetGoogleTranslate,
+      }}
     >
       {children}
       {/* Single persistent Google Translate root mount so popovers closing never unmount the widget */}

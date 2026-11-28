@@ -19,7 +19,7 @@ import {
 } from 'lucide-react';
 import { UserProfile, ActivityEntry } from '../types.ts';
 import { useLanguage } from '../i18n/LanguageContext.tsx';
-import { getUiTracking } from '../i18n/uiTrackingI18n.ts';
+import { getUiTracking, UI_TRACKING_I18N } from '../i18n/uiTrackingI18n.ts';
 
 interface SmartwatchSyncModalProps {
   isOpen: boolean;
@@ -122,6 +122,13 @@ export const SmartwatchSyncModal: React.FC<SmartwatchSyncModalProps> = ({
     if (!raw) return '';
     const match = raw.match(/^(?:Aujourd'hui à|Today at)\s+(.+)$/i);
     if (match) return trk.todayAtTime(match[1]);
+    const timeMatch = raw.match(/\b(\d{1,2}[:h.]\d{2})\b/);
+    if (timeMatch) {
+      const timeToken = timeMatch[1];
+      if (Object.values(UI_TRACKING_I18N).some((d) => d.todayAtTime(timeToken) === raw)) {
+        return trk.todayAtTime(timeToken);
+      }
+    }
     return raw;
   };
 

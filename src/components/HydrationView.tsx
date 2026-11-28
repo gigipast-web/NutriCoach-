@@ -16,7 +16,9 @@ import {
 import { UserProfile, WaterData, ActivityEntry } from '../types.ts';
 import { SmartwatchSyncModal } from './SmartwatchSyncModal.tsx';
 import { useLanguage } from '../i18n/LanguageContext.tsx';
-import { getUiTracking } from '../i18n/uiTrackingI18n.ts';
+import { getUiTracking, UI_TRACKING_I18N } from '../i18n/uiTrackingI18n.ts';
+import { getDashboardUi } from '../i18n/dashboardI18n.ts';
+import { LANGUAGES } from '../i18n/translations.ts';
 
 interface HydrationViewProps {
   user: UserProfile;
@@ -60,9 +62,36 @@ export const HydrationView: React.FC<HydrationViewProps> = ({
 
   const formatWatchSyncLabel = (raw?: string) => {
     if (!raw) return '';
-    const match = raw.match(/^(?:Aujourd'hui à|Today at)\s+(.+)$/i);
-    if (match) return trk.todayAtTime(match[1]);
+    const legacyMatch = raw.match(/^(?:Aujourd'hui à|Today at)\s+(.+)$/i);
+    if (legacyMatch) return trk.todayAtTime(legacyMatch[1]);
+    const timeMatch = raw.match(/\b(\d{1,2}[:h.]\d{2})\b/);
+    if (timeMatch) {
+      const timeToken = timeMatch[1];
+      const matchesAnyLang = Object.values(UI_TRACKING_I18N).some((d) => d.todayAtTime(timeToken) === raw);
+      if (matchesAnyLang) return trk.todayAtTime(timeToken);
+    }
     return raw;
+  };
+
+  const localizeActivityTitle = (act: ActivityEntry): string => {
+    if (act.id === 'act_today_1' || act.title === 'Marche active') {
+      return trk.presetActiveWalk.replace(/\s*\([^)]*\)\s*$/, '');
+    }
+    const allTrackDicts = Object.values(UI_TRACKING_I18N);
+    if (allTrackDicts.some((d) => d.presetSmallWalk === act.title)) return trk.presetSmallWalk;
+    if (allTrackDicts.some((d) => d.presetActiveWalk === act.title)) return trk.presetActiveWalk;
+    if (allTrackDicts.some((d) => d.presetLongWalk === act.title)) return trk.presetLongWalk;
+    if (LANGUAGES.some((l) => getDashboardUi(l.code).dailyWalkTitle === act.title)) {
+      return getDashboardUi(language).dailyWalkTitle;
+    }
+    const watchBrandMatch = act.title.match(/\(([^)]+)\)\s*$/);
+    if (watchBrandMatch) {
+      const brand = watchBrandMatch[1];
+      if (allTrackDicts.some((d) => d.watchActivityTitle(brand) === act.title)) {
+        return trk.watchActivityTitle(brand);
+      }
+    }
+    return act.title;
   };
 
   const handleQuickAddSteps = (steps: number, durationMin: number, cal: number, label: string) => {
@@ -410,7 +439,7 @@ export const HydrationView: React.FC<HydrationViewProps> = ({
                     </div>
                     <div>
                       <span className="font-bold text-xs sm:text-sm text-slate-800 dark:text-slate-100 block">
-                        {act.title}
+                        {localizeActivityTitle(act)}
                       </span>
                       <span className="text-[11px] text-slate-400">
                         {act.durationMinutes} min • {act.stepsCount > 0 ? `${act.stepsCount.toLocaleString(locale)} ${trk.stepsUnit}` : trk.sportSession}

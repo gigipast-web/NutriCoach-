@@ -212,7 +212,7 @@ export const translations = {
     brandTitle: 'NutriCoach Minceur',
     brandSubtitle: 'Weight Loss & AI Nutrition',
     freeTrialBanner: 'Free Trial',
-    freeTrialNotice: 'Active account ({days} days left) • $4.99/mo after',
+    freeTrialNotice: 'Active account ({days} days left) • €4.99/mo after',
     btnPremium: 'Go Premium',
     streakDays: '{days}-day streak',
     navDashboard: 'Dashboard',

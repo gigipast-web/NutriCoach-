@@ -52,7 +52,7 @@ import { CheckCircle2, AlertCircle, X, Volume2, VolumeX, Mic } from 'lucide-reac
 import { playWelcomeVoiceGreeting, stopSpeaking } from './utils/voiceCoach.ts';
 
 export default function App() {
-  const { language, locale } = useLanguage();
+  const { language, locale, isUniversalTranslateOpen } = useLanguage();
   const core = getUiCore(language);
   const languageRef = useRef(language);
   useEffect(() => {
@@ -998,7 +998,10 @@ export default function App() {
   return (
     <div
       id="nutricoach-app-root"
+      translate={isUniversalTranslateOpen ? 'yes' : 'no'}
       className={`min-h-screen transition-colors duration-200 font-semibold relative ${
+        !isUniversalTranslateOpen ? 'notranslate ' : ''
+      }${
         isDarkMode ? 'text-slate-100' : 'text-[#163321]'
       }`}
       style={{

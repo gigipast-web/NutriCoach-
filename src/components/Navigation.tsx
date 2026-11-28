@@ -121,38 +121,40 @@ export const Navigation: React.FC<NavigationProps> = ({
                   : activeSeason === 'summer'
                   ? 'bg-gradient-to-r from-emerald-600 via-teal-500 to-amber-500'
                   : 'bg-gradient-to-r from-[#1F6F43] via-[#2A8F57] to-[#F59E0B]'
-              } text-white text-xs px-4 py-1.5 flex items-center justify-between font-medium gap-2`}
+              } text-white text-xs px-3 sm:px-4 py-1.5 flex items-center justify-between font-medium gap-2 overflow-hidden`}
             >
-              <div className="flex items-center gap-2 min-w-0">
-                <span className="bg-white/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider text-[10px] flex items-center gap-1 shrink-0">
-                  <Timer className="w-3 h-3" />
-                  {user.isPremium
-                    ? ui.premiumActive
-                    : isTrialExpired
-                    ? ui.trialEnded
-                    : t('freeTrialBanner')}
+              <div className="flex items-center flex-wrap sm:flex-nowrap gap-x-2 gap-y-0.5 min-w-0 flex-1">
+                <span className="bg-white/20 px-2 py-0.5 rounded-full font-bold uppercase tracking-wider text-[10px] inline-flex items-center gap-1 shrink-0 max-w-full">
+                  <Timer className="w-3 h-3 shrink-0" />
+                  <span className="truncate">
+                    {user.isPremium
+                      ? ui.premiumActive
+                      : isTrialExpired
+                      ? ui.trialEnded
+                      : t('freeTrialBanner')}
+                  </span>
                 </span>
                 {user.isPremium ? (
-                  <span className="truncate font-semibold">
+                  <span className="truncate font-semibold text-[11px] sm:text-xs leading-tight min-w-0">
                     {ui.unlimitedAccess}
                   </span>
                 ) : isTrialExpired ? (
                   <>
-                    <span className="hidden sm:inline font-bold">
+                    <span className="hidden sm:inline font-bold truncate min-w-0">
                       {ui.trialEndedBannerFull}
                     </span>
-                    <span className="sm:hidden font-bold truncate">
+                    <span className="sm:hidden font-bold text-[11px] leading-tight min-w-0">
                       {ui.trialEndedBannerShort}
                     </span>
                   </>
                 ) : (
                   <>
-                    <span className="hidden sm:inline">
+                    <span className="hidden sm:inline truncate min-w-0">
                       {t('freeTrialNotice', { days: user.trialDaysRemaining })}
                     </span>
-                    <span className="sm:hidden font-bold flex items-center gap-1">
+                    <span className="sm:hidden font-bold text-[11px] leading-tight min-w-0 flex items-center flex-wrap gap-x-1">
                       <span>{ui.daysLeftShort(user.trialDaysRemaining)}</span>
-                      <span className="opacity-80 text-[10px]">{ui.todayFreeShort}</span>
+                      <span className="opacity-90 text-[10px] font-semibold">{ui.todayFreeShort}</span>
                     </span>
                   </>
                 )}
@@ -160,12 +162,12 @@ export const Navigation: React.FC<NavigationProps> = ({
               <button
                 id="btn-banner-premium"
                 onClick={onOpenPremium}
-                className={`flex items-center gap-1.5 bg-white ${
+                className={`flex items-center gap-1 bg-white ${
                   isTrialExpired ? 'text-rose-700 hover:bg-rose-50' : 'text-[#1F6F43] hover:bg-emerald-50'
-                } px-3 py-0.5 rounded-full font-black transition-all text-xs shadow-xs cursor-pointer shrink-0`}
+                } px-2.5 sm:px-3 py-1 rounded-full font-black transition-all text-[11px] sm:text-xs shadow-xs cursor-pointer shrink-0 whitespace-nowrap`}
               >
-                <Crown className="w-3.5 h-3.5 text-[#F59E0B] fill-[#F59E0B]" />
-                {isTrialExpired ? ui.payMonthlyCta : user.isPremium ? ui.manage : t('btnPremium')}
+                <Crown className="w-3.5 h-3.5 text-[#F59E0B] fill-[#F59E0B] shrink-0" />
+                <span>{isTrialExpired ? ui.payMonthlyCta : user.isPremium ? ui.manage : t('btnPremium')}</span>
               </button>
             </div>
           );
